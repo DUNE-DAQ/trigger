@@ -15,6 +15,7 @@
 #define TRIGGER_PLUGINS_MODULELEVELTRIGGER_HPP_
 
 #include "trigger/TokenManager.hpp"
+#include "trigger/LivetimeCounter.hpp"
 #include "trigger/moduleleveltriggerinfo/InfoNljs.hpp"
 
 #include "triggeralgs/TriggerCandidate.hpp"
@@ -77,6 +78,7 @@ private:
 
   // Create the next trigger decision
   dfmessages::TriggerDecision create_decision(const triggeralgs::TriggerCandidate& tc);
+  dfmessages::trigger_type_t m_trigger_type_shifted;
 
   void dfo_busy_callback(ipm::Receiver::Response message);
 
@@ -92,6 +94,7 @@ private:
   std::atomic<bool> m_dfo_is_busy;
   std::string m_trigger_decision_connection;
   std::string m_inhibit_connection;
+  std::atomic<bool> m_hsi_passthrough;
 
   dfmessages::trigger_number_t m_last_trigger_number;
 
@@ -102,6 +105,13 @@ private:
   // Are we in a configured state, ie after conf and before scrap?
   std::atomic<bool> m_configured_flag{ false };
 
+  // LivetimeCounter
+  std::shared_ptr<LivetimeCounter> m_livetime_counter;
+  LivetimeCounter::state_time_t m_lc_kLive_count;
+  LivetimeCounter::state_time_t m_lc_kPaused_count;
+  LivetimeCounter::state_time_t m_lc_kDead_count;
+  LivetimeCounter::state_time_t m_lc_deadtime;
+
   // Opmon variables
   using metric_counter_type = decltype(moduleleveltriggerinfo::Info::tc_received_count);
   std::atomic<metric_counter_type> m_tc_received_count{ 0 };
@@ -110,6 +120,9 @@ private:
   std::atomic<metric_counter_type> m_td_paused_count{ 0 };
   std::atomic<metric_counter_type> m_td_total_count{ 0 };
   std::atomic<metric_counter_type> m_td_queue_timeout_expired_err_count{ 0 };
+  std::atomic<metric_counter_type> m_lc_kLive{ 0 };
+  std::atomic<metric_counter_type> m_lc_kPaused{ 0 };
+  std::atomic<metric_counter_type> m_lc_kDead{ 0 };
 };
 } // namespace trigger
 } // namespace dunedaq

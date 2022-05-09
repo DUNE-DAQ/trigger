@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(trigger VERSION 1.3.0)
+project(trigger VERSION 1.3.7)
 
 find_package(daq-cmake REQUIRED)
 
@@ -18,20 +18,22 @@ find_package(utilities REQUIRED)
 find_package(networkmanager REQUIRED)
 find_package(daqdataformats REQUIRED)
 find_package(detdataformats REQUIRED)
+find_package(detchannelmaps REQUIRED)
 find_package(hdf5libs REQUIRED)
 find_package(CLI11 REQUIRED)
 
 ##############################################################################
 # Main library
 
-daq_add_library(TokenManager.cpp
+daq_add_library(TokenManager.cpp LivetimeCounter.cpp
   LINK_LIBRARIES
   appfwk::appfwk
   logging::logging
   dfmessages::dfmessages
   triggeralgs::triggeralgs
   utilities::utilities
-  detdataformats::detdataformats)
+  detdataformats::detdataformats
+  detchannelmaps::detchannelmaps)
 
 ##############################################################################
 # Codegen
@@ -40,11 +42,7 @@ daq_add_library(TokenManager.cpp
 ## us all changing it.  Please keep one file per line to give git
 ## merge a chance to succeed.
 daq_codegen(
-  fakedataflow.jsonnet
-  faketimestampeddatagenerator.jsonnet
   faketpcreatorheartbeatmaker.jsonnet
-  intervaltccreator.jsonnet
-  intervaltriggercreator.jsonnet
   moduleleveltrigger.jsonnet
   randomtriggercandidatemaker.jsonnet
   timingtriggercandidatemaker.jsonnet
@@ -56,6 +54,7 @@ daq_codegen(
   tpsetbuffercreator.jsonnet
   tasetsink.jsonnet
   tpsetreceiver.jsonnet
+  tpchannelfilter.jsonnet
   TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 
 daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
@@ -69,14 +68,11 @@ daq_add_plugin(TriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDecisionMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(RandomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
 daq_add_plugin(ModuleLevelTrigger duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
-daq_add_plugin(IntervalTriggerCreator duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs TEST)
-daq_add_plugin(IntervalTCCreator duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs TEST)
 daq_add_plugin(TPSetSink duneDAQModule LINK_LIBRARIES trigger TEST)
 daq_add_plugin(TASetSink duneDAQModule LINK_LIBRARIES trigger TEST)
-daq_add_plugin(FakeTimeStampedDataGenerator duneDAQModule LINK_LIBRARIES trigger TEST)
-daq_add_plugin(FakeDataFlow duneDAQModule LINK_LIBRARIES trigger TEST)
 daq_add_plugin(FakeTPCreatorHeartbeatMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TPSetBufferCreator duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(TPChannelFilter duneDAQModule LINK_LIBRARIES trigger)
 
 daq_add_plugin(TPZipper duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TAZipper duneDAQModule LINK_LIBRARIES trigger)
@@ -86,7 +82,8 @@ daq_add_plugin(TCZipper duneDAQModule LINK_LIBRARIES trigger)
 # Algorithm plugins
 daq_add_plugin(TriggerActivityMakerADCSimpleWindowPlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMakerADCSimpleWindowPlugin duneTCMaker LINK_LIBRARIES trigger)
-
+daq_add_plugin(TriggerActivityMakerHorizontalMuonPlugin duneTAMaker LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerCandidateMakerHorizontalMuonPlugin duneTCMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMakerPrescalePlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMakerPrescalePlugin duneTCMaker LINK_LIBRARIES trigger)
 
@@ -107,6 +104,8 @@ daq_add_plugin(TASetNQ duneNetworkQueue LINK_LIBRARIES trigger nwqueueadapters::
 daq_add_application( set_serialization_speed set_serialization_speed.cxx TEST LINK_LIBRARIES trigger)
 daq_add_application( taset_serialization taset_serialization.cxx TEST LINK_LIBRARIES trigger)
 daq_add_application( check_fragment_TPs check_fragment_TPs.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
+daq_add_application( print_trigger_type print_trigger_type.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
+daq_add_application( streamed_TPs_to_text streamed_TPs_to_text.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
 
 ##############################################################################
 # Unit Tests
