@@ -4,7 +4,7 @@ import rich.traceback
 from rich.console import Console
 from os.path import exists, join
 
-from appfwk.system import System
+from daqconf.core.system import System
 
 # Add -h as default help option
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -40,7 +40,7 @@ def cli(slowdown_factor, input_file, output_file, number_of_loops, do_taset_chec
         DO_TASET_CHECKS = do_taset_checks
     )
 
-    from appfwk.conf_utils import make_app_command_data, make_system_command_datas, generate_boot, write_json_files
+    from daqconf.core.conf_utils import make_app_command_data, make_system_command_datas, generate_boot, write_json_files
 
     app_command_datas = {
         name : make_app_command_data(the_system, app)

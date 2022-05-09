@@ -19,9 +19,9 @@ import dunedaq.trigger.triggerzipper as tzip
 import dunedaq.trigger.faketpcreatorheartbeatmaker as ftpchm
 import dunedaq.trigger.tasetsink as tasetsink
 
-from appfwk.app import App, ModuleGraph
-from appfwk.daqmodule import DAQModule
-from appfwk.conf_utils import Direction, Connection
+from daqconf.core.app import App, ModuleGraph
+from daqconf.core.daqmodule import DAQModule
+from daqconf.core.conf_utils import Direction, Connection
 
 #FIXME maybe one day, triggeralgs will define schemas... for now allow a dictionary of 4byte int, 4byte floats, and strings
 moo.otypes.make_type(schema='number', dtype='i4', name='temp_integer', path='temptypes')
@@ -44,7 +44,7 @@ def make_moo_record(conf_dict,name,path='temptypes'):
 
 #===============================================================================
 def generate(
-        INPUT_FILES: str,
+        INPUT_FILES: [str],
         OUTPUT_FILE: str,
         SLOWDOWN_FACTOR: float,
         NUMBER_OF_LOOPS: int,
@@ -57,56 +57,43 @@ def generate(
     
     modules = []
 
-    # mod_specs = [
-    #     mspec(f"tpm{i}", "TriggerPrimitiveMaker", [
-    #         app.QueueInfo(name="tpset_sink", inst=f"tpset_q", dir="output"),
-    #     ]) for i in range(len(INPUT_FILES))
-    # ] + [
-    #     mspec("zip", "TPZipper", [
-    #         app.QueueInfo(name="input", inst="tpset_q", dir="input"),
-    #         app.QueueInfo(name="output", inst="zipped_tpset_q", dir="output"),
-    #     ]),
-        
-    #     mspec('tam', 'TriggerActivityMaker', [ # TPSet -> TASet
-    #         app.QueueInfo(name='input', inst='zipped_tpset_q', dir='input'),
-    #         app.QueueInfo(name='output', inst='taset_q', dir='output'),
-    #     ]),
-
-    #     mspec("ta_sink", "TASetSink", [
-    #         app.QueueInfo(name="taset_source", inst="taset_q", dir="input"),
-    #     ]),
-    # ]
-
-    
     make_moo_record(ACTIVITY_CONFIG,'ActivityConf','temptypes')
     import temptypes
 
-    
-    for i,input_file in enumerate(INPUT_FILES):
-        modules.append(DAQModule(name = f"tpm{i}",
-                                 plugin = "TriggerPrimitiveMaker",
-                                 connections = {"tpset_sink": Connection(f"ftpchm{i}.tpset_source")},
-                                 conf = tpm.ConfParams(filename=input_file,
-                                                       number_of_loops=NUMBER_OF_LOOPS,
-                                                       tpset_time_offset=0,
-                                                       tpset_time_width=10000,
-                                                       clock_frequency_hz=CLOCK_FREQUENCY_HZ,
-                                                       maximum_wait_time_us=1000,
-                                                       region_id=0,
-                                                       element_id=i)))
+    n_streams = len(INPUT_FILES)
 
-        modules.append(DAQModule(name = f"ftpchm{i}",
+    tp_streams = [tpm.TPStream(filename=input_file,
+                               region_id = 0,
+                               element_id = istream,
+                               output_sink_name = f"output{istream}")
+                  for istream,input_file in enumerate(INPUT_FILES)]
+
+    tpm_connections = { f"output{istream}" : Connection(f"ftpchm{istream}.tpset_source")
+                        for istream in range(n_streams) }
+    modules.append(DAQModule(name = "tpm",
+                             plugin = "TriggerPrimitiveMaker",
+                             conf = tpm.ConfParams(tp_streams = tp_streams,
+                                                   number_of_loops=NUMBER_OF_LOOPS, # Infinite
+                                                   tpset_time_offset=0,
+                                                   tpset_time_width=TPSET_WIDTH,
+                                                   clock_frequency_hz=CLOCK_FREQUENCY_HZ,
+                                                   maximum_wait_time_us=1000,),
+                             connections = tpm_connections))
+
+    for istream in range(n_streams):
+        modules.append(DAQModule(name = f"ftpchm{istream}",
                                  plugin = "FakeTPCreatorHeartbeatMaker",
-                                 connections = {"tpset_sink": Connection("zip.input")},
-                                 conf = ftpchm.Conf(heartbeat_interval = 50000)))
+                                 conf = ftpchm.Conf(heartbeat_interval = 50000),
+                                 connections = {"tpset_sink" : Connection("zip.input")}))
 
     modules.append(DAQModule(name = "zip",
                              plugin = "TPZipper",
-                             connections = {"output": Connection("tam.input")},
-                             conf = tzip.ConfParams(cardinality=len(INPUT_FILES),
-                                                    max_latency_ms=100,
+                             conf = tzip.ConfParams(cardinality=n_streams,
+                                                    max_latency_ms=10,
                                                     region_id=0,
-                                                    element_id=0)))
+                                                    element_id=0,),
+                             connections = {"output" : Connection("tam.input")}))
+    
     modules.append(DAQModule(name = "tam",
                              plugin = "TriggerActivityMaker",
                              connections = {"output": Connection("ta_sink.taset_source")},
