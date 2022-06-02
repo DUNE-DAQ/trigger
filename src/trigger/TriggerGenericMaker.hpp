@@ -23,6 +23,7 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "rcif/cmd/Nljs.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -112,6 +113,7 @@ private:
 
   uint16_t m_geoid_region_id;  // NOLINT(build/unsigned)
   uint32_t m_geoid_element_id; // NOLINT(build/unsigned)
+  daqdataformats::run_number_t m_run_number;
 
   daqdataformats::timestamp_t m_buffer_time;
   daqdataformats::timestamp_t m_window_time;
@@ -124,8 +126,10 @@ private:
   // Should also call set_algorithm_name and set_geoid/set_windowing (if desired)
   virtual std::shared_ptr<MAKER> make_maker(const nlohmann::json& obj) = 0;
 
-  void do_start(const nlohmann::json& /*obj*/)
+  void do_start(const nlohmann::json& startobj)
   {
+      rcif::cmd::StartParams start_params = startobj.get<rcif::cmd::StartParams>();
+      m_run_number = start_params.run;
     m_received_count = 0;
     m_sent_count = 0;
     m_thread.start_working_thread(get_name());
@@ -346,6 +350,7 @@ public: // NOLINT
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
+      out.run_number = in.run_number;
       out.origin = daqdataformats::GeoID(
           daqdataformats::GeoID::SystemType::kDataSelection, m_parent.m_geoid_region_id, m_parent.m_geoid_element_id);
 
@@ -388,6 +393,7 @@ public: // NOLINT
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
+      out.run_number = m_parent.m_run_number;
       out.origin = daqdataformats::GeoID(
           daqdataformats::GeoID::SystemType::kDataSelection, m_parent.m_geoid_region_id, m_parent.m_geoid_element_id);
 

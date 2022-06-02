@@ -22,6 +22,7 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "rcif/cmd/Nljs.hpp"
 
 #include <chrono>
 #include <list>
@@ -89,6 +90,7 @@ public:
   size_t m_n_received{ 0 };
   size_t m_n_sent{ 0 };
   size_t m_n_tardy{ 0 };
+  daqdataformats::run_number_t m_run_number{ 0 };
   std::map<daqdataformats::GeoID, size_t> m_tardy_counts;
 
   explicit TriggerZipper(const std::string& name)
@@ -130,8 +132,10 @@ public:
     m_zm.set_cardinality(0);
   }
 
-  void do_start(const nlohmann::json& /*startobj*/)
+  void do_start(const nlohmann::json& startobj)
   {
+      rcif::cmd::StartParams start_params = startobj.get<rcif::cmd::StartParams>();
+      m_run_number = start_params.run;
     m_n_received = 0;
     m_n_sent = 0;
     m_n_tardy = 0;
@@ -173,6 +177,12 @@ public:
     auto& tset = m_cache.front();
     std::optional<TSET> opt_tset= m_inq->try_receive(std::chrono::milliseconds(10));
     if (opt_tset.has_value()) {
+        if (opt_tset.value().run_number != m_run_number) {
+            TLOG() << "Discarding input TSet with run number " << opt_tset.value().run_number << ", current run number " << m_run_number;
+            m_cache.pop_front(); // vestigial
+            drain();
+            return true;
+        }
       tset = *opt_tset;
       ++m_n_received;
     }
