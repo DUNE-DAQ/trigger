@@ -98,7 +98,7 @@ protected:
 private:
   dunedaq::utilities::WorkerThread m_thread;
 
-  using metric_counter_type = decltype(moduleleveltriggerinfo::Info::received_count);
+  using metric_counter_type = decltype(triggergenericmakerinfo::Info::received_count);
   std::atomic<metric_counter_type> m_received_count;
   std::atomic<metric_counter_type> m_sent_count;
 
