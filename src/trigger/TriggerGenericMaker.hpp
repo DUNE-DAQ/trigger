@@ -13,6 +13,7 @@
 #include "trigger/Set.hpp"
 #include "trigger/TimeSliceInputBuffer.hpp"
 #include "trigger/TimeSliceOutputBuffer.hpp"
+#include "trigger/triggergenericmakerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
@@ -97,8 +98,9 @@ protected:
 private:
   dunedaq::utilities::WorkerThread m_thread;
 
-  size_t m_received_count;
-  size_t m_sent_count;
+  using metric_counter_type = decltype(moduleleveltriggerinfo::Info::received_count);
+  std::atomic<metric_counter_type> m_received_count;
+  std::atomic<metric_counter_type> m_sent_count;
 
   using source_t = dunedaq::iomanager::ReceiverConcept<IN>;
   std::shared_ptr<source_t> m_input_queue;
@@ -123,6 +125,17 @@ private:
   // This should return a shared_ptr to the MAKER created from conf command arguments.
   // Should also call set_algorithm_name and set_geoid/set_windowing (if desired)
   virtual std::shared_ptr<MAKER> make_maker(const nlohmann::json& obj) = 0;
+
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/)
+  {
+    triggergenericmakerinfo::Info i;
+
+    i.received_count = m_received_count.load();
+    i.sent_count = m_sent_count.load();
+
+    ci.add(i);
+  }
+
 
   void do_start(const nlohmann::json& /*obj*/)
   {

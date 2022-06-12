@@ -46,6 +46,7 @@ daq_add_library(TokenManager.cpp LivetimeCounter.cpp
 daq_codegen(
   faketpcreatorheartbeatmaker.jsonnet
   moduleleveltrigger.jsonnet
+  triggergenericmakerinfo.jsonnet
   randomtriggercandidatemaker.jsonnet
   timingtriggercandidatemaker.jsonnet
   triggerprimitivemaker.jsonnet
