@@ -99,7 +99,7 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 {
   m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
-  m_paused.store(true);
+  m_paused.store(false);
   m_running_flag.store(true);
   m_dfo_is_busy.store(false);
 
@@ -208,8 +208,9 @@ ModuleLevelTrigger::send_trigger_decisions()
   auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_trigger_decision_connection);
 
   while (true) {
-    std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_source->receive(std::chrono::milliseconds(100));
+    std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_source->try_receive(std::chrono::milliseconds(100));
     if (!tc.has_value()) {
+      TLOG(1) << "Received non empty TC at MLT. Number of TCs received: " << tc->time_start;
       // The condition to exit the loop is that we've been stopped and
       // there's nothing left on the input queue
       if (!m_running_flag.load()) {
@@ -221,6 +222,7 @@ ModuleLevelTrigger::send_trigger_decisions()
 
     // We got a TC
     ++m_tc_received_count;
+    TLOG(1) << "So we have a TC. Is trigger paused? Answer: " << m_paused.load();
 
     if (!m_paused.load() && !m_dfo_is_busy.load()) {
 

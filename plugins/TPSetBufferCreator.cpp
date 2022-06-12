@@ -237,7 +237,8 @@ TPSetBufferCreator::do_work(std::atomic<bool>& running_flag)
     TPSetBuffer::DataRequestOutput requested_tpset;
 
     // Block that receives TPSets and add them in buffer and check for pending data requests
-    try {
+    try
+      {
       input_tpset = m_input_queue_tps->receive(m_queueTimeout);
       if (first) {
         TLOG() << get_name() << ": Got first TPSet, with start_time=" << input_tpset.start_time
