@@ -78,6 +78,16 @@ public:
     m_output_queue = get_iom_sender<OUT>(appfwk::connection_inst(obj, "output"));
   }
 
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  {
+    triggergenericmakerinfo::Info i;
+
+    i.received_count = m_received_count.load();
+    i.sent_count = m_sent_count.load();
+
+    ci.add(i);
+  }
+  
 protected:
   void set_algorithm_name(const std::string& name) { m_algorithm_name = name; }
 
@@ -126,21 +136,10 @@ private:
   // Should also call set_algorithm_name and set_geoid/set_windowing (if desired)
   virtual std::shared_ptr<MAKER> make_maker(const nlohmann::json& obj) = 0;
 
-  void get_info(opmonlib::InfoCollector& ci, int /*level*/)
-  {
-    triggergenericmakerinfo::Info i;
-
-    i.received_count = m_received_count.load();
-    i.sent_count = m_sent_count.load();
-
-    ci.add(i);
-  }
-
-
   void do_start(const nlohmann::json& /*obj*/)
   {
-    m_received_count = 0;
-    m_sent_count = 0;
+    m_received_count.store(0);
+    m_sent_count.store(0);
     m_thread.start_working_thread(get_name());
   }
 
