@@ -76,6 +76,7 @@ TPChannelFilter::channel_should_be_removed(int channel) const
   // The plane numbering convention is found in detchannelmaps/plugins/VDColdboxChannelMap.cpp and is:
   // U (induction) = 0, Y (induction) = 1, Z (induction) = 2, unconnected channel = 9999
   uint plane = m_channel_map->get_plane_from_offline_channel(channel);
+  TLOG(1) << "Checking received TP with channel " << channel << " and plane " << plane;
   // Check for collection
   if (plane == 0 || plane == 1) {
     return !m_conf.keep_induction;

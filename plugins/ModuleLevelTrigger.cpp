@@ -99,7 +99,7 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 {
   m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
-  m_paused.store(false);
+  m_paused.store(true);
   m_running_flag.store(true);
   m_dfo_is_busy.store(false);
 
@@ -209,11 +209,13 @@ ModuleLevelTrigger::send_trigger_decisions()
 
   while (true) {
     std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_source->try_receive(std::chrono::milliseconds(100));
+    TLOG(1) << "The m_running_flag is currently: " << m_running_flag.load();
     if (!tc.has_value()) {
-      TLOG(1) << "Received non empty TC at MLT. Number of TCs received: " << tc->time_start;
+      TLOG(1) << "No TC received.";
       // The condition to exit the loop is that we've been stopped and
       // there's nothing left on the input queue
       if (!m_running_flag.load()) {
+        TLOG(1) << "The m_running_flag is currently: " << m_running_flag.load() << " so going to break out of this TD process.";
         break;
       } else {
         continue;
@@ -223,12 +225,14 @@ ModuleLevelTrigger::send_trigger_decisions()
     // We got a TC
     ++m_tc_received_count;
     TLOG(1) << "So we have a TC. Is trigger paused? Answer: " << m_paused.load();
+    TLOG(1) << "DFO is busy? Answer: " << m_dfo_is_busy.load();
 
+    // Looks like trigger is in a paused state here, and DFO is busy - will prevent us sending a TD.
     if (!m_paused.load() && !m_dfo_is_busy.load()) {
 
       dfmessages::TriggerDecision decision = create_decision(*tc);
 
-      TLOG_DEBUG(1) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
+      TLOG(1) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
                     << decision.trigger_timestamp << " number of links " << decision.components.size()
                     << " based on TC of type " << static_cast<std::underlying_type_t<decltype(tc->type)>>(tc->type);
 
