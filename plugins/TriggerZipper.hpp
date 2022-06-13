@@ -91,7 +91,7 @@ public:
   std::atomic<metric_counter_type> m_n_received{ 0 };
   std::atomic<metric_counter_type> m_n_sent{ 0 };
   std::atomic<metric_counter_type> m_n_tardy{ 0 };
-  
+
   std::map<daqdataformats::GeoID, size_t> m_tardy_counts;
 
   explicit TriggerZipper(const std::string& name)
@@ -111,6 +111,19 @@ public:
     set_input(appfwk::connection_inst(ini, "input").uid);
     set_output(appfwk::connection_inst(ini, "output").uid);
   }
+
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  {
+    triggergenericmakerinfo::Info i;
+
+    i.n_received = m_n_received.load();
+    i.n_sent = m_n_sent.load();
+    i.n_tardy = m_n_tardy.load();
+
+    ci.add(i);
+  }
+
+
   void set_input(const std::string& name)
   {
     m_inq = get_iom_receiver<TSET>(name);
