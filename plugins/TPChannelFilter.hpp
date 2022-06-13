@@ -52,10 +52,10 @@ private:
   bool channel_should_be_removed(int channel) const;
   dunedaq::utilities::WorkerThread m_thread;
 
-  using metric_counter_type = decltype(triggergenericmakerinfo::Info::received_count);
+  using metric_counter_type = decltype(tpchannelfilterinfo::Info::received_count);
   std::atomic<metric_counter_type> m_received_count;
   std::atomic<metric_counter_type> m_sent_count;
-  
+
 
   using source_t = dunedaq::iomanager::ReceiverConcept<TPSet>;
   std::shared_ptr<source_t> m_input_queue;
