@@ -50,6 +50,8 @@ public:
   explicit TriggerGenericMaker(const std::string& name)
     : DAQModule(name)
     , m_thread(std::bind(&TriggerGenericMaker::do_work, this, std::placeholders::_1))
+    , m_received_count(0),
+    , m_sent_count(0),
     , m_input_queue(nullptr)
     , m_output_queue(nullptr)
     , m_queue_timeout(100)
@@ -138,8 +140,8 @@ private:
 
   void do_start(const nlohmann::json& /*obj*/)
   {
-    m_received_count.store(0);
-    m_sent_count.store(0);
+    m_received_count = 0;
+    m_sent_count = 0;
     m_thread.start_working_thread(get_name());
   }
 
