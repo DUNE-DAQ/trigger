@@ -114,7 +114,7 @@ public:
 
   void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
   {
-    triggergenericmakerinfo::Info i;
+    triggerzipperinfo::Info i;
 
     i.n_received = m_n_received.load();
     i.n_sent = m_n_sent.load();
