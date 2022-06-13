@@ -22,6 +22,7 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "trigger/triggerzipperinfo/InfoNljs.hpp"
 
 #include <chrono>
 #include <list>
@@ -86,9 +87,11 @@ public:
   cache_type m_cache;
   seqno_type m_next_seqno{ 0 };
 
-  size_t m_n_received{ 0 };
-  size_t m_n_sent{ 0 };
-  size_t m_n_tardy{ 0 };
+  using metric_counter_type = decltype(triggerzipperinfo::Info::received_count);
+  std::atomic<metric_counter_type> m_n_received{ 0 };
+  std::atomic<metric_counter_type> m_n_sent{ 0 };
+  std::atomic<metric_counter_type> m_n_tardy{ 0 };
+  
   std::map<daqdataformats::GeoID, size_t> m_tardy_counts;
 
   explicit TriggerZipper(const std::string& name)
