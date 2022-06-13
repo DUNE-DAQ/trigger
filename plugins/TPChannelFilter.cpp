@@ -42,7 +42,7 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
 }
 
   void 
-  TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   {
     troggerchannelmapinfo::Info i;
 
