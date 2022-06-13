@@ -244,6 +244,7 @@ public:
 
   void send_out(std::vector<node_type>& got)
   {
+    TLOG(1) << "Called send_out with a vector of size: " << got.size();
     for (auto& node : got) {
       payload_type lit = node.payload;
       auto& tset = *lit; // list iterator
@@ -257,7 +258,9 @@ public:
       try {
         m_outq->send(std::move(tset), std::chrono::milliseconds(10));
         ++m_n_sent;
+        TLOG(1) << "Successfuly sent something. Number of things tried to send: " << m_n_sent; 
       } catch (const iomanager::TimeoutExpired& err) {
+        TLOG(1) << "Timeout expired at send_out";
         // our output queue is stuffed.  should more be done
         // here than simply complain and drop?
         ers::error(err);
@@ -284,6 +287,7 @@ public:
   {
     std::vector<node_type> got;
     m_zm.drain_full(std::back_inserter(got));
+    TLOG(1) << "Calling flush, which will also call send_out";
     send_out(got);
   }
 };
