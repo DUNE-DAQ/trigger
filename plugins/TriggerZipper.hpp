@@ -171,6 +171,7 @@ public:
   {
     m_cache.emplace_front(); // to be filled
     auto& tset = m_cache.front();
+    TLOG(1) << "Trying to receive something from queue. Number of things received: " << m_n_received;
     std::optional<TSET> opt_tset= m_inq->try_receive(std::chrono::milliseconds(10));
     if (opt_tset.has_value()) {
       tset = *opt_tset;
@@ -181,6 +182,8 @@ public:
       drain();
       return false;
     }
+
+    TLOG(1) << "Received something at the TriggerZipper. Number of things received: " << m_n_received;
 
     if (!m_tardy_counts.count(tset.origin))
       m_tardy_counts[tset.origin] = 0;
@@ -210,7 +213,7 @@ public:
       sort_value |= 0x1;
 
     bool accepted = m_zm.feed(m_cache.begin(), sort_value, zipper_stream_id(tset.origin));
-
+    TLOG(1) << "Has this been accepted? Answer: " << accepted;
     if (!accepted) {
       ++m_n_tardy;
       ++m_tardy_counts[tset.origin];
@@ -252,6 +255,7 @@ public:
   {
     std::vector<node_type> got;
     if (m_cfg.max_latency_ms) {
+      TLOG(1) << "Calling drain_prompt since max_latency :" << m_cfg.max_latency_ms;
       m_zm.drain_prompt(std::back_inserter(got));
     } else {
       m_zm.drain_waiting(std::back_inserter(got));

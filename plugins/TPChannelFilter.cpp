@@ -131,7 +131,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
       });
       tpset->objects.erase(it, tpset->objects.end());
       size_t n_after = tpset->objects.size();
-      TLOG_DEBUG(2) << "Removed " << (n_before - n_after) << " TPs out of " << n_before;
+      TLOG(1) << "Removed " << (n_before - n_after) << " TPs out of " << n_before << " TPs remaining: " << n_after;
     }
 
     // The rule is that we don't send empty TPSets, so ensure that
@@ -148,7 +148,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
     }
 
   } // while(true)
-  TLOG_DEBUG(2) << "Exiting do_work() method";
+  TLOG(1) << "Exiting do_work() method";
 }
 
 } // namespace trigger
