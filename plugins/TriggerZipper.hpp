@@ -87,7 +87,7 @@ public:
   cache_type m_cache;
   seqno_type m_next_seqno{ 0 };
 
-  using metric_counter_type = decltype(triggerzipperinfo::Info::received_count);
+  using metric_counter_type = decltype(triggerzipperinfo::Info::n_received);
   std::atomic<metric_counter_type> m_n_received{ 0 };
   std::atomic<metric_counter_type> m_n_sent{ 0 };
   std::atomic<metric_counter_type> m_n_tardy{ 0 };
