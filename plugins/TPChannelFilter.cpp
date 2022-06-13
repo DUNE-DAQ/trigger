@@ -44,7 +44,7 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
   void 
   TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   {
-    troggerchannelmapinfo::Info i;
+    triggerchannelmapinfo::Info i;
 
     i.received_count = m_received_count.load();
     i.sent_count = m_sent_count.load();
