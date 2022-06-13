@@ -41,9 +41,16 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
   }
 }
 
-void
-TPChannelFilter::get_info(opmonlib::InfoCollector& /* ci */, int /*level*/)
-{}
+  void 
+  TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  {
+    troggerchannelmapinfo::Info i;
+
+    i.received_count = m_received_count.load();
+    i.sent_count = m_sent_count.load();
+
+    ci.add(i);
+  }
 
 void
 TPChannelFilter::do_conf(const nlohmann::json& conf_arg)
@@ -55,6 +62,8 @@ TPChannelFilter::do_conf(const nlohmann::json& conf_arg)
 void
 TPChannelFilter::do_start(const nlohmann::json&)
 {
+  m_received_count.store(0);
+  m_sent_count.store(0);
   m_thread.start_working_thread("channelfilter");
   TLOG_DEBUG(2) << get_name() + " successfully started.";
 }
@@ -111,7 +120,8 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
     }
 
     // If we got here, we got a TPSet
-    
+    ++m_received_count;
+
     // Actually do the removal for payload TPSets. Leave heartbeat TPSets unmolested
 
     if (tpset->type == TPSet::kPayload) {
@@ -128,6 +138,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
     if (!tpset->objects.empty()) {
       try {
         m_output_queue->send(std::move(*tpset), m_queue_timeout);
+        ++m_sent_count;
       } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
         std::ostringstream oss_warn;
         oss_warn << "push to output queue \"" << m_output_queue->get_name() << "\"";
