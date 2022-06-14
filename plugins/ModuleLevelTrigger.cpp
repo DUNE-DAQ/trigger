@@ -209,13 +209,13 @@ ModuleLevelTrigger::send_trigger_decisions()
 
   while (true) {
     std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_source->try_receive(std::chrono::milliseconds(100));
-    TLOG(1) << "The m_running_flag is currently: " << m_running_flag.load();
+   // TLOG(1) << "The m_running_flag is currently: " << m_running_flag.load();
     if (!tc.has_value()) {
-      TLOG(1) << "No TC received.";
+     // TLOG(1) << "No TC received.";
       // The condition to exit the loop is that we've been stopped and
       // there's nothing left on the input queue
       if (!m_running_flag.load()) {
-        TLOG(1) << "The m_running_flag is currently: " << m_running_flag.load() << " so going to break out of this TD process.";
+       // TLOG(1) << "The m_running_flag is currently: " << m_running_flag.load() << " so going to break out of this TD process.";
         break;
       } else {
         continue;
@@ -224,8 +224,8 @@ ModuleLevelTrigger::send_trigger_decisions()
 
     // We got a TC
     ++m_tc_received_count;
-    TLOG(1) << "So we have a TC. Is trigger paused? Answer: " << m_paused.load();
-    TLOG(1) << "DFO is busy? Answer: " << m_dfo_is_busy.load();
+    //TLOG(1) << "So we have a TC. Is trigger paused? Answer: " << m_paused.load();
+    //TLOG(1) << "DFO is busy? Answer: " << m_dfo_is_busy.load();
 
     // Looks like trigger is in a paused state here, and DFO is busy - will prevent us sending a TD.
     if (!m_paused.load() && !m_dfo_is_busy.load()) {
@@ -248,10 +248,10 @@ ModuleLevelTrigger::send_trigger_decisions()
 
     } else if (m_paused.load()) {
       ++m_td_paused_count;
-      TLOG_DEBUG(1) << "Triggers are paused. Not sending a TriggerDecision ";
+      //TLOG_DEBUG(1) << "Triggers are paused. Not sending a TriggerDecision ";
     } else {
       ers::warning(TriggerInhibited(ERS_HERE, m_run_number));
-      TLOG_DEBUG(1) << "The DFO is busy. Not sending a TriggerDecision for candidate timestamp " << tc->time_candidate;
+      //TLOG_DEBUG(1) << "The DFO is busy. Not sending a TriggerDecision for candidate timestamp " << tc->time_candidate;
       m_td_inhibited_count++;
     }
     m_td_total_count++;

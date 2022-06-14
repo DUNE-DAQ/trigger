@@ -84,9 +84,7 @@ Tee<T>::do_work(std::atomic<bool>& running_flag)
     try {
       object = m_input_queue->receive(std::chrono::milliseconds(100));
       ++n_objects;
-      TLOG(1) << "Received something. Number of things received: " << n_objects;
     } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
-      TLOG(1) << "Timeout when trying to receive something from the queue. Number of things received: " << n_objects;
       // The condition to exit the loop is that we've been stopped and
       // there's nothing left on the input queue
       if (!running_flag.load()) {
@@ -100,14 +98,12 @@ Tee<T>::do_work(std::atomic<bool>& running_flag)
     try {
       T object1(object);
       m_output_queue1->send(std::move(object1), std::chrono::milliseconds(timeout_ms));
-      TLOG(1) << "Tried to send something to the queue: Q1 ";
     } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
       ers::warning(dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), "push to output queue 1", timeout_ms));
     }
     try {
       T object2(object);
       m_output_queue2->send(std::move(object2), std::chrono::milliseconds(timeout_ms));
-      TLOG(1) << "Tried to send something to the queue: Q2 ";
     } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
       ers::warning(dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), "push to output queue 2", timeout_ms));
     }
