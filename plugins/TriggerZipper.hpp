@@ -162,7 +162,7 @@ public:
     m_thread.join();
     flush();
     m_zm.clear();
-   // TLOG() << "Received " << m_n_received << " Sets. Sent " << m_n_sent << " Sets. " << m_n_tardy << " were tardy";
+    TLOG() << "Received " << m_n_received << " Sets. Sent " << m_n_sent << " Sets. " << m_n_tardy << " were tardy";
     std::stringstream ss;
     ss << std::endl;
     for (auto& [id, n] : m_tardy_counts) {
@@ -187,7 +187,6 @@ public:
   {
     m_cache.emplace_front(); // to be filled
     auto& tset = m_cache.front();
-    //TLOG(1) << "Trying to receive something from queue. Number of things received: " << m_n_received;
     std::optional<TSET> opt_tset= m_inq->try_receive(std::chrono::milliseconds(10));
     if (opt_tset.has_value()) {
       tset = *opt_tset;
@@ -198,8 +197,6 @@ public:
       drain();
       return false;
     }
-
-    //TLOG(1) << "Received something at the TriggerZipper. Number of things received: " << m_n_received;
 
     if (!m_tardy_counts.count(tset.origin))
       m_tardy_counts[tset.origin] = 0;
@@ -229,7 +226,6 @@ public:
       sort_value |= 0x1;
 
     bool accepted = m_zm.feed(m_cache.begin(), sort_value, zipper_stream_id(tset.origin));
-    //TLOG(1) << "Has this been accepted? Answer: " << accepted;
     if (!accepted) {
       ++m_n_tardy;
       ++m_tardy_counts[tset.origin];
@@ -244,7 +240,6 @@ public:
 
   void send_out(std::vector<node_type>& got)
   {
-    //TLOG(1) << "Called send_out with a vector of size: " << got.size();
     for (auto& node : got) {
       payload_type lit = node.payload;
       auto& tset = *lit; // list iterator
@@ -258,9 +253,8 @@ public:
       try {
         m_outq->send(std::move(tset), std::chrono::milliseconds(10));
         ++m_n_sent;
-       // TLOG(1) << "Successfuly sent something. Number of things tried to send: " << m_n_sent; 
+        TLOG_DEBUG(2) << "Successfuly sent something. Number of things tried to send: " << m_n_sent; 
       } catch (const iomanager::TimeoutExpired& err) {
-        //TLOG(1) << "Timeout expired at send_out";
         // our output queue is stuffed.  should more be done
         // here than simply complain and drop?
         ers::error(err);
@@ -274,7 +268,6 @@ public:
   {
     std::vector<node_type> got;
     if (m_cfg.max_latency_ms) {
-      //TLOG(1) << "Calling drain_prompt since max_latency :" << m_cfg.max_latency_ms;
       m_zm.drain_prompt(std::back_inserter(got));
     } else {
       m_zm.drain_waiting(std::back_inserter(got));
@@ -287,7 +280,6 @@ public:
   {
     std::vector<node_type> got;
     m_zm.drain_full(std::back_inserter(got));
-   // TLOG(1) << "Calling flush, which will also call send_out";
     send_out(got);
   }
 };

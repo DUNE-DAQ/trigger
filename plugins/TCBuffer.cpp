@@ -98,7 +98,7 @@ TCBuffer::do_work(std::atomic<bool>& running_flag)
     
     std::optional<triggeralgs::TriggerCandidate> tc = m_input_queue_tcs->try_receive(std::chrono::milliseconds(0));
     if (tc.has_value()) {  
-      //TLOG(1) << "Got TC with start time " << tc->time_start;
+      TLOG_DEBUG(2) << "Got TC with start time " << tc->time_start;
       popped_anything = true;
       m_latency_buffer_impl->write(TCWrapper(*tc));
       ++n_tcs_received;
@@ -107,7 +107,7 @@ TCBuffer::do_work(std::atomic<bool>& running_flag)
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
     if (data_request.has_value()) {
       auto& info = data_request->request_information;
-      //TLOG(1) << "Got data request with component " << info.component << ", window_begin " << info.window_begin << ", window_end " << info.window_end;
+      TLOG_DEBUG(2) << "Got data request with component " << info.component << ", window_begin " << info.window_begin << ", window_end " << info.window_end;
       popped_anything = true;
       ++n_requests_received;
       m_request_handler_impl->issue_request(*data_request, false);
@@ -118,7 +118,7 @@ TCBuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  //TLOG() << get_name() << " exiting do_work() method. Received " << n_tcs_received << " TCs " << " and " << n_requests_received << " data requests";
+  TLOG() << get_name() << " exiting do_work() method. Received " << n_tcs_received << " TCs " << " and " << n_requests_received << " data requests";
 }
 } // namespace trigger
 } // namespace dunedaq

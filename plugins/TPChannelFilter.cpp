@@ -85,7 +85,7 @@ TPChannelFilter::channel_should_be_removed(int channel) const
   // The plane numbering convention is found in detchannelmaps/plugins/VDColdboxChannelMap.cpp and is:
   // U (induction) = 0, Y (induction) = 1, Z (induction) = 2, unconnected channel = 9999
   uint plane = m_channel_map->get_plane_from_offline_channel(channel);
-  //TLOG_DEBUG(2) << "Checking received TP with channel " << channel << " and plane " << plane;
+  TLOG_DEBUG(2) << "Checking received TP with channel " << channel << " and plane " << plane;
   // Check for collection
   if (plane == 0 || plane == 1) {
     return !m_conf.keep_induction;
@@ -131,7 +131,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
       });
       tpset->objects.erase(it, tpset->objects.end());
       size_t n_after = tpset->objects.size();
-    //  TLOG(1) << "Removed " << (n_before - n_after) << " TPs out of " << n_before << " TPs remaining: " << n_after;
+      TLOG_DEBUG(2) << "Removed " << (n_before - n_after) << " TPs out of " << n_before << " TPs remaining: " << n_after;
     }
 
     // The rule is that we don't send empty TPSets, so ensure that
@@ -148,7 +148,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
     }
 
   } // while(true)
-  TLOG(1) << "Exiting do_work() method";
+  TLOG_DEBUG(2) << "Exiting do_work() method";
 }
 
 } // namespace trigger

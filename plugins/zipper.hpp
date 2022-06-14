@@ -267,7 +267,7 @@ public:
     for (const auto& sit : streams) {
       const auto& ident = sit.first;
       auto have = sit.second.occupancy;
-      // TLOG(1) << "identity in complete function: " << ident << " and have: " << have << " and top identity " << top_ident;
+      TLOG_DEBUG(4) << "identity in complete function: " << ident << " and have: " << have << " and top identity " << top_ident;
       // Do not count the top node.
       if (top_ident == ident) {
         have -= 1;
@@ -309,7 +309,7 @@ public:
       // stale "unrepresented" to cause incompleteness.
       ++completeness;
     }
-    //TLOG(1) << "At zipper stage: completeness is currently: " << completeness << " and cardinality is: " << cardinality;
+    TLOG_DEBUG(4) << "At zipper stage: completeness is currently: " << completeness << " and cardinality is: " << cardinality;
     return completeness >= cardinality;
   }
 
