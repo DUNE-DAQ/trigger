@@ -22,6 +22,7 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "trigger/triggerzipperinfo/InfoNljs.hpp"
 
 #include <chrono>
 #include <list>
@@ -86,9 +87,11 @@ public:
   cache_type m_cache;
   seqno_type m_next_seqno{ 0 };
 
-  size_t m_n_received{ 0 };
-  size_t m_n_sent{ 0 };
-  size_t m_n_tardy{ 0 };
+  using metric_counter_type = decltype(triggerzipperinfo::Info::n_received);
+  std::atomic<metric_counter_type> m_n_received{ 0 };
+  std::atomic<metric_counter_type> m_n_sent{ 0 };
+  std::atomic<metric_counter_type> m_n_tardy{ 0 };
+
   std::map<daqdataformats::GeoID, size_t> m_tardy_counts;
 
   explicit TriggerZipper(const std::string& name)
@@ -108,6 +111,19 @@ public:
     set_input(appfwk::connection_inst(ini, "input").uid);
     set_output(appfwk::connection_inst(ini, "output").uid);
   }
+
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  {
+    triggerzipperinfo::Info i;
+
+    i.n_received = m_n_received.load();
+    i.n_sent = m_n_sent.load();
+    i.n_tardy = m_n_tardy.load();
+
+    ci.add(i);
+  }
+
+
   void set_input(const std::string& name)
   {
     m_inq = get_iom_receiver<TSET>(name);
@@ -210,7 +226,6 @@ public:
       sort_value |= 0x1;
 
     bool accepted = m_zm.feed(m_cache.begin(), sort_value, zipper_stream_id(tset.origin));
-
     if (!accepted) {
       ++m_n_tardy;
       ++m_tardy_counts[tset.origin];
@@ -238,6 +253,7 @@ public:
       try {
         m_outq->send(std::move(tset), std::chrono::milliseconds(10));
         ++m_n_sent;
+        TLOG_DEBUG(2) << "Successfuly sent something. Number of things tried to send: " << m_n_sent; 
       } catch (const iomanager::TimeoutExpired& err) {
         // our output queue is stuffed.  should more be done
         // here than simply complain and drop?

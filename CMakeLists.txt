@@ -46,6 +46,7 @@ daq_add_library(TokenManager.cpp LivetimeCounter.cpp
 daq_codegen(
   faketpcreatorheartbeatmaker.jsonnet
   moduleleveltrigger.jsonnet
+  triggergenericmakerinfo.jsonnet
   randomtriggercandidatemaker.jsonnet
   timingtriggercandidatemaker.jsonnet
   triggerprimitivemaker.jsonnet
@@ -97,6 +98,9 @@ daq_add_plugin(TriggerCandidateMakerPrescalePlugin duneTCMaker LINK_LIBRARIES tr
 daq_add_plugin(TriggerActivityMakerSupernovaPlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMakerSupernovaPlugin duneTCMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDecisionMakerSupernovaPlugin duneTDMaker LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerActivityMakerMichelElectronPlugin duneTAMaker LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerCandidateMakerMichelElectronPlugin duneTCMaker LINK_LIBRARIES trigger)
+
 
 ##############################################################################
 # Integration tests

@@ -112,7 +112,7 @@ FakeTPCreatorHeartbeatMaker::do_work(std::atomic<bool>& running_flag)
     if (m_geoid.region_id == daqdataformats::GeoID::s_invalid_region_id) {
       m_geoid = tpset->origin;
     }
-    TLOG_DEBUG(3) << "Activity received.";
+    TLOG_DEBUG(3) << "Activity received";
 
     daqdataformats::timestamp_t current_tpset_start_time = tpset->start_time;
 
