@@ -85,14 +85,14 @@ static void
 pop_must_timeout(receiver_t out)
 {
   TLOG() << "Popping assuming a timeout";
-  BOOST_CHECK_THROW(out->receive((duration_t)1000), iomanager::TimeoutExpired);
+  BOOST_CHECK_THROW(out->receive((duration_t)100), iomanager::TimeoutExpired);
 }
 static trigger::TPSet
 pop_must_succeed(receiver_t out)
 {
   TLOG() << "Popping assuming no waiting";
   trigger::TPSet tpset;
-  BOOST_CHECK_NO_THROW(tpset = out->receive((duration_t)1000); // no exception expected
+  BOOST_CHECK_NO_THROW(tpset = out->receive((duration_t)100); // no exception expected
   );
   TLOG() << "Popped " << tpset.origin << " @ " << tpset.start_time;
   return tpset;
@@ -109,9 +109,9 @@ BOOST_AUTO_TEST_CASE(ZipperScenario1)
 {
   iomanager::ConnectionIds_t connections;
   connections.emplace_back(
-    iomanager::ConnectionId{ "zipper_input", iomanager::ServiceType::kQueue, "trigger::TPSet", "queue://StdDeQueue:10" });
+    iomanager::ConnectionId{ "zipper_input", iomanager::ServiceType::kQueue, "trigger::TPSet", "queue://FollyMPMCQueue:10" });
   connections.emplace_back(
-    iomanager::ConnectionId{ "zipper_output", iomanager::ServiceType::kQueue, "trigger::TPSet", "queue://StdDeQueue:10" });
+    iomanager::ConnectionId{ "zipper_output", iomanager::ServiceType::kQueue, "trigger::TPSet", "queue://FollyMPMCQueue:10" });
   iomanager::IOManager::get()->configure(connections);
 
   auto in = dunedaq::get_iom_sender<trigger::TPSet>("zipper_input");
@@ -122,7 +122,12 @@ BOOST_AUTO_TEST_CASE(ZipperScenario1)
   zip->set_input("zipper_input");
   zip->set_output("zipper_output");
 
-  trigger::TPZipper::cfg_t cfg{ 2, 100, 1, 20 };
+  trigger::TPZipper::cfg_t cfg{
+    /* cardinality    = */ 2,
+    /* max_latency_ms = */ 200,
+    /* region_id      = */ 1,
+    /* element_id     = */ 20 };
+  
   nlohmann::json jcfg = cfg, jempty;
   zip->do_configure(jcfg);
 
