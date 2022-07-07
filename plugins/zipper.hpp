@@ -81,12 +81,23 @@ public:
      A nonzero max_latency must be supplied to enable latency
      guarantees.
    */
-  explicit merge(size_t k = 0, duration_t max_latency = duration_t::zero())
-    : cardinality(k)
+  explicit merge(std::vector<identity_t> stream_ids = std::vector<identity_t>(), duration_t max_latency = duration_t::zero())
+    : cardinality(stream_ids.size())
     , latency(max_latency)
     , origin(0) // ordering
-  {}
+  {
+    set_stream_ids(stream_ids);
+  }
 
+  void set_stream_ids(std::vector<identity_t> stream_ids)
+  {
+    cardinality = stream_ids.size();
+    streams.clear();
+    for (auto const& id : stream_ids) {
+      streams[id] = Stream{0, clock_t::now()};
+    }
+  }
+  
   /**
       Set the expected number of identified streams.
 
@@ -112,7 +123,7 @@ public:
       considered complete and thus will exhibit permanent
       undefined behavior as described above.
   */
-  void set_cardinality(size_t k) { cardinality = k; }
+  // void set_cardinality(size_t k) { cardinality = k; }
 
   /**
      Set the maximum latency

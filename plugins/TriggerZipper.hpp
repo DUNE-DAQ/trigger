@@ -121,13 +121,13 @@ public:
   {
     m_cfg = cfgobj.get<cfg_t>();
     m_zm.set_max_latency(std::chrono::milliseconds(m_cfg.max_latency_ms));
-    m_zm.set_cardinality(m_cfg.cardinality);
+    // m_zm.set_cardinality(m_cfg.cardinality);
   }
 
   void do_scrap(const nlohmann::json& /*stopobj*/)
   {
     m_cfg = cfg_t{};
-    m_zm.set_cardinality(0);
+    m_zm.set_stream_ids(std::vector<typename zm_type::identity_t>{});
   }
 
   void do_start(const nlohmann::json& /*startobj*/)
@@ -136,6 +136,16 @@ public:
     m_n_sent = 0;
     m_n_tardy = 0;
     m_tardy_counts.clear();
+    // We set the streams here, at start time, so that the last_seen
+    // time in each stream is set to the run start time (not the
+    // configure time, as it would be if we did this in do_configure,
+    // which would otherwise be more natural)
+    std::vector<typename zm_type::identity_t> stream_ids;
+    for (auto const& schema_geoid : m_cfg.input_geoids) {
+      daqdataformats::GeoID geoid = daqdataformats::GeoID{ daqdataformats::GeoID::string_to_system_type(schema_geoid.system), schema_geoid.region, schema_geoid.element };
+      stream_ids.push_back(zipper_stream_id(geoid));
+    }
+    m_zm.set_stream_ids(stream_ids);
     m_running.store(true);
     m_thread = std::thread(&TriggerZipper::worker, this);
   }

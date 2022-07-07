@@ -13,10 +13,18 @@ local hier = {
     // fixme: this should be factored, not copy-pasted
     region_id : s.number("RegionId", "u2"),
     element_id : s.number("ElementId", "u4"),
+    system_type : s.string("system_type"),
 
+    geoid : s.record("GeoID", [s.field("region", self.region_id, doc="" ),
+      s.field("element", self.element_id, doc="" ),
+      s.field("system", self.system_type, doc="" )],
+      doc="GeoID"),
+
+    geoids : s.sequence("geoids", self.geoid),
+  
     conf : s.record("ConfParams", [
-        s.field("cardinality", hier.card,
-                doc="Expected number of streams"),
+        s.field("input_geoids", hier.geoids,
+                doc="GeoIDs of inputs to the zipper"),
         s.field("max_latency_ms", hier.delay,
                 doc="Max bound on latency, zero for unbound but lossless"),
         s.field("region_id", hier.region_id,

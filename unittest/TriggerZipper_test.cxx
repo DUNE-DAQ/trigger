@@ -13,6 +13,7 @@
 #include "iomanager/Queue.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
+#include <thread>
 
 /**
  * @brief Name of this test module
@@ -73,6 +74,7 @@ struct TPSetSrc
   trigger::TPSet operator()(timestamp_t datatime)
   {
     ++tpset.seqno;
+    tpset.origin.system_type = daqdataformats::GeoID::SystemType::kDataSelection;
     tpset.origin.region_id = 0;
     tpset.origin.element_id = element_id;
     tpset.start_time = datatime;
@@ -123,7 +125,8 @@ BOOST_AUTO_TEST_CASE(ZipperScenario1)
   zip->set_output("zipper_output");
 
   trigger::TPZipper::cfg_t cfg{
-    /* cardinality    = */ 2,
+    /* input_geoids    = */ { {0, 1, "DataSelection"},
+                              {0, 2, "DataSelection"} },
     /* max_latency_ms = */ 200,
     /* region_id      = */ 1,
     /* element_id     = */ 20 };
@@ -160,6 +163,24 @@ BOOST_AUTO_TEST_CASE(ZipperScenario1)
   got = pop_must_succeed(out);
   BOOST_CHECK_EQUAL(got.start_time, 14);
 
+  TLOG() << "Deleteing TriggerZipper";
+  zip.reset(nullptr);
+
+  // ====================================================================
+  zip = std::make_unique<trigger::TPZipper>("zs2");
+
+  zip->set_input("zipper_input");
+  zip->set_output("zipper_output");
+
+  zip->do_configure(jcfg);
+  zip->do_start(jempty);
+
+  push0(in, s1(10));
+  push0(in, s1(11));
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+  got = pop_must_succeed(out);
+
+  zip->do_stop(jempty);
   TLOG() << "Deleteing TriggerZipper";
   zip.reset(nullptr);
 }
