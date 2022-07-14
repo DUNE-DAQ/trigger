@@ -80,7 +80,8 @@ RandomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
   switch (m_conf.timestamp_method) {
     case randomtriggercandidatemaker::timestamp_estimation::kTimeSync:
       TLOG_DEBUG(0) << "Creating TimestampEstimator";
-      m_timestamp_estimator.reset(new timinglibs::TimestampEstimator(m_time_sync_source, m_conf.clock_frequency_hz));
+      m_timestamp_estimator.reset(new timinglibs::TimestampEstimator(m_run_number, m_conf.clock_frequency_hz));
+      m_time_sync_source->add_callback(std::bind(&timinglibs::TimestampEstimator::timesync_callback, reinterpret_cast<timinglibs::TimestampEstimator*>(m_timestamp_estimator.get()), std::placeholders::_1));
       break;
     case randomtriggercandidatemaker::timestamp_estimation::kSystemClock:
       TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
@@ -99,6 +100,7 @@ RandomTriggerCandidateMaker::do_stop(const nlohmann::json& /*obj*/)
 
   m_send_trigger_candidates_thread.join();
 
+  m_time_sync_source->remove_callback();
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
 }
 
