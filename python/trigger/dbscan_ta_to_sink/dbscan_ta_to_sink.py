@@ -21,7 +21,7 @@ import dunedaq.trigger.tasetsink as tasetsink
 
 from daqconf.core.app import App, ModuleGraph
 from daqconf.core.daqmodule import DAQModule
-from daqconf.core.conf_utils import Direction, Connection
+from daqconf.core.conf_utils import Direction
 
 #FIXME maybe one day, triggeralgs will define schemas... for now allow a dictionary of 4byte int, 4byte floats, and strings
 moo.otypes.make_type(schema='number', dtype='i4', name='temp_integer', path='temptypes')
@@ -43,7 +43,7 @@ def make_moo_record(conf_dict,name,path='temptypes'):
     moo.otypes.make_type(schema='record', fields=fields, name=name, path=path)
 
 #===============================================================================
-def generate(
+def get_dbscan_ta_to_sink_app(
         INPUT_FILES: [str],
         OUTPUT_FILE: str,
         SLOWDOWN_FACTOR: float,
@@ -68,8 +68,6 @@ def generate(
                                output_sink_name = f"output{istream}")
                   for istream,input_file in enumerate(INPUT_FILES)]
 
-    tpm_connections = { f"output{istream}" : Connection(f"ftpchm{istream}.tpset_source")
-                        for istream in range(n_streams) }
     modules.append(DAQModule(name = "tpm",
                              plugin = "TriggerPrimitiveMaker",
                              conf = tpm.ConfParams(tp_streams = tp_streams,
@@ -77,37 +75,39 @@ def generate(
                                                    tpset_time_offset=0,
                                                    tpset_time_width=TPSET_WIDTH,
                                                    clock_frequency_hz=CLOCK_FREQUENCY_HZ,
-                                                   maximum_wait_time_us=1000,),
-                             connections = tpm_connections))
+                                                   maximum_wait_time_us=1000,)))
 
     for istream in range(n_streams):
         modules.append(DAQModule(name = f"ftpchm{istream}",
                                  plugin = "FakeTPCreatorHeartbeatMaker",
-                                 conf = ftpchm.Conf(heartbeat_interval = 50000),
-                                 connections = {"tpset_sink" : Connection("zip.input")}))
+                                 conf = ftpchm.Conf(heartbeat_interval = 50000)))
 
     modules.append(DAQModule(name = "zip",
                              plugin = "TPZipper",
                              conf = tzip.ConfParams(cardinality=n_streams,
                                                     max_latency_ms=10,
                                                     region_id=0,
-                                                    element_id=0,),
-                             connections = {"output" : Connection("tam.input")}))
+                                                    element_id=0,)))
     
     modules.append(DAQModule(name = "tam",
                              plugin = "TriggerActivityMaker",
-                             connections = {"output": Connection("ta_sink.taset_source")},
                              conf = tam.Conf(activity_maker="TriggerActivityMakerDBSCANPlugin",
                                              geoid_region=0, # Fake placeholder
                                              geoid_element=0, # Fake placeholder
                                              window_time=10000, # should match whatever makes TPSets, in principle
-                                             buffer_time=625000, # 10ms in 62.5 MHz ticks
+                                             buffer_time=6250000, # 10ms in 62.5 MHz ticks
                                              activity_maker_config=temptypes.ActivityConf(**ACTIVITY_CONFIG))))
     modules.append(DAQModule(name = "ta_sink",
                              plugin = "TASetSink",
-                             connections = {},
                              conf = tasetsink.Conf(output_filename=OUTPUT_FILE,
                                                    do_checks = DO_TASET_CHECKS)))
 
     mgraph = ModuleGraph(modules)
+
+    for istream in range(n_streams):
+        mgraph.connect_modules(f"tpm.output{istream}", f"ftpchm{istream}.tpset_source")
+        mgraph.connect_modules(f"ftpchm{istream}.tpset_sink", f"zip.input")
+    mgraph.connect_modules("zip.output", "tam.input")
+    mgraph.connect_modules("tam.output", "ta_sink.taset_source")
+    
     return App(modulegraph = mgraph, host="localhost", name="TASinkApp")

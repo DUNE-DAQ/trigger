@@ -26,13 +26,13 @@ def cli(slowdown_factor, input_file, output_file, number_of_loops, do_taset_chec
     """
 
     partition_name = "ta_sink_partition"
-    the_system = System(partition_name)
+    the_system = System()
     
     console.log("Loading faketp config generator")
-    from . import dbscan_ta_to_sink
+    from .dbscan_ta_to_sink import get_dbscan_ta_to_sink_app
     console.log(f"Generating configs")
 
-    the_system.apps["tasinkapp"] = dbscan_ta_to_sink.generate(
+    the_system.apps["tasinkapp"] = get_dbscan_ta_to_sink_app(
         INPUT_FILES = input_file,
         OUTPUT_FILE = output_file,
         SLOWDOWN_FACTOR = slowdown_factor,
@@ -40,23 +40,24 @@ def cli(slowdown_factor, input_file, output_file, number_of_loops, do_taset_chec
         DO_TASET_CHECKS = do_taset_checks
     )
 
-    from daqconf.core.conf_utils import make_app_command_data, make_system_command_datas, generate_boot, write_json_files
-
+    from daqconf.core.conf_utils import make_app_command_data, make_system_command_datas, write_json_files, generate_boot_common
+    from daqconf.core.metadata import write_metadata_file
     app_command_datas = {
-        name : make_app_command_data(the_system, app)
+        name : make_app_command_data(the_system, app, name)
         for name,app in the_system.apps.items()
     }
 
 
     system_command_datas = make_system_command_datas(the_system)
-    # Override the default boot.json with the one from minidaqapp
-    boot = generate_boot(the_system.apps, partition_name=partition_name)
 
-    system_command_datas['boot'] = boot
+    # system_command_datas['boot'] = generate_boot_common(daq_app_exec_name = "daq_application_ssh")
+    # Override the default boot.json with the one from minidaqapp
+
+    # system_command_datas['boot'] = boot
 
     write_json_files(app_command_datas, system_command_datas, json_dir)
 
-
+    write_metadata_file(json_dir, "dbscan_ta_to_sink")
 
 if __name__ == '__main__':
 
