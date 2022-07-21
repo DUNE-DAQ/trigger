@@ -1,9 +1,3 @@
-import json
-import os
-import rich.traceback
-from rich.console import Console
-from os.path import exists, join
-
 from daqconf.core.system import System
 
 # Add -h as default help option
