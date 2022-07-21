@@ -16,7 +16,7 @@
 #include "trigger/tasetsink/Nljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSource.hpp"
+#include "iomanager/Receiver.hpp"
 
 #include <fstream>
 #include <memory>
@@ -58,8 +58,8 @@ private:
   
   tasetsink::Conf m_conf;
   // Queue sources and sinks
-  using source_t = appfwk::DAQSource<TASet>;
-  std::unique_ptr<source_t> m_taset_source;
+  using source_t = iomanager::ReceiverConcept<TASet>;
+  std::shared_ptr<source_t> m_taset_source;
 };
 } // namespace trigger
 } // namespace dunedaq

@@ -12,6 +12,7 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
+#include "iomanager/IOManager.hpp"
 #include "triggeralgs/Types.hpp"
 #include <chrono>
 #include <sstream>
@@ -30,7 +31,7 @@ TASetSink::TASetSink(const std::string& name)
 void
 TASetSink::init(const nlohmann::json& obj)
 {
-  m_taset_source.reset(new source_t(appfwk::queue_inst(obj, "taset_source")));
+  m_taset_source = get_iom_receiver<TASet>(appfwk::connection_inst(obj, "taset_source"));
 }
 
 void
@@ -76,11 +77,8 @@ TASetSink::do_work()
   uint32_t last_seqno = 0;
 
   while (true) {
-    TASet taset;
-    try {
-      m_taset_source->pop(taset, std::chrono::milliseconds(100));
-      ++n_taset_received;
-    } catch (appfwk::QueueTimeoutExpired&) {
+    std::optional<TASet> taset_opt = m_taset_source->try_receive(std::chrono::milliseconds(100));
+    if (!taset_opt.has_value()) {
       // The condition to exit the loop is that we've been stopped and
       // there's nothing left on the input queue
       if (!m_running_flag.load()) {
@@ -90,6 +88,9 @@ TASetSink::do_work()
       }
     }
 
+    TASet taset = *taset_opt;
+    
+    ++n_taset_received;
     if (m_outfile.is_open()) {
       for (auto const& ta : taset.objects) {
         m_outfile << ta.time_start << "\t" << ta.time_end << "\t" << ta.channel_start << "\t" << ta.channel_end << "\t"
