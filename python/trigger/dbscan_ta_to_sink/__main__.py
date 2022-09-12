@@ -3,6 +3,8 @@ from daqconf.core.system import System
 # Add -h as default help option
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
+from rich.console import Console
+
 console = Console()
 
 import click
@@ -51,7 +53,7 @@ def cli(slowdown_factor, input_file, output_file, number_of_loops, do_taset_chec
 
     write_json_files(app_command_datas, system_command_datas, json_dir)
 
-    write_metadata_file(json_dir, "dbscan_ta_to_sink")
+    write_metadata_file(json_dir, "dbscan_ta_to_sink", "daqconf.ini")
 
 if __name__ == '__main__':
 

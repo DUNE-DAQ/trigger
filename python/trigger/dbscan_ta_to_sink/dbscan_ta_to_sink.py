@@ -63,7 +63,6 @@ def get_dbscan_ta_to_sink_app(
     n_streams = len(INPUT_FILES)
 
     tp_streams = [tpm.TPStream(filename=input_file,
-                               region_id = 0,
                                element_id = istream,
                                output_sink_name = f"output{istream}")
                   for istream,input_file in enumerate(INPUT_FILES)]
@@ -86,13 +85,11 @@ def get_dbscan_ta_to_sink_app(
                              plugin = "TPZipper",
                              conf = tzip.ConfParams(cardinality=n_streams,
                                                     max_latency_ms=10,
-                                                    region_id=0,
                                                     element_id=0,)))
     
     modules.append(DAQModule(name = "tam",
                              plugin = "TriggerActivityMaker",
                              conf = tam.Conf(activity_maker="TriggerActivityMakerDBSCANPlugin",
-                                             geoid_region=0, # Fake placeholder
                                              geoid_element=0, # Fake placeholder
                                              window_time=10000, # should match whatever makes TPSets, in principle
                                              buffer_time=6250000, # 10ms in 62.5 MHz ticks
