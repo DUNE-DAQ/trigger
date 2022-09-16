@@ -38,7 +38,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     from daqconf.apps.dataflow_gen import get_dataflow_app
     from daqconf.apps.trigger_gen import get_trigger_app
     from daqconf.apps.dfo_gen import get_dfo_app
-    
+   
     console.log(f"Generating configs")
 
     ru_configs=[{"host": "localhost",
@@ -69,8 +69,16 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     )
 
     # get_dfo_app() expects the dataflow conf structs to be passed to dfo_gen, consider hard coding here?
-    df_conf = {'dataflow0': {'host_df': 'localhost', 'max_file_size': 4294967296, 'max_trigger_record_window': 0,
-               'output_paths': ['.'], 'token_count': 9, 'source_id': 0}}
+    #df_conf = {'dataflow0': {'host_df': 'localhost', 'max_file_size': 4294967296, 'max_trigger_record_window': 0,
+    #           'output_paths': ['.'], 'token_count': 9, 'source_id': 0}}
+
+
+    # Issues generating the DF_CONF dict since source_id changes. Current attempt:
+    moo.otypes.load_types('daqconf/confgen.jsonnet')
+    import dunedaq.daqconf.confgen as confgen
+    df_conf = {"apps": [{...}]}
+    dataflow = confgen.dataflow()
+    dataflow.upload(df_conf)
 
     the_system.apps['dfo'] = get_dfo_app(
         DF_CONF = df_conf,
