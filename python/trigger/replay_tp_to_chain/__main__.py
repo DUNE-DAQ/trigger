@@ -68,20 +68,28 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         # DEBUG=debug
     )
 
-    # get_dfo_app() expects the dataflow conf structs to be passed to dfo_gen, consider hard coding here?
-    #df_conf = {'dataflow0': {'host_df': 'localhost', 'max_file_size': 4294967296, 'max_trigger_record_window': 0,
-    #           'output_paths': ['.'], 'token_count': 9, 'source_id': 0}}
-
-
     # Issues generating the DF_CONF dict since source_id changes. Current attempt:
     moo.otypes.load_types('daqconf/confgen.jsonnet')
     import dunedaq.daqconf.confgen as confgen
-    df_conf = {"apps": [{...}]}
-    dataflow = confgen.dataflow()
-    dataflow.upload(df_conf)
+
+    # Try hardcoding the df_conf again
+    df_conf = {"apps": [{
+	'host_df': 'localhost', 
+	'max_file_size': 4294967296, 
+	'max_trigger_record_window': 0,
+	'output_paths': ['.'], 
+	'token_count': 9
+	}]}
+
+    dataflow = confgen.dataflow(**df_conf)
+    df_apps = {}
+
+    for i, app in enumerate(df_conf['apps']):
+        df_apps[f'dataflow{i}'] = confgen.dataflowapp(**app)
+        df_apps[f'dataflow{i}'].source_id = 0
 
     the_system.apps['dfo'] = get_dfo_app(
-        DF_CONF = df_conf,
+        DF_CONF = df_apps,
         # DF_COUNT = 1,
         # TOKEN_COUNT = trigemu_token_count,
         # STOP_TIMEOUT = dfo_stop_timeout,
@@ -111,10 +119,6 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     tp_mode = get_tpg_mode(enable_firmware_tpg,enable_software_tpg)
     sourceid_broker.generate_trigger_source_ids(dro_infos, tp_mode)
     tp_infos = sourceid_broker.get_all_source_ids("Trigger")
-
-    # === TO DO? Manually create the tp_infos dictionary and avoid the hardware map altogether.
-    # tp_infos = {'host_trigger': 'np04-srv-001', 'trigger_window_before_ticks': 260000, 
-    #             'trigger_window_after_ticks': 2144, 'hsi_trigger_type_passthrough': True}
 
     the_system.apps['trigger'] = get_trigger_app(
         # SOFTWARE_TPG_ENABLED = True,
@@ -154,7 +158,9 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         for name,app in the_system.apps.items()
     }
 
-    system_command_datas = make_system_command_datas(the_system)
+    print("Number of items in the_system: ", len(the_system.apps))
+    boot = confgen.boot()
+    system_command_datas = make_system_command_datas(boot, the_system)
 
     write_json_files(app_command_datas, system_command_datas, json_dir)
 
