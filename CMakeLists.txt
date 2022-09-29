@@ -54,6 +54,7 @@ daq_codegen(
   triggerdecisionmaker.jsonnet
   triggerzipper.jsonnet
   tpsetbuffercreator.jsonnet
+  tasetsink.jsonnet
   tpchannelfilter.jsonnet
   TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 
@@ -72,6 +73,7 @@ daq_add_plugin(TriggerDecisionMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(RandomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
 daq_add_plugin(ModuleLevelTrigger duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
 daq_add_plugin(TPSetSink duneDAQModule LINK_LIBRARIES trigger TEST)
+daq_add_plugin(TASetSink duneDAQModule LINK_LIBRARIES trigger TEST)
 daq_add_plugin(FakeTPCreatorHeartbeatMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TPSetBufferCreator duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TPBuffer duneDAQModule LINK_LIBRARIES trigger readoutlibs::readoutlibs)
@@ -94,9 +96,12 @@ daq_add_plugin(TriggerActivityMakerHorizontalMuonPlugin duneTAMaker LINK_LIBRARI
 daq_add_plugin(TriggerCandidateMakerHorizontalMuonPlugin duneTCMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMakerPrescalePlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMakerPrescalePlugin duneTCMaker LINK_LIBRARIES trigger)
+
 daq_add_plugin(TriggerActivityMakerSupernovaPlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMakerSupernovaPlugin duneTCMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDecisionMakerSupernovaPlugin duneTDMaker LINK_LIBRARIES trigger)
+
+daq_add_plugin(TriggerActivityMakerDBSCANPlugin duneTAMaker LINK_LIBRARIES trigger)
 
 ##############################################################################
 # Integration tests
