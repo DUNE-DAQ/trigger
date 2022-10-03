@@ -69,7 +69,8 @@ private:
     // comparable based on first timestamp
     bool operator<(const TCWrapper& other) const
     {
-      return this->candidate.time_start < other.candidate.time_start;
+      
+      return std::tie(candidate.time_start, candidate.detid, candidate.type) < std::tie(other.candidate.time_start, other.candidate.detid, other.candidate.type);
     }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)

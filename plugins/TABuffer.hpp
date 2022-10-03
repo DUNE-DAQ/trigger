@@ -67,7 +67,7 @@ private:
     // comparable based on first timestamp
     bool operator<(const TAWrapper& other) const
     {
-      return this->activity.time_start < other.activity.time_start;
+      return std::tie(activity.time_start, activity.channel_start, activity.channel_end) < std::tie(other.activity.time_start, other.activity.channel_start, other.activity.channel_end);
     }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
