@@ -56,7 +56,7 @@ private:
     // comparable based on first timestamp
     bool operator<(const TPWrapper& other) const
     {
-      return this->primitive.time_start < other.primitive.time_start;
+      return std::tie(this->primitive.time_start, this->primitive.channel) < std::tie(other.primitive.time_start, other.primitive.channel);
     }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
