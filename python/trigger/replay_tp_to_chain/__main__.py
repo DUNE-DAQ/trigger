@@ -68,25 +68,16 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         # DEBUG=debug
     )
 
-    # Issues generating the DF_CONF dict since source_id changes. Current attempt:
+    # get_dfo_app() expects the dataflow conf structs to be passed to dfo_gen, so we hard code them here
     moo.otypes.load_types('daqconf/confgen.jsonnet')
     import dunedaq.daqconf.confgen as confgen
 
-    # Try hardcoding the df_conf again
-    df_conf = {"apps": [{
-	'host_df': 'localhost', 
-	'max_file_size': 4294967296, 
-	'max_trigger_record_window': 0,
-	'output_paths': ['.'], 
-	'token_count': 9
-	}]}
-
-    dataflow = confgen.dataflow(**df_conf)
-    df_apps = {}
-
-    for i, app in enumerate(df_conf['apps']):
-        df_apps[f'dataflow{i}'] = confgen.dataflowapp(**app)
-        df_apps[f'dataflow{i}'].source_id = 0
+    df_apps = {'dataflow0': confgen.dataflowapp(host_df='localhost', 
+                                                max_file_size=4294967296, 
+                                                max_trigger_record_window=0,
+                                                output_paths=['.'], 
+                                                token_count=9)}
+    df_apps['dataflow0'].source_id = 0
 
     the_system.apps['dfo'] = get_dfo_app(
         DF_CONF = df_apps,
@@ -100,13 +91,13 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     # Attempt to fix replay app with source ID broker
     sourceid_broker = SourceIDBroker()
 
-    # Load the hw map file here to extract ru hosts, cards, slr, links, frontend types, sourceIDs and geoIDs
-    # The ru apps are determined by the combinations of hostname and card_id, the SourceID determines the 
-    # DLH (with physical slr+link information), the detId acts as system_type allows to infer the frontend_type
+    # Create a hw map file based on the input files we were given on
+    # the command line. Then we can get the SourceIDBroker to make the
+    # necessary TPInfo objects for get_trigger_app()
     hw_map_file = NamedTemporaryFile("w")
     for idx,f in enumerate(input_file):
         hw_map_file.write(f"0 0 0 {idx} 3 localhost {idx} 0 0\n")
-    hw_map_file.flush()
+    hw_map_file.flush() # Flush the file so the next line sees the changes
     hw_map_service = HardwareMapService(hw_map_file.name)
 
     # Get the list of RU processes - required to create instances of TXInfo later
@@ -115,7 +106,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     enable_firmware_tpg = False
     enable_software_tpg = True  # We always want software TPG for replay app
     
-    sourceid_broker.register_readout_source_ids(dro_infos)
+    sourceid_broker.register_readout_source_ids(dro_infos, TPGenMode.SWTPG)
     tp_mode = get_tpg_mode(enable_firmware_tpg,enable_software_tpg)
     sourceid_broker.generate_trigger_source_ids(dro_infos, tp_mode)
     tp_infos = sourceid_broker.get_all_source_ids("Trigger")
@@ -158,7 +149,6 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         for name,app in the_system.apps.items()
     }
 
-    print("Number of items in the_system: ", len(the_system.apps))
     boot = confgen.boot()
     system_command_datas = make_system_command_datas(boot, the_system)
 
