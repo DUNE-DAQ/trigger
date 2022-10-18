@@ -31,7 +31,7 @@ TASetSink::TASetSink(const std::string& name)
 void
 TASetSink::init(const nlohmann::json& obj)
 {
-  m_taset_source = get_iom_receiver<TASet>(appfwk::connection_inst(obj, "taset_source"));
+  m_taset_source = get_iom_receiver<TASet>(appfwk::connection_uid(obj, "taset_source"));
 }
 
 void

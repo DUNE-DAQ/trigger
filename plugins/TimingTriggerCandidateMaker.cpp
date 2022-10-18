@@ -81,7 +81,7 @@ void
 TimingTriggerCandidateMaker::init(const nlohmann::json& iniobj)
 {
   try {
-    m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_inst(iniobj, "output"));
+    m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(iniobj, "output"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
