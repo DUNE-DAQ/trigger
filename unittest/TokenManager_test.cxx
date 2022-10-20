@@ -41,7 +41,7 @@ struct IOManagerTestFixture
     dunedaq::iomanager::ConnectionId cid{ "foo", "TriggerDecisionToken" };
     connections.emplace_back(
       dunedaq::iomanager::Connection{ cid, "inproc://foo", dunedaq::iomanager::ConnectionType::kSendRecv });
-    get_iomanager()->configure({}, connections);
+    get_iomanager()->configure({}, connections, false); // Not using ConfigClient
   }
   ~IOManagerTestFixture()
   {
