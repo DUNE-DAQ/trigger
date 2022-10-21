@@ -10,6 +10,7 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "detdataformats/trigger/Types.hpp"
+#include "trigger/TriggerCandidate_serialization.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
