@@ -104,8 +104,8 @@ public:
 
   void init(const nlohmann::json& ini)
   {
-    set_input(appfwk::connection_inst(ini, "input").uid);
-    set_output(appfwk::connection_inst(ini, "output").uid);
+    set_input(appfwk::connection_uid(ini, "input"));
+    set_output(appfwk::connection_uid(ini, "output"));
   }
   void set_input(const std::string& name)
   {

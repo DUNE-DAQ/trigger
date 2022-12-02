@@ -37,9 +37,9 @@ void
 Tee<T>::init(const nlohmann::json& iniobj)
 {
   try {
-    m_input_queue = get_iom_receiver<T>(appfwk::connection_inst(iniobj, "input"));
-    m_output_queue1 = get_iom_sender<T>(appfwk::connection_inst(iniobj, "output1"));
-    m_output_queue2 = get_iom_sender<T>(appfwk::connection_inst(iniobj, "output2"));
+    m_input_queue = get_iom_receiver<T>(appfwk::connection_uid(iniobj, "input"));
+    m_output_queue1 = get_iom_sender<T>(appfwk::connection_uid(iniobj, "output1"));
+    m_output_queue2 = get_iom_sender<T>(appfwk::connection_uid(iniobj, "output2"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }

@@ -10,6 +10,7 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "detdataformats/trigger/Types.hpp"
+#include "trigger/TriggerCandidate_serialization.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
@@ -81,7 +82,7 @@ void
 TimingTriggerCandidateMaker::init(const nlohmann::json& iniobj)
 {
   try {
-    m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_inst(iniobj, "output"));
+    m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(iniobj, "output"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }

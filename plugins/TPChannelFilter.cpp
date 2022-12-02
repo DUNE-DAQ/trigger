@@ -34,8 +34,8 @@ void
 TPChannelFilter::init(const nlohmann::json& iniobj)
 {
   try {
-    m_input_queue = get_iom_receiver<TPSet>(appfwk::connection_inst(iniobj, "tpset_source"));
-    m_output_queue = get_iom_sender<TPSet>(appfwk::connection_inst(iniobj, "tpset_sink"));
+    m_input_queue = get_iom_receiver<TPSet>(appfwk::connection_uid(iniobj, "tpset_source"));
+    m_output_queue = get_iom_sender<TPSet>(appfwk::connection_uid(iniobj, "tpset_sink"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
@@ -78,7 +78,7 @@ TPChannelFilter::channel_should_be_removed(int channel) const
   uint plane = m_channel_map->get_plane_from_offline_channel(channel);
   // Check for collection
   if (plane == 0 || plane == 1) {
-    return !m_conf.keep_induction;
+    return false;
   }
   // Check for induction
   if (plane == 2) {
