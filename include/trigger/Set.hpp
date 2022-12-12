@@ -43,10 +43,10 @@ public:
 
   // The current run number
   daqdataformats::run_number_t run_number{ 0 };
-
+  
   // Identify the instance creator/stream/source of this set.
   origin_t origin{ daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger,
-                                            daqdataformats::SourceID::s_invalid_id) };
+                                         daqdataformats::SourceID::s_invalid_id) };
 
   // Whether this Set is a regular bag-of-objects or a heartbeat
   Type type{ kUnknown };

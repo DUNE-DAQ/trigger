@@ -43,6 +43,7 @@ private:
   using sink_t = dunedaq::iomanager::SenderConcept<T>;
   std::shared_ptr<sink_t> m_output_queue1;
   std::shared_ptr<sink_t> m_output_queue2;
+
 };
 } // namespace trigger
 } // namespace dunedaq

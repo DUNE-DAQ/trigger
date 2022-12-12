@@ -81,8 +81,8 @@ TABuffer::do_stop(const nlohmann::json& args)
 void
 TABuffer::do_scrap(const nlohmann::json& args)
 {
-  m_request_handler_impl->scrap(args);
-  m_latency_buffer_impl->scrap(args);
+    m_request_handler_impl->scrap(args);
+    m_latency_buffer_impl->scrap(args);
 }
 
 void
@@ -93,11 +93,11 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
 
   while (running_flag.load()) {
 
-    bool popped_anything = false;
+    bool popped_anything=false;
     std::optional<TASet> taset = m_input_queue_tas->try_receive(std::chrono::milliseconds(0));
     if (taset.has_value()) {
       popped_anything = true;
-      for (auto const& ta : taset->objects) {
+      for (auto const& ta: taset->objects) {
         m_latency_buffer_impl->write(TAWrapper(ta));
         ++n_tas_received;
       }
@@ -115,8 +115,7 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  TLOG() << get_name() << " exiting do_work() method. Received " << n_tas_received << " TAs "
-         << " and " << n_requests_received << " data requests";
+  TLOG() << get_name() << " exiting do_work() method. Received " << n_tas_received << " TAs " << " and " << n_requests_received << " data requests";
 }
 
 } // namespace trigger

@@ -30,7 +30,7 @@
   {                                                                                                                    \
     std::shared_ptr<triggeralgs::TriggerActivityMaker> make()                                                          \
     {                                                                                                                  \
-      return std::shared_ptr<triggeralgs::TriggerActivityMaker>(new klass());                                          \
+      return std::shared_ptr<triggeralgs::TriggerActivityMaker>(new klass());                                            \
     }                                                                                                                  \
   }
 
@@ -62,7 +62,7 @@ make_ta_maker(std::string const& plugin_name)
   {                                                                                                                    \
     std::shared_ptr<triggeralgs::TriggerCandidateMaker> make()                                                         \
     {                                                                                                                  \
-      return std::shared_ptr<triggeralgs::TriggerCandidateMaker>(new klass());                                         \
+      return std::shared_ptr<triggeralgs::TriggerCandidateMaker>(new klass());                                           \
     }                                                                                                                  \
   }
 
@@ -94,7 +94,7 @@ make_tc_maker(std::string const& plugin_name)
   {                                                                                                                    \
     std::shared_ptr<triggeralgs::TriggerDecisionMaker> make()                                                          \
     {                                                                                                                  \
-      return std::shared_ptr<triggeralgs::TriggerDecisionMaker>(new klass());                                          \
+      return std::shared_ptr<triggeralgs::TriggerDecisionMaker>(new klass());                                            \
     }                                                                                                                  \
   }
 

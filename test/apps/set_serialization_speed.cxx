@@ -6,12 +6,12 @@
  * received with this code.
  */
 
-#include "detdataformats/trigger/Types.hpp"
 #include "logging/Logging.hpp"
 #include "serialization/Serialization.hpp"
 #include "trigger/TASet.hpp"
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
+#include "detdataformats/trigger/Types.hpp"
 
 #include <chrono>
 #include <iostream>

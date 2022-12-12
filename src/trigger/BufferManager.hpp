@@ -12,9 +12,9 @@
 #include "daqdataformats/Types.hpp"
 
 #include <atomic>
-#include <cstddef>
 #include <set>
 #include <vector>
+#include <cstddef>
 
 namespace dunedaq {
 namespace trigger {
@@ -32,8 +32,7 @@ public:
     : m_buffer_max_size(buffer_size)
     , m_buffer_earliest_start_time(0)
     , m_buffer_latest_end_time(0)
-  {
-  }
+  {}
 
   virtual ~BufferManager() {}
 

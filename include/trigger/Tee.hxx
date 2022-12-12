@@ -6,6 +6,7 @@
  * received with this code.
  */
 
+
 #include "appfwk/DAQModuleHelper.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
@@ -70,15 +71,14 @@ Tee<T>::do_stop(const nlohmann::json&)
 template<class T>
 void
 Tee<T>::do_scrap(const nlohmann::json&)
-{
-}
+{}
 
 template<class T>
 void
 Tee<T>::do_work(std::atomic<bool>& running_flag)
 {
   size_t n_objects = 0;
-
+  
   while (true) {
     T object;
     try {
@@ -114,3 +114,4 @@ Tee<T>::do_work(std::atomic<bool>& running_flag)
 
 } // namespace trigger
 } // namespace dunedaq
+
