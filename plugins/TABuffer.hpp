@@ -43,15 +43,14 @@ public:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
-
   struct TAWrapper
   {
     triggeralgs::TriggerActivity activity;
     std::vector<uint8_t> activity_overlay_buffer;
-    
+
     // Don't really want this default ctor, but IterableQueueModel requires it
     TAWrapper() {}
-    
+
     TAWrapper(triggeralgs::TriggerActivity a)
       : activity(a)
     {
@@ -63,12 +62,9 @@ private:
       activity_overlay_buffer.resize(triggeralgs::get_overlay_nbytes(activity));
       triggeralgs::write_overlay(activity, activity_overlay_buffer.data());
     }
-    
+
     // comparable based on first timestamp
-    bool operator<(const TAWrapper& other) const
-    {
-      return this->activity.time_start < other.activity.time_start;
-    }
+    bool operator<(const TAWrapper& other) const { return this->activity.time_start < other.activity.time_start; }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
     {
@@ -91,23 +87,17 @@ private:
 
     size_t get_frame_size() { return get_payload_size(); }
 
-    uint8_t* begin()
-    {
-      return activity_overlay_buffer.data();
-    }
-    
-    uint8_t* end()
-    {
-      return activity_overlay_buffer.data()+activity_overlay_buffer.size();
-    }
+    uint8_t* begin() { return activity_overlay_buffer.data(); }
 
-    //static const constexpr size_t fixed_payload_size = 5568;
-    static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
+    uint8_t* end() { return activity_overlay_buffer.data() + activity_overlay_buffer.size(); }
+
+    // static const constexpr size_t fixed_payload_size = 5568;
+    static const constexpr daqdataformats::SourceID::Subsystem subsystem =
+      daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerActivity;
     // No idea what this should really be set to
     static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
-
-};
+  };
 
   void do_conf(const nlohmann::json& config);
   void do_start(const nlohmann::json& obj);
@@ -118,18 +108,18 @@ private:
   dunedaq::utilities::WorkerThread m_thread;
 
   using tas_source_t = iomanager::ReceiverConcept<trigger::TASet>;
-  std::shared_ptr<tas_source_t> m_input_queue_tas{nullptr};
+  std::shared_ptr<tas_source_t> m_input_queue_tas{ nullptr };
 
   using dr_source_t = iomanager::ReceiverConcept<dfmessages::DataRequest>;
-  std::shared_ptr<dr_source_t> m_input_queue_dr{nullptr};
+  std::shared_ptr<dr_source_t> m_input_queue_dr{ nullptr };
 
   std::chrono::milliseconds m_queue_timeout;
 
   using buffer_object_t = TAWrapper;
   using latency_buffer_t = readoutlibs::SkipListLatencyBufferModel<buffer_object_t>;
-  std::unique_ptr<latency_buffer_t> m_latency_buffer_impl{nullptr};
+  std::unique_ptr<latency_buffer_t> m_latency_buffer_impl{ nullptr };
   using request_handler_t = readoutlibs::DefaultSkipListRequestHandler<buffer_object_t>;
-  std::unique_ptr<request_handler_t> m_request_handler_impl{nullptr};
+  std::unique_ptr<request_handler_t> m_request_handler_impl{ nullptr };
 
   // Don't actually use this, but it's currently needed as arg to request handler ctor
   std::unique_ptr<readoutlibs::FrameErrorRegistry> m_error_registry;

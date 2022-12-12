@@ -52,15 +52,13 @@ TASetSink::do_stop(const nlohmann::json& /*obj*/)
 void
 TASetSink::do_conf(const nlohmann::json& obj)
 {
-  m_conf=obj;
+  m_conf = obj;
   if (m_conf.output_filename != "") {
     m_outfile.open(m_conf.output_filename);
-  }
-  else {
+  } else {
     TLOG() << "Output filename is null, so not opening an output file";
   }
 }
-
 
 void
 TASetSink::do_work()
@@ -89,7 +87,7 @@ TASetSink::do_work()
     }
 
     TASet taset = *taset_opt;
-    
+
     ++n_taset_received;
     if (m_outfile.is_open()) {
       for (auto const& ta : taset.objects) {
@@ -128,7 +126,7 @@ TASetSink::do_work()
     } // end if(m_conf.do_checks)
 
     last_seqno = taset.seqno;
-    
+
     if (first_timestamp == 0) {
       first_timestamp = taset.start_time;
     }

@@ -81,8 +81,8 @@ TPBuffer::do_stop(const nlohmann::json& args)
 void
 TPBuffer::do_scrap(const nlohmann::json& args)
 {
-    m_request_handler_impl->scrap(args);
-    m_latency_buffer_impl->scrap(args);
+  m_request_handler_impl->scrap(args);
+  m_latency_buffer_impl->scrap(args);
 }
 
 void
@@ -90,15 +90,15 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
 {
   size_t n_tps_received = 0;
   size_t n_requests_received = 0;
-  
+
   while (running_flag.load()) {
-    
-    bool popped_anything=false;
-    
+
+    bool popped_anything = false;
+
     std::optional<TPSet> tpset = m_input_queue_tps->try_receive(std::chrono::milliseconds(0));
     if (tpset.has_value()) {
       popped_anything = true;
-      for (auto const& tp: tpset->objects) {
+      for (auto const& tp : tpset->objects) {
         m_latency_buffer_impl->write(TPWrapper(tp));
         ++n_tps_received;
       }
@@ -116,7 +116,8 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  TLOG() << get_name() << " exiting do_work() method. Received " << n_tps_received << " TPs " << " and " << n_requests_received << " data requests";
+  TLOG() << get_name() << " exiting do_work() method. Received " << n_tps_received << " TPs "
+         << " and " << n_requests_received << " data requests";
 }
 
 } // namespace trigger

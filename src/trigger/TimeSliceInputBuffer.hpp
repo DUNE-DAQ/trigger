@@ -32,7 +32,8 @@ public:
   TimeSliceInputBuffer(const std::string& name, const std::string& algorithm)
     : m_name(name)
     , m_algorithm(algorithm)
-  {}
+  {
+  }
   // Add a new Set<T> to the buffer. If it's inconsistent with buffered events,
   // fill time_slice, start_time, end_time with the previous (complete) slice.
   // Returns whether the previous slice was complete (and time_slice etc was filled)
@@ -72,7 +73,8 @@ public:
     m_buffer.clear();
     // sort the vector by time_start property of T
     std::sort(time_slice.begin(), time_slice.end(), [](const T& a, const T& b) { return a.time_start < b.time_start; });
-    // TODO Benjamin Land <BenLand100@github.com> June-01-2021: would be nice if the T (TriggerPrimative, etc) included a natural ordering with operator<()
+    // TODO Benjamin Land <BenLand100@github.com> June-01-2021: would be nice if the T (TriggerPrimative, etc) included
+    // a natural ordering with operator<()
     return true;
   }
 

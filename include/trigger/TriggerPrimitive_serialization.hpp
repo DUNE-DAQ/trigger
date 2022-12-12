@@ -9,9 +9,9 @@
 #ifndef TRIGGER_INCLUDE_TRIGGER_TRIGGERPRIMITIVE_SERIALIZATION_HPP_
 #define TRIGGER_INCLUDE_TRIGGER_TRIGGERPRIMITIVE_SERIALIZATION_HPP_
 
+#include "detdataformats/trigger/Types.hpp"
 #include "serialization/Serialization.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
-#include "detdataformats/trigger/Types.hpp"
 
 MSGPACK_ADD_ENUM(dunedaq::detdataformats::trigger::TriggerPrimitive::Type)
 

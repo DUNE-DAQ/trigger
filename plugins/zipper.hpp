@@ -10,11 +10,11 @@
 #define TRIGGER_PLUGINS_ZIPPER_HPP_
 
 #include <chrono>
-#include <queue>
-#include <vector>
 #include <functional>
-#include <unordered_map>
+#include <queue>
 #include <stdexcept>
+#include <unordered_map>
+#include <vector>
 
 namespace zipper {
 
@@ -86,7 +86,8 @@ public:
     : cardinality(k)
     , latency(max_latency)
     , origin(0) // ordering
-  {}
+  {
+  }
 
   /**
       Set the expected number of identified streams.
@@ -254,7 +255,7 @@ public:
    */
   bool complete(const timepoint_t& now = timepoint_t::min()) const
   {
-    if (this->empty()) { 
+    if (this->empty()) {
       return false;
     }
 

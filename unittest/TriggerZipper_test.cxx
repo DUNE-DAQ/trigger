@@ -35,11 +35,8 @@ BOOST_AUTO_TEST_SUITE(BOOST_TEST_MODULE)
  */
 struct IOManagerTestFixture
 {
-  IOManagerTestFixture()
-  {
-    setenv("DUNEDAQ_PARTITION", "TriggerZipper_t", 0);
-  }
-  ~IOManagerTestFixture() { }
+  IOManagerTestFixture() { setenv("DUNEDAQ_PARTITION", "TriggerZipper_t", 0); }
+  ~IOManagerTestFixture() {}
 
   IOManagerTestFixture(IOManagerTestFixture const&) = default;
   IOManagerTestFixture(IOManagerTestFixture&&) = default;

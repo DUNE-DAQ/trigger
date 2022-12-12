@@ -13,11 +13,11 @@
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/Types.hpp"
 #include "ers/Issue.hpp"
-#include "triggeralgs/Types.hpp"
 #include "trigger/serialize.hpp"
+#include "triggeralgs/Types.hpp"
 
-#include <string>
 #include <bitset>
+#include <string>
 
 // NOLINTNEXTLINE(build/define_used)
 #define TLVL_ENTER_EXIT_METHODS 10
@@ -160,12 +160,12 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 ERS_DECLARE_ISSUE_BASE(trigger,
                        TCOutOfTimeout,
                        appfwk::GeneralDAQModuleIssue,
-                       "TC of type " << tc_type << ", timestamp " << tc_timestamp << " overlaps with previous TD readout window: [" << td_start << ", " << td_end << "]",
+                       "TC of type " << tc_type << ", timestamp " << tc_timestamp
+                                     << " overlaps with previous TD readout window: [" << td_start << ", " << td_end
+                                     << "]",
                        ((std::string)name),
-                       ((int)tc_type)
-                       ((triggeralgs::timestamp_t)tc_timestamp)
-                       ((triggeralgs::timestamp_t)td_start)
-                       ((triggeralgs::timestamp_t)td_end))
+                       ((int)tc_type)((triggeralgs::timestamp_t)tc_timestamp)((triggeralgs::timestamp_t)td_start)(
+                         (triggeralgs::timestamp_t)td_end))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
                        InvalidHSIEventRunNumber,

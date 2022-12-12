@@ -9,8 +9,8 @@
 #include "TCBuffer.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "dfmessages/DataRequest.hpp"
 #include "daqdataformats/SourceID.hpp"
+#include "dfmessages/DataRequest.hpp"
 #include "trigger/TriggerCandidate_serialization.hpp"
 
 #include <chrono>
@@ -35,8 +35,7 @@ void
 TCBuffer::init(const nlohmann::json& init_data)
 {
   try {
-    m_input_queue_tcs =
-      get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(init_data, "tc_source"));
+    m_input_queue_tcs = get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(init_data, "tc_source"));
     m_input_queue_dr =
       get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
   } catch (const ers::Issue& excpt) {
@@ -85,8 +84,8 @@ TCBuffer::do_stop(const nlohmann::json& args)
 void
 TCBuffer::do_scrap(const nlohmann::json& args)
 {
-    m_request_handler_impl->scrap(args);
-    m_latency_buffer_impl->scrap(args);
+  m_request_handler_impl->scrap(args);
+  m_latency_buffer_impl->scrap(args);
 }
 
 void
@@ -94,13 +93,13 @@ TCBuffer::do_work(std::atomic<bool>& running_flag)
 {
   size_t n_tcs_received = 0;
   size_t n_requests_received = 0;
-  
+
   while (running_flag.load()) {
-    
-    bool popped_anything=false;
-    
+
+    bool popped_anything = false;
+
     std::optional<triggeralgs::TriggerCandidate> tc = m_input_queue_tcs->try_receive(std::chrono::milliseconds(0));
-    if (tc.has_value()) {  
+    if (tc.has_value()) {
       TLOG_DEBUG(2) << "Got TC with start time " << tc->time_start;
       popped_anything = true;
       m_latency_buffer_impl->write(TCWrapper(*tc));
@@ -111,11 +110,9 @@ TCBuffer::do_work(std::atomic<bool>& running_flag)
     if (data_request.has_value()) {
       auto& info = data_request->request_information;
       TLOG_DEBUG(2) << "Got data request with component " << info.component << ", window_begin " << info.window_begin
-                    << ", window_end " << info.window_end << ", trig/seq_number "
-                    << data_request->trigger_number << "." << data_request->sequence_number
-                    << ", runno " << data_request->run_number
-                    << ", trig timestamp " << data_request->trigger_timestamp
-                    << ", dest: " << data_request->data_destination;
+                    << ", window_end " << info.window_end << ", trig/seq_number " << data_request->trigger_number << "."
+                    << data_request->sequence_number << ", runno " << data_request->run_number << ", trig timestamp "
+                    << data_request->trigger_timestamp << ", dest: " << data_request->data_destination;
       popped_anything = true;
       ++n_requests_received;
       m_request_handler_impl->issue_request(*data_request, true);
@@ -126,7 +123,8 @@ TCBuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  TLOG() << get_name() << " exiting do_work() method. Received " << n_tcs_received << " TCs " << " and " << n_requests_received << " data requests";
+  TLOG() << get_name() << " exiting do_work() method. Received " << n_tcs_received << " TCs "
+         << " and " << n_requests_received << " data requests";
 }
 } // namespace trigger
 } // namespace dunedaq

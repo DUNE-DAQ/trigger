@@ -1,5 +1,6 @@
 /**
- * @file check_fragment_TPs.cxx Read TP fragments from file and check that they have start times within the request window
+ * @file check_fragment_TPs.cxx Read TP fragments from file and check that they have start times within the request
+ * window
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -29,11 +30,12 @@ main(int argc, char** argv)
   dunedaq::hdf5libs::HDF5RawDataFile decoder(filename);
 
   auto trigger_record_ids = decoder.get_all_trigger_record_ids();
-  
-  for (auto trigger_record_id : trigger_record_ids){
+
+  for (auto trigger_record_id : trigger_record_ids) {
     auto trigger_number = trigger_record_id.first;
 
     auto header = decoder.get_trh_ptr(trigger_number);
-    std::cout << "Trigger record " << trigger_number << " has type 0x" << std::hex << header->get_trigger_type() << std::dec << std::endl;
+    std::cout << "Trigger record " << trigger_number << " has type 0x" << std::hex << header->get_trigger_type()
+              << std::dec << std::endl;
   }
 }

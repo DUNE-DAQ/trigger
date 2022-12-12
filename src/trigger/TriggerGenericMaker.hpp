@@ -115,7 +115,7 @@ private:
 
   std::shared_ptr<MAKER> m_maker;
   nlohmann::json m_maker_conf;
-  
+
   TriggerGenericWorker<IN, OUT, MAKER> worker;
 
   // This should return a shared_ptr to the MAKER created from conf command arguments.
@@ -141,7 +141,7 @@ private:
     // persist between runs and hold onto its state from the previous
     // run
     m_maker_conf = obj;
-   
+
     // worker should be notified that configuration potentially changed
     worker.reconfigure();
   }
@@ -166,8 +166,8 @@ private:
     // outputs are stale and will cause tardy warnings from the zipper
     // downstream
     worker.drain(true);
-    TLOG() << get_name() << ": Exiting do_work() method, received " << m_received_count << " inputs and successfully sent "
-           << m_sent_count << " outputs. ";
+    TLOG() << get_name() << ": Exiting do_work() method, received " << m_received_count
+           << " inputs and successfully sent " << m_sent_count << " outputs. ";
     worker.reset();
   }
 
@@ -211,7 +211,8 @@ class TriggerGenericWorker
 public:
   explicit TriggerGenericWorker(TriggerGenericMaker<IN, OUT, MAKER>& parent)
     : m_parent(parent)
-  {}
+  {
+  }
 
   TriggerGenericMaker<IN, OUT, MAKER>& m_parent;
 
@@ -252,7 +253,8 @@ public: // NOLINT
     : m_parent(parent)
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
     , m_out_buffer(parent.get_name(), parent.m_algorithm_name, parent.m_buffer_time)
-  {}
+  {
+  }
 
   TriggerGenericMaker<Set<A>, Set<B>, MAKER>& m_parent;
 
@@ -326,8 +328,7 @@ public: // NOLINT
         heartbeat.type = Set<B>::Type::kHeartbeat;
         heartbeat.start_time = in.start_time;
         heartbeat.end_time = in.end_time;
-        heartbeat.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+        heartbeat.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
         TLOG_DEBUG(4) << "Buffering heartbeat with start time " << heartbeat.start_time;
         m_out_buffer.buffer_heartbeat(heartbeat);
@@ -353,15 +354,14 @@ public: // NOLINT
       m_out_buffer.buffer(elems);
     }
 
-    size_t n_output_windows=0;
+    size_t n_output_windows = 0;
     // emit completed windows
     while (m_out_buffer.ready()) {
       ++n_output_windows;
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
-      out.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+      out.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
         TLOG_DEBUG(4) << "Sending heartbeat with start time " << out.start_time;
@@ -402,11 +402,10 @@ public: // NOLINT
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
-      out.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+      out.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
-        if(!drop) {
+        if (!drop) {
           if (!m_parent.send(std::move(out))) {
             ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
             // out is dropped
@@ -437,7 +436,8 @@ public: // NOLINT
   explicit TriggerGenericWorker(TriggerGenericMaker<Set<A>, OUT, MAKER>& parent)
     : m_parent(parent)
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
-  {}
+  {
+  }
 
   TriggerGenericMaker<Set<A>, OUT, MAKER>& m_parent;
 

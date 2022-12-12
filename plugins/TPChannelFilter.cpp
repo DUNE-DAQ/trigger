@@ -43,7 +43,8 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
 
 void
 TPChannelFilter::get_info(opmonlib::InfoCollector& /* ci */, int /*level*/)
-{}
+{
+}
 
 void
 TPChannelFilter::do_conf(const nlohmann::json& conf_arg)
@@ -68,7 +69,8 @@ TPChannelFilter::do_stop(const nlohmann::json&)
 
 void
 TPChannelFilter::do_scrap(const nlohmann::json&)
-{}
+{
+}
 
 bool
 TPChannelFilter::channel_should_be_removed(int channel) const
@@ -85,7 +87,7 @@ TPChannelFilter::channel_should_be_removed(int channel) const
     return !m_conf.keep_collection;
   }
   // Always remove unconnected channels
-  if (plane == 9999 ) {
+  if (plane == 9999) {
     return true;
   }
   // Unknown plane?!
@@ -97,7 +99,8 @@ void
 TPChannelFilter::do_work(std::atomic<bool>& running_flag)
 {
   while (true) {
-    std::optional<TPSet> tpset = m_input_queue->try_receive(m_queue_timeout);;
+    std::optional<TPSet> tpset = m_input_queue->try_receive(m_queue_timeout);
+    ;
 
     if (!tpset.has_value()) {
       // The condition to exit the loop is that we've been stopped and
@@ -110,7 +113,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
     }
 
     // If we got here, we got a TPSet
-    
+
     // Actually do the removal for payload TPSets. Leave heartbeat TPSets unmolested
 
     if (tpset->type == TPSet::kPayload) {
@@ -130,8 +133,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
       } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
         std::ostringstream oss_warn;
         oss_warn << "push to output queue \"" << m_output_queue->get_name() << "\"";
-        ers::warning(
-          dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), oss_warn.str(), m_queue_timeout.count()));
+        ers::warning(dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), oss_warn.str(), m_queue_timeout.count()));
       }
     }
 
