@@ -34,13 +34,13 @@ main(int argc, char** argv)
   dunedaq::hdf5libs::HDF5RawDataFile hdf5file(in_filename);
 
   std::ofstream fout(out_filename);
-  
+
   auto fragment_paths = hdf5file.get_all_fragment_dataset_paths();
 
   using dunedaq::detdataformats::trigger::TriggerPrimitive;
-  
+
   // Populate the map with the TRHs and DS fragments
-  for (auto fragment_path: fragment_paths){
+  for (auto fragment_path : fragment_paths) {
     auto frag = hdf5file.get_frag_ptr(fragment_path);
     size_t payload_size = frag->get_size() - sizeof(dunedaq::daqdataformats::FragmentHeader);
     size_t n_tps = payload_size / sizeof(TriggerPrimitive);
@@ -48,16 +48,10 @@ main(int argc, char** argv)
     assert(remainder == 0);
     const TriggerPrimitive* prim = reinterpret_cast<TriggerPrimitive*>(frag->get_data());
     for (size_t i = 0; i < n_tps; ++i) {
-      fout << "\t" << prim->time_start
-                << "\t" << prim->time_over_threshold
-                << "\t" << prim->time_peak
-                << "\t" << prim->channel
-                << "\t" << prim->adc_integral
-                << "\t" << prim->adc_peak
-                << "\t" << prim->detid
-                << "\t" << prim->type << std::endl;
+      fout << "\t" << prim->time_start << "\t" << prim->time_over_threshold << "\t" << prim->time_peak << "\t"
+           << prim->channel << "\t" << prim->adc_integral << "\t" << prim->adc_peak << "\t" << prim->detid << "\t"
+           << prim->type << std::endl;
       ++prim;
     }
-
   }
 }

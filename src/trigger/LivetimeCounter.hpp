@@ -18,63 +18,61 @@ namespace dunedaq::trigger {
 class LivetimeCounter
 {
 public:
-  enum class State {
+  enum class State
+  {
     kLive,  // Live to triggers
     kDead,  // Dead to triggers due to a problem
     kPaused // Triggers paused (so we are dead to triggers, but intentionally)
   };
 
- /**
- ** @brief A type to store a time duration in milliseconds
- **/
+  /**
+  ** @brief A type to store a time duration in milliseconds
+  **/
   using state_time_t = uint64_t;
 
-
- /**
- ** @brief Construct a LivetimeCounter in the given state
- **
- ** Counting the time in the initial state begins immediately
- **/
+  /**
+  ** @brief Construct a LivetimeCounter in the given state
+  **
+  ** Counting the time in the initial state begins immediately
+  **/
   LivetimeCounter(State state);
 
   ~LivetimeCounter();
 
-
- /**
- ** @brief Set the current state to @a state
- **
- ** Updates the accumulated time in the previous state and switches the state
- **/
+  /**
+  ** @brief Set the current state to @a state
+  **
+  ** Updates the accumulated time in the previous state and switches the state
+  **/
   void set_state(State state);
 
- /**
- ** @brief Get a map of accumulated time in milliseconds in each state
- **/
+  /**
+  ** @brief Get a map of accumulated time in milliseconds in each state
+  **/
   std::map<State, state_time_t> get_time_map();
 
- /**
- ** @brief Get the accumulated time in milliseconds spent in a particular state
- **/
+  /**
+  ** @brief Get the accumulated time in milliseconds spent in a particular state
+  **/
   state_time_t get_time(State state);
 
- /**
- ** @brief Get a nicely-formatted string of the time spent in each state
- **/
+  /**
+  ** @brief Get a nicely-formatted string of the time spent in each state
+  **/
   std::string get_report_string();
 
   std::string get_state_name(State state) const;
-  
+
 private:
   state_time_t now() const;
   // Precondition:  m_mutex is locked by caller
-     void update_map();
-       
-     std::mutex m_mutex;
-     State m_state;
-     std::map<State, state_time_t> m_state_times;
-     state_time_t m_last_state_change_time;
-  
+  void update_map();
+
+  std::mutex m_mutex;
+  State m_state;
+  std::map<State, state_time_t> m_state_times;
+  state_time_t m_last_state_change_time;
 };
 } // namespace dunedaq::trigger
- 
+
 #endif // TRIGGER_PLUGINS_LIVETIMECOUNTER_HPP_

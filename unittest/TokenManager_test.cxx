@@ -43,10 +43,7 @@ struct IOManagerTestFixture
       dunedaq::iomanager::Connection{ cid, "inproc://foo", dunedaq::iomanager::ConnectionType::kSendRecv });
     get_iomanager()->configure({}, connections, false); // Not using ConfigClient
   }
-  ~IOManagerTestFixture()
-  {
-    get_iomanager()->reset();
-  }
+  ~IOManagerTestFixture() { get_iomanager()->reset(); }
 
   IOManagerTestFixture(IOManagerTestFixture const&) = default;
   IOManagerTestFixture(IOManagerTestFixture&&) = default;

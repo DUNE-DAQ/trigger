@@ -79,7 +79,8 @@ FakeTPCreatorHeartbeatMaker::do_stop(const nlohmann::json&)
 
 void
 FakeTPCreatorHeartbeatMaker::do_scrap(const nlohmann::json&)
-{}
+{
+}
 
 void
 FakeTPCreatorHeartbeatMaker::do_work(std::atomic<bool>& running_flag)
@@ -94,10 +95,10 @@ FakeTPCreatorHeartbeatMaker::do_work(std::atomic<bool>& running_flag)
   daqdataformats::timestamp_t last_sent_heartbeat_time;
 
   TPSet::seqno_t sequence_number = 0;
-  
+
   while (true) {
     std::optional<TPSet> tpset = m_input_queue->try_receive(m_queue_timeout);
-    if(!tpset.has_value()){
+    if (!tpset.has_value()) {
       // The condition to exit the loop is that we've been stopped and
       // there's nothing left on the input queue
       if (!running_flag.load()) {
@@ -142,7 +143,7 @@ FakeTPCreatorHeartbeatMaker::do_work(std::atomic<bool>& running_flag)
         }
       }
     }
-    
+
     tpset->seqno = sequence_number;
     ++sequence_number;
 

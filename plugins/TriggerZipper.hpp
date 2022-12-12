@@ -107,14 +107,8 @@ public:
     set_input(appfwk::connection_uid(ini, "input"));
     set_output(appfwk::connection_uid(ini, "output"));
   }
-  void set_input(const std::string& name)
-  {
-    m_inq = get_iom_receiver<TSET>(name);
-  }
-  void set_output(const std::string& name)
-  {
-    m_outq = get_iom_sender<TSET>(name);
-  }
+  void set_input(const std::string& name) { m_inq = get_iom_receiver<TSET>(name); }
+  void set_output(const std::string& name) { m_outq = get_iom_sender<TSET>(name); }
 
   void do_configure(const nlohmann::json& cfgobj)
   {
@@ -171,12 +165,11 @@ public:
   {
     m_cache.emplace_front(); // to be filled
     auto& tset = m_cache.front();
-    std::optional<TSET> opt_tset= m_inq->try_receive(std::chrono::milliseconds(10));
+    std::optional<TSET> opt_tset = m_inq->try_receive(std::chrono::milliseconds(10));
     if (opt_tset.has_value()) {
       tset = *opt_tset;
       ++m_n_received;
-    }
-    else {
+    } else {
       m_cache.pop_front(); // vestigial
       drain();
       return false;
@@ -215,8 +208,7 @@ public:
       ++m_n_tardy;
       ++m_tardy_counts[tset.origin];
 
-      ers::warning(TardyInputSet(
-                                 ERS_HERE, get_name(), tset.origin.id, tset.start_time, m_zm.get_origin() >> 1));
+      ers::warning(TardyInputSet(ERS_HERE, get_name(), tset.origin.id, tset.start_time, m_zm.get_origin() >> 1));
       m_cache.pop_front(); // vestigial
     }
     drain();

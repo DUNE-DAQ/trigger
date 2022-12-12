@@ -1,5 +1,5 @@
-#include "trigger/Tee.hpp"
 #include "trigger/TPSet.hpp"
+#include "trigger/Tee.hpp"
 
 namespace dunedaq {
 namespace trigger {
