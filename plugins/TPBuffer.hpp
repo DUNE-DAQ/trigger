@@ -41,20 +41,23 @@ public:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
+
   struct TPWrapper
   {
     triggeralgs::TriggerPrimitive primitive;
 
     // Don't really want this default ctor, but IterableQueueModel requires it
     TPWrapper() {}
-
+    
     TPWrapper(triggeralgs::TriggerPrimitive p)
       : primitive(p)
-    {
-    }
-
+    {}
+    
     // comparable based on first timestamp
-    bool operator<(const TPWrapper& other) const { return this->primitive.time_start < other.primitive.time_start; }
+    bool operator<(const TPWrapper& other) const
+    {
+      return this->primitive.time_start < other.primitive.time_start;
+    }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
     {
@@ -71,23 +74,29 @@ private:
       return primitive.time_start;
     }
 
+
     size_t get_payload_size() { return sizeof(triggeralgs::TriggerPrimitive); }
 
     size_t get_num_frames() { return 1; }
 
     size_t get_frame_size() { return get_payload_size(); }
 
-    triggeralgs::TriggerPrimitive* begin() { return &primitive; }
+    triggeralgs::TriggerPrimitive* begin()
+    {
+      return &primitive;
+    }
+    
+    triggeralgs::TriggerPrimitive* end()
+    {
+      return &primitive + 1;
+    }
 
-    triggeralgs::TriggerPrimitive* end() { return &primitive + 1; }
-
-    // static const constexpr size_t fixed_payload_size = 5568;
-    static const constexpr daqdataformats::SourceID::Subsystem subsystem =
-      daqdataformats::SourceID::Subsystem::kTrigger;
+    //static const constexpr size_t fixed_payload_size = 5568;
+    static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerPrimitive;
     // No idea what this should really be set to
     static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
-  };
+};
 
   void do_conf(const nlohmann::json& config);
   void do_start(const nlohmann::json& obj);
@@ -98,18 +107,18 @@ private:
   dunedaq::utilities::WorkerThread m_thread;
 
   using tps_source_t = iomanager::ReceiverConcept<trigger::TPSet>;
-  std::shared_ptr<tps_source_t> m_input_queue_tps{ nullptr };
+  std::shared_ptr<tps_source_t> m_input_queue_tps{nullptr};
 
   using dr_source_t = iomanager::ReceiverConcept<dfmessages::DataRequest>;
-  std::shared_ptr<dr_source_t> m_input_queue_dr{ nullptr };
+  std::shared_ptr<dr_source_t> m_input_queue_dr{nullptr};
 
   std::chrono::milliseconds m_queue_timeout;
 
   using buffer_object_t = TPWrapper;
   using latency_buffer_t = readoutlibs::SkipListLatencyBufferModel<buffer_object_t>;
-  std::unique_ptr<latency_buffer_t> m_latency_buffer_impl{ nullptr };
+  std::unique_ptr<latency_buffer_t> m_latency_buffer_impl{nullptr};
   using request_handler_t = readoutlibs::DefaultSkipListRequestHandler<buffer_object_t>;
-  std::unique_ptr<request_handler_t> m_request_handler_impl{ nullptr };
+  std::unique_ptr<request_handler_t> m_request_handler_impl{nullptr};
 
   // Don't actually use this, but it's currently needed as arg to request handler ctor
   std::unique_ptr<readoutlibs::FrameErrorRegistry> m_error_registry;

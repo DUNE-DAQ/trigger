@@ -15,8 +15,8 @@
 
 #include "readoutlibs/FrameErrorRegistry.hpp"
 #include "readoutlibs/models/DefaultRequestHandlerModel.hpp"
-#include "readoutlibs/models/DefaultSkipListRequestHandler.hpp"
 #include "readoutlibs/models/SkipListLatencyBufferModel.hpp"
+#include "readoutlibs/models/DefaultSkipListRequestHandler.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerObjectOverlay.hpp"
 #include "utilities/WorkerThread.hpp"
@@ -46,13 +46,14 @@ public:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
+
   struct TCWrapper
   {
     triggeralgs::TriggerCandidate candidate;
     std::vector<uint8_t> candidate_overlay_buffer;
     // Don't really want this default ctor, but IterableQueueModel requires it
     TCWrapper() {}
-
+    
     TCWrapper(triggeralgs::TriggerCandidate c)
       : candidate(c)
     {
@@ -64,9 +65,12 @@ private:
       candidate_overlay_buffer.resize(triggeralgs::get_overlay_nbytes(candidate));
       triggeralgs::write_overlay(candidate, candidate_overlay_buffer.data());
     }
-
+    
     // comparable based on first timestamp
-    bool operator<(const TCWrapper& other) const { return this->candidate.time_start < other.candidate.time_start; }
+    bool operator<(const TCWrapper& other) const
+    {
+      return this->candidate.time_start < other.candidate.time_start;
+    }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
     {
@@ -84,17 +88,23 @@ private:
 
     size_t get_frame_size() { return get_payload_size(); }
 
-    uint8_t* begin() { return candidate_overlay_buffer.data(); }
+    uint8_t* begin()
+    {
+      return candidate_overlay_buffer.data();
+    }
+    
+    uint8_t* end()
+    {
+      return candidate_overlay_buffer.data()+candidate_overlay_buffer.size();
+    }
 
-    uint8_t* end() { return candidate_overlay_buffer.data() + candidate_overlay_buffer.size(); }
-
-    // static const constexpr size_t fixed_payload_size = 5568;
-    static const constexpr daqdataformats::SourceID::Subsystem subsystem =
-      daqdataformats::SourceID::Subsystem::kTrigger;
+    //static const constexpr size_t fixed_payload_size = 5568;
+    static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerCandidate;
     // No idea what this should really be set to
     static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
-  };
+
+};
 
   void do_conf(const nlohmann::json& config);
   void do_start(const nlohmann::json& obj);
@@ -105,18 +115,18 @@ private:
   dunedaq::utilities::WorkerThread m_thread;
 
   using tcs_source_t = iomanager::ReceiverConcept<triggeralgs::TriggerCandidate>;
-  std::shared_ptr<tcs_source_t> m_input_queue_tcs{ nullptr };
+  std::shared_ptr<tcs_source_t> m_input_queue_tcs{nullptr};
 
   using dr_source_t = iomanager::ReceiverConcept<dfmessages::DataRequest>;
-  std::shared_ptr<dr_source_t> m_input_queue_dr{ nullptr };
+  std::shared_ptr<dr_source_t> m_input_queue_dr{nullptr};
 
   std::chrono::milliseconds m_queue_timeout;
 
   using buffer_object_t = TCWrapper;
   using latency_buffer_t = readoutlibs::SkipListLatencyBufferModel<buffer_object_t>;
-  std::unique_ptr<latency_buffer_t> m_latency_buffer_impl{ nullptr };
+  std::unique_ptr<latency_buffer_t> m_latency_buffer_impl{nullptr};
   using request_handler_t = readoutlibs::DefaultSkipListRequestHandler<buffer_object_t>;
-  std::unique_ptr<request_handler_t> m_request_handler_impl{ nullptr };
+  std::unique_ptr<request_handler_t> m_request_handler_impl{nullptr};
 
   // Don't actually use this, but it's currently needed as arg to request handler ctor
   std::unique_ptr<readoutlibs::FrameErrorRegistry> m_error_registry;

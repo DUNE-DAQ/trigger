@@ -20,16 +20,14 @@
 
 namespace dunedaq::trigger {
 
-// TODO Benjamin Land <BenLand100@github.com> June-01-2021: would be nice if the T (TriggerPrimative, etc) included a
-// natural ordering with operator<()
+// TODO Benjamin Land <BenLand100@github.com> June-01-2021: would be nice if the T (TriggerPrimative, etc) included a natural ordering with operator<()
 template<class T>
 struct time_start_greater_t
 {
   bool operator()(const T& a, const T& b) { return a.time_start > b.time_start; }
 };
 
-// TODO Philip Rodrigues rodriges@fnal.gov 2022-04-27: Same comment as above, plus we should really fix the
-// time_start/start_time inconsistency
+// TODO Philip Rodrigues rodriges@fnal.gov 2022-04-27: Same comment as above, plus we should really fix the time_start/start_time inconsistency
 template<class T>
 struct start_time_greater_t
 {
@@ -57,8 +55,7 @@ public:
     , m_buffer_time(buffer_time)
     , m_window_time(window_time)
     , m_largest_time(0)
-  {
-  }
+  {}
 
   // Add a new vector<T> to the buffer.
   void buffer(const std::vector<T>& in)
@@ -167,8 +164,7 @@ public:
       }
       m_buffer.pop();
     }
-    TLOG_DEBUG(4) << "Filled payload from " << out_set.start_time << " to " << out_set.end_time << " with "
-                  << out_set.objects.size() << " objects";
+    TLOG_DEBUG(4) << "Filled payload from " << out_set.start_time << " to " << out_set.end_time << " with " << out_set.objects.size() << " objects";
   }
 
 private:

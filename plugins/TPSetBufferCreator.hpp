@@ -77,8 +77,7 @@ private:
   using dr_source_t = dunedaq::iomanager::ReceiverConcept<dfmessages::DataRequest>;
   std::shared_ptr<dr_source_t> m_input_queue_dr;
 
-  using fragment_sink_t =
-    dunedaq::iomanager::SenderConcept<std::pair<std::unique_ptr<daqdataformats::Fragment>, std::string>>;
+  using fragment_sink_t = dunedaq::iomanager::SenderConcept<std::pair<std::unique_ptr<daqdataformats::Fragment>, std::string>>;
   std::shared_ptr<fragment_sink_t> m_output_queue_frag;
 
   std::unique_ptr<trigger::TPSetBuffer> m_tps_buffer;
@@ -96,7 +95,8 @@ private:
   std::map<dfmessages::DataRequest, std::vector<trigger::TPSet>, DataRequestComp>
     m_dr_on_hold; ///< Holds data request when data has not arrived in the buffer yet
 
-  std::unique_ptr<daqdataformats::Fragment> convert_to_fragment(std::vector<TPSet>&, dfmessages::DataRequest);
+  std::unique_ptr<daqdataformats::Fragment> convert_to_fragment(std::vector<TPSet>&,
+                                                                dfmessages::DataRequest);
 
   void send_out_fragment(std::unique_ptr<daqdataformats::Fragment>, std::string, size_t&, std::atomic<bool>&);
   void send_out_fragment(std::unique_ptr<daqdataformats::Fragment>, std::string);

@@ -55,7 +55,7 @@ private:
   std::atomic<bool> m_running_flag{ false };
   std::thread m_thread;
   std::ofstream m_outfile;
-
+  
   tasetsink::Conf m_conf;
   // Queue sources and sinks
   using source_t = iomanager::ReceiverConcept<TASet>;

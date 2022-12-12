@@ -28,8 +28,7 @@ class TriggerDecisionMaker
 public:
   explicit TriggerDecisionMaker(const std::string& name)
     : TriggerGenericMaker(name)
-  {
-  }
+  {}
 
   TriggerDecisionMaker(const TriggerDecisionMaker&) = delete;
   TriggerDecisionMaker& operator=(const TriggerDecisionMaker&) = delete;
