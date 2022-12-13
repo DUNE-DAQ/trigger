@@ -38,7 +38,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     from daqconf.apps.dataflow_gen import get_dataflow_app
     from daqconf.apps.trigger_gen import get_trigger_app
     from daqconf.apps.dfo_gen import get_dfo_app
-    
+   
     console.log(f"Generating configs")
 
     ru_configs=[{"host": "localhost",
