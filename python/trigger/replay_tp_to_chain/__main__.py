@@ -32,13 +32,13 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     """
 
     the_system = System()
-    
+
     console.log("Loading faketp config generator")
     from .replay_tp_app import get_replay_app
     from daqconf.apps.dataflow_gen import get_dataflow_app
     from daqconf.apps.trigger_gen import get_trigger_app
     from daqconf.apps.dfo_gen import get_dfo_app
-   
+
     console.log(f"Generating configs")
 
     ru_configs=[{"host": "localhost",
@@ -46,7 +46,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
                  "region_id": i,
                  "start_channel": 0,
                  "channel_count": 1} for i in range(len(input_file))]
-    
+
     the_system.apps["replay"] = get_replay_app(
         INPUT_FILES = input_file,
         SLOWDOWN_FACTOR = slowdown_factor,
@@ -72,11 +72,15 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     moo.otypes.load_types('daqconf/confgen.jsonnet')
     import dunedaq.daqconf.confgen as confgen
 
-    df_apps = {'dataflow0': confgen.dataflowapp(host_df='localhost', 
-                                                max_file_size=4294967296, 
-                                                max_trigger_record_window=0,
-                                                output_paths=['.'], 
-                                                token_count=9)}
+    df_apps = {
+        'dataflow0': confgen.dataflowapp(
+            host_df='localhost',
+            max_file_size=4294967296,
+            max_trigger_record_window=0,
+            output_paths=['.'],
+            # token_count=9
+        )
+    }
     df_apps['dataflow0'].source_id = 0
 
     the_system.apps['dfo'] = get_dfo_app(
@@ -105,7 +109,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
 
     enable_firmware_tpg = False
     enable_software_tpg = True  # We always want software TPG for replay app
-    
+
     sourceid_broker.register_readout_source_ids(dro_infos, TPGenMode.SWTPG)
     tp_mode = get_tpg_mode(enable_firmware_tpg,enable_software_tpg)
     sourceid_broker.generate_trigger_source_ids(dro_infos, tp_mode)
@@ -140,16 +144,17 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
 
     connect_all_fragment_producers(the_system)
     set_mlt_links(the_system, "trigger")
-    
+
+    boot = confgen.boot()
+
     from daqconf.core.conf_utils import make_app_command_data, make_system_command_datas, write_json_files
     from daqconf.core.metadata import write_metadata_file
-    
+
     app_command_datas = {
-        name : make_app_command_data(the_system, app, name)
+        name : make_app_command_data(the_system, app, name, use_k8s=boot.use_k8s, use_connectivity_service=boot.use_connectivity_service)
         for name,app in the_system.apps.items()
     }
 
-    boot = confgen.boot()
     system_command_datas = make_system_command_datas(boot, the_system)
 
     write_json_files(app_command_datas, system_command_datas, json_dir)
