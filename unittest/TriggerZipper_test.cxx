@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(ZipperScenario1)
   iomanager::Queues_t queues;
   queues.emplace_back(iomanager::QueueConfig{ { "zipper_input", "TPSet" }, iomanager::QueueType::kStdDeQueue, 10 });
   queues.emplace_back(iomanager::QueueConfig{ { "zipper_output", "TPSet" }, iomanager::QueueType::kStdDeQueue, 10 });
-  iomanager::IOManager::get()->configure(queues, {});
+  iomanager::IOManager::get()->configure(queues, {}, false, 0ms); // Not using Connectivity Service
 
   auto in = dunedaq::get_iom_sender<trigger::TPSet>("zipper_input");
   auto out = dunedaq::get_iom_receiver<trigger::TPSet>("zipper_output");
