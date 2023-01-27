@@ -119,6 +119,12 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
     TLOG_DEBUG(3) << *it;
     ++it;
   }
+
+  m_readout_window_map_data = params.td_readout_map;
+  parse_readout_map(m_readout_window_map_data);
+  TLOG_DEBUG(3) << "Readout map: ";
+  TLOG_DEBUG(3) << m_readout_window_map[static_cast<detdataformats::trigger::TriggerCandidateData::Type>(5)].first;
+  TLOG_DEBUG(3) << m_readout_window_map[static_cast<detdataformats::trigger::TriggerCandidateData::Type>(5)].second;
 }
 
 void
@@ -406,8 +412,8 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
       TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
                     << " overlaps with pending TD with start/end times " << it->readout_start << "/" << it->readout_end;
       it->contributing_tcs.push_back(tc);
-      it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
-      it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
+      it->readout_start = ( (tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start) ? it->readout_start : (tc.time_candidate - m_readout_window_map[tc.type].first);
+      it->readout_end = ( (tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end) ? (tc.time_candidate + m_readout_window_map[tc.type].second) : it->readout_end;
       it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
       added_to_existing = true;
       break;
@@ -418,8 +424,8 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
   if (!added_to_existing) {
     PendingTD td_candidate;
     td_candidate.contributing_tcs.push_back(tc);
-    td_candidate.readout_start = tc.time_start;
-    td_candidate.readout_end = tc.time_end;
+    td_candidate.readout_start = tc.time_candidate - m_readout_window_map[tc.type].first;
+    td_candidate.readout_end = tc.time_candidate + m_readout_window_map[tc.type].second;
     td_candidate.walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
     m_pending_tds.push_back(td_candidate);
   }
@@ -429,7 +435,7 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
 bool
 ModuleLevelTrigger::check_overlap(const triggeralgs::TriggerCandidate& tc, const PendingTD& pending_td)
 {
-  return !((tc.time_end < pending_td.readout_start) || (tc.time_start > pending_td.readout_end));
+  return !(( (tc.time_candidate + m_readout_window_map[tc.type].second) < pending_td.readout_start) || ( (tc.time_candidate - m_readout_window_map[tc.type].first > pending_td.readout_end) ));
 }
 
 bool
@@ -560,6 +566,15 @@ ModuleLevelTrigger::check_trigger_type_ignore(int tc_type)
     ++it;
   }
   return ignore;
+}
+
+void
+ModuleLevelTrigger::parse_readout_map(const nlohmann::json& data)
+{
+  for (auto readout_type : data)
+  {
+    m_readout_window_map[static_cast<detdataformats::trigger::TriggerCandidateData::Type>(readout_type["candidate_type"])] = { readout_type["time_before"], readout_type["time_after"] };
+  }
 }
 
 } // namespace trigger
