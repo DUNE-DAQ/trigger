@@ -282,7 +282,11 @@ ModuleLevelTrigger::send_trigger_decisions()
         TLOG_DEBUG(3) << "TC type: " << static_cast<int>(tc->type);
         if (check_trigger_type_ignore(static_cast<int>(tc->type)) == true) {
           TLOG_DEBUG(3) << "ignoring...";
-          m_tc_ignored_count++;
+	  m_tc_ignored_count++;
+	 
+	  // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend readout
+          std::lock_guard<std::mutex> lock(m_td_vector_mutex);
+	  add_tc_ignored(*tc);
           continue;
         }
       }
@@ -428,6 +432,21 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
     td_candidate.readout_end = tc.time_candidate + m_readout_window_map[tc.type].second;
     td_candidate.walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
     m_pending_tds.push_back(td_candidate);
+  }
+  return;
+}
+
+void
+ModuleLevelTrigger::add_tc_ignored(const triggeralgs::TriggerCandidate& tc)
+{
+  for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
+    if (check_overlap(tc, *it)) {
+      TLOG_DEBUG(3) << "!Ignored! TC with start/end times " << tc.time_start << "/" << tc.time_end
+                    << " overlaps with pending TD with start/end times " << it->readout_start << "/" << it->readout_end;
+      it->contributing_tcs.push_back(tc);
+      break;
+    }
+    ++it;
   }
   return;
 }
