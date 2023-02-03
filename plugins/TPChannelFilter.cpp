@@ -109,6 +109,10 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
       }
     }
 
+    using namespace std::chrono;
+    tpset->start_diagnostic_time = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+    TLOG_DEBUG(3) << "New TPset with the start_diagnostic_time: " << tpset->start_diagnostic_time << "ms";
+
     // If we got here, we got a TPSet
     
     // Actually do the removal for payload TPSets. Leave heartbeat TPSets unmolested

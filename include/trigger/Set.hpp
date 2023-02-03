@@ -57,6 +57,12 @@ public:
   // The latest timestamp inspected to form this Set
   timestamp_t end_time{ 0 };
 
+  // Start the diagnostic latency measurement timestamp
+  timestamp_t start_diagnostic_time{ 0 };
+
+  // End the diagnostic latency measurement timestamp
+  timestamp_t end_diagnostic_time{ 0 };
+
   // The TPs/TAs themselves. Needs a better name!
   std::vector<T> objects;
 };
