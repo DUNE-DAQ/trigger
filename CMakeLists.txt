@@ -47,6 +47,7 @@ daq_codegen(
   faketpcreatorheartbeatmaker.jsonnet
   moduleleveltrigger.jsonnet
   randomtriggercandidatemaker.jsonnet
+  customtriggercandidatemaker.jsonnet
   timingtriggercandidatemaker.jsonnet
   triggerprimitivemaker.jsonnet
   triggeractivitymaker.jsonnet
@@ -70,6 +71,7 @@ daq_add_plugin(TriggerActivityMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDecisionMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(RandomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
+daq_add_plugin(CustomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
 daq_add_plugin(ModuleLevelTrigger duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
 daq_add_plugin(TPSetSink duneDAQModule LINK_LIBRARIES trigger TEST)
 daq_add_plugin(FakeTPCreatorHeartbeatMaker duneDAQModule LINK_LIBRARIES trigger)
