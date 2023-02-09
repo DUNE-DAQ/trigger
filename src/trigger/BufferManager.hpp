@@ -47,15 +47,6 @@ public:
   BufferManager& operator=(BufferManager const&) = delete;
   BufferManager& operator=(BufferManager&&) = default;
 
-  std::string GetElapsedTime(const BSET& txs)
-  {
-    if((txs.start_diagnostic_time == 0)  || (txs.end_diagnostic_time == 0))
-      return std::string("TEST: Not a TPSet!");
-
-    auto timediff = txs.end_diagnostic_time - txs.start_diagnostic_time;
-    return std::string("TEST: Latency time: " + std::to_string(timediff));
-  }
-
   /**
    *  add a TxSet to the buffer. Remove oldest TxSets from buffer if we are at maximum size
    */
@@ -76,8 +67,6 @@ public:
 
     using namespace std::chrono;
     txs.end_diagnostic_time = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
-    TLOG_DEBUG(3) << GetElapsedTime(txs).c_str();
-    TLOG_DEBUG(3) << "TEST: tpset added to a buffer!";
 
     return m_txset_buffer.insert(txs).second; // false if txs with same start_time already exists
   }
