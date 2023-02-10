@@ -109,10 +109,6 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-    // Record diagnostic/debugging time for measuring the latency
-    using namespace std::chrono;
-    tpset->start_diagnostic_time = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
-
     // If we got here, we got a TPSet
     
     // Actually do the removal for payload TPSets. Leave heartbeat TPSets unmolested
@@ -125,6 +121,24 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
       tpset->objects.erase(it, tpset->objects.end());
       size_t n_after = tpset->objects.size();
       TLOG_DEBUG(2) << "Removed " << (n_before - n_after) << " TPs out of " << n_before;
+    }
+
+    if(!tpset->objects.empty()){
+      // Record diagnostic/debugging time for measuring the latency
+      using namespace std::chrono;
+      uint64_t latency_time_ns = duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count();
+
+      for(const auto& TP : tpset->objects){
+        TLOG() << "TPs Received. time_start: " << TP.time_start
+                            << " time_peak: " << TP.time_peak
+                            << " time_over_threshold: " << TP.time_over_threshold
+                            << " channel: " << TP.channel
+                            << " ADC integral: " << TP.adc_integral
+                            << " ADC peak: " << TP.adc_peak
+                            << " detid: " << TP.detid
+                            << " type: " << TP.type
+                            << " real time: " << latency_time_ns;
+      }
     }
 
     // The rule is that we don't send empty TPSets, so ensure that
