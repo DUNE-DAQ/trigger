@@ -102,13 +102,6 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
         m_latency_buffer_impl->write(TPWrapper(tp));
         ++n_tps_received;
       }
-
-      using namespace std::chrono;
-      tpset->end_diagnostic_time = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
-      if((tpset->start_diagnostic_time == 0) || (tpset->end_diagnostic_time == 0))
-        TLOG() << "TEST: tXset added to a buffer, but not TPSet!";
-      else
-        TLOG() << "TEST: TPset Latency time: " << tpset->end_diagnostic_time - tpset->start_diagnostic_time;
     }
 
 
@@ -119,13 +112,8 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
       m_request_handler_impl->issue_request(*data_request, false);
 
       using namespace std::chrono;
-      uint64_t  reqtime = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
-      if((tpset->start_diagnostic_time == 0) || (tpset->end_diagnostic_time == 0))
-        TLOG() << "TEST: tXset added to a buffer, but not TPSet!";
-      else{
-        TLOG() << "TEST: TPset is requested, after creation: " << reqtime - tpset->start_diagnostic_time;
-        TLOG() << "TEST: TPset is requested, after buffered: " << reqtime - tpset->end_diagnostic_time;
-      }
+      uint64_t  time_latency = duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count();
+      TLOG() << "TPs being requested: window_begin: " << data_request->request_information.window_begin << " window_end: " << data_request->request_information.window_end << " time_latency_ns: " << time_latency; 
     }
 
     if (!popped_anything) {

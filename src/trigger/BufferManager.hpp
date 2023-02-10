@@ -10,7 +10,6 @@
 #define TRIGGER_SRC_TRIGGER_BUFFERMANAGER_HPP_
 
 #include "daqdataformats/Types.hpp"
-#include "logging/Logging.hpp"
 
 #include <atomic>
 #include <set>
@@ -64,9 +63,6 @@ public:
 
     if ((m_buffer_latest_end_time == 0) || (txs.end_time > m_buffer_latest_end_time))
       m_buffer_latest_end_time = txs.end_time;
-
-    using namespace std::chrono;
-    txs.end_diagnostic_time = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 
     return m_txset_buffer.insert(txs).second; // false if txs with same start_time already exists
   }
