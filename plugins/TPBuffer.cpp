@@ -111,7 +111,7 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
       m_request_handler_impl->issue_request(*data_request, false);
 
       using namespace std::chrono;
-      uint64_t  time_latency = duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count();
+      uint64_t  time_latency = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
       TLOG() << "TPs being requested: window_begin: " << data_request->request_information.window_begin << " window_end: " << data_request->request_information.window_end << " time_latency_ns: " << time_latency; 
     }
 

@@ -126,7 +126,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
     if(!tpset->objects.empty()){
       // Record diagnostic/debugging time for measuring the latency
       using namespace std::chrono;
-      uint64_t latency_time_ns = duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count();
+      uint64_t latency_time_ns = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
       for(const auto& TP : tpset->objects){
         TLOG() << "TPs Received. time_start: " << TP.time_start
