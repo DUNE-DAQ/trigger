@@ -128,17 +128,9 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
       using namespace std::chrono;
       uint64_t latency_time_ns = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-      for(const auto& TP : tpset->objects){
-        TLOG() << "TPs Received. time_start: " << TP.time_start
-                            << " time_peak: " << TP.time_peak
-                            << " time_over_threshold: " << TP.time_over_threshold
-                            << " channel: " << TP.channel
-                            << " ADC integral: " << TP.adc_integral
-                            << " ADC peak: " << TP.adc_peak
-                            << " detid: " << TP.detid
-                            << " type: " << TP.type
-                            << " real time: " << latency_time_ns;
-      }
+      TLOG() << "TPs Received. time_start: " << tpset->objects[0].time_start
+                          << " ADC integral: " << tpset->objects[0].adc_integral
+                          << " real time: " << latency_time_ns;
     }
 
     // The rule is that we don't send empty TPSets, so ensure that
