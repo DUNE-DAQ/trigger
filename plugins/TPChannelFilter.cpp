@@ -83,7 +83,7 @@ TPChannelFilter::channel_should_be_removed(int channel) const
 {
   // Immediately remove channels that are in the known noisy list.
   if(std::count(m_conf.noisy_channels.begin(), m_conf.noisy_channels.end(), channel)) { 
-   TLOG() << "Removing TP from noisy channel: " << channel;
+   //TLOG() << "Removing TP from noisy channel: " << channel;
    return true;
   }
   // The plane numbering convention is found in detchannelmaps/plugins/VDColdboxChannelMap.cpp and is:
