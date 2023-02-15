@@ -4,8 +4,9 @@ local s = moo.oschema.schema(ns);
 
 local types = {
   bool: s.boolean("Boolean"),
-  string : s.string("String", moo.re.ident, doc="A string field"),
-//  list: s.sequence("List", doc="List of values"), 
+  string: s.string("String", moo.re.ident, doc="A string field"),
+  number: s.number("offline_channel", "i4", doc="Offline channel ID"), 
+  group: s.sequence("List", self.number, doc="List of channel IDs"), 
  
   conf : s.record("Conf", [
     s.field("keep_collection", self.bool,
@@ -14,7 +15,7 @@ local types = {
       doc="Whether to keep induction-channel TPs"),
     s.field("channel_map_name", self.string,
       doc="Name of channel map"),
-    s.field("noisy_channels", self.bool,
+    s.field("noisy_channels", self.group, [],
       doc="Known noisy offline channels, remove their TP contribution from the stream."),    
   ], doc="FakeTPCreatorHeartbeatMaker configuration parameters."),
 

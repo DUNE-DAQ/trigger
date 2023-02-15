@@ -50,6 +50,14 @@ TPChannelFilter::do_conf(const nlohmann::json& conf_arg)
 {
   m_conf = conf_arg.get<dunedaq::trigger::tpchannelfilter::Conf>();
   m_channel_map = dunedaq::detchannelmaps::make_map(m_conf.channel_map_name);
+
+  TLOG() << "Noisy channels that will be ignored: ";
+  for (std::vector<int>::iterator it = m_conf.noisy_channels.begin(); it != m_conf.noisy_channels.end();){
+   TLOG() << *it;
+   ++it;
+  }
+
+
 }
 
 void
@@ -73,9 +81,13 @@ TPChannelFilter::do_scrap(const nlohmann::json&)
 bool
 TPChannelFilter::channel_should_be_removed(int channel) const
 {
+  // Immediately remove channels that are in the known noisy list.
+  if(std::count(m_conf.noisy_channels.begin(), m_conf.noisy_channels.end(), channel)) { 
+   TLOG() << "Removing TP from noisy channel: " << channel;
+   return true;
+  }
   // The plane numbering convention is found in detchannelmaps/plugins/VDColdboxChannelMap.cpp and is:
   // U (induction) = 0, Y (induction) = 1, Z (induction) = 2, unconnected channel = 9999
-  //TLOG() << "Noisy channels passed to TPChannelFilter: " << m_conf.noisy_channels; 
  
   uint plane = m_channel_map->get_plane_from_offline_channel(channel);
   // Check for collection
