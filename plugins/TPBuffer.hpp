@@ -24,6 +24,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace dunedaq {
 namespace trigger {
@@ -96,7 +97,117 @@ private:
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerPrimitive;
     // No idea what this should really be set to
     static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
-};
+  };
+
+  /**
+   * @struct LatencyBuffer
+   * @brief Holds latency measurements.
+   */
+  struct LatencyBuffer
+  {
+    /// @brief start_time of the TP as it enters triggerapp
+    std::vector<uint64_t> tpin_start_time;
+    /// @brief adc_integral of the TP as it enters triggerapp
+    std::vector<uint32_t> tpin_adc_integral;
+    /// @brief walltime of the TP as it enters triggerapp
+    std::vector<uint64_t> tpin_timestamp;
+    /// @brief number of TP latencies currently stored
+    size_t tpin_count;
+    /// @brief maxumum number of TP latencies to be stored
+    size_t tpin_count_max;
+
+    /// @brief window_time_start of the DataReuqest for TP
+    std::vector<uint64_t> tpreq_window_begin;
+    /// @brief end_time of the DataReuqest for TP
+    std::vector<uint64_t> tpreq_window_end;
+    /// @brief walltime of the DataReuqest for TP
+    std::vector<uint64_t> tpreq_timestamp;
+    /// @brief number of DataReuqest for TP latencies stored
+    size_t tpreq_count;
+    /// @brief max number of TP DataRequest to be stored
+    size_t tpreq_count_max;
+
+    /**
+     * @brief Initialize the LatencyBuffer based on max sizes
+     *
+     * @parameter _tpin_count_max max number of input TP latencies
+     * @parameter _tpreq_count_max max number of output DataRequest latencies
+     */
+    void init(size_t _tpin_count_max = 1e6, size_t _tpreq_count_max = 1e3)
+    {
+      tpin_count_max    = _tpin_count_max;
+      tpin_count        = 0;
+      tpin_start_time   = std::vector<uint64_t>(tpin_count_max, 0);
+      tpin_adc_integral = std::vector<uint32_t>(tpin_count_max, 0);
+      tpin_timestamp    = std::vector<uint64_t>(tpin_count_max, 0);
+
+      tpreq_count_max   = _tpreq_count_max;
+      tpreq_count       = 0;
+      tpreq_window_begin= std::vector<uint64_t>(tpreq_count_max, 0);
+      tpreq_window_end  = std::vector<uint64_t>(tpreq_count_max, 0);
+      tpreq_timestamp   = std::vector<uint64_t>(tpreq_count_max, 0);
+    }
+
+    /**
+     * @brief fills the timestamps of a TP that entered the trigger app
+     *
+     * @parameter _start_time the start_time of a TriggerPrimitive
+     * @parameter _adc_integral the adc_integral of a TriggerPrimitive
+     * @parameter _timestamp the chrono walltime saved when TP enters triggerapp
+     */
+    void FillTPIn(uint64_t _start_time, uint32_t _adc_integral, uint64_t _timestamp)
+    {
+      if(tpin_count < tpin_count_max){
+        // Fill the TP latency (using data held by the TPSet itself).
+        tpin_start_time[tpin_count]   = _start_time;
+        tpin_adc_integral[tpin_count] = _adc_integral;
+        tpin_timestamp[tpin_count]    = _timestamp;
+        tpin_count++;
+      }
+    }
+
+    /**
+     * @brief fills the timestamps of a DataRequest for a TP
+     *
+     * @parameter _start_time the start_time of the DataRequest
+     * @parameter _end_time the end_time of the DataRequest
+     */
+    void FillTPDataRequest(uint64_t _start_time, uint64_t _end_time)
+    {
+      if(tpreq_count < tpreq_count_max){
+        // Get the current timestamp
+        using namespace std::chrono;
+        uint64_t  timestamp = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+        // Fill the data request latencies
+        tpreq_window_begin[tpreq_count] = _start_time;
+        tpreq_window_end[tpreq_count]   = _end_time;
+        tpreq_timestamp[tpreq_count]    = timestamp;
+        tpreq_count++;
+      }
+    }
+
+    /// @brief Prints all the stored latencies
+    void PrintAll()
+    {
+      // Print the input TPs first
+      for(size_t i = 0; i < tpin_count; ++i){
+        TLOG() << "TPs Received. time_start: " << tpin_start_time[i]
+                            << " ADC integral: " << tpin_adc_integral[i]
+                            << " real_time: " << tpin_timestamp[i];
+      }
+
+      // Now print the DataRequests for the TPs
+      for(size_t i = 0; i < tpreq_count; ++i){
+        TLOG() << "TPs being requested: window_begin: " << tpreq_window_begin[i]
+                                   << " window_end: " << tpreq_window_end[i]
+                                   << " real_time: " << tpreq_timestamp[i];
+      }
+    }
+  };
+
+  /// @brief Object holding latency measurements
+  LatencyBuffer m_latencies;
 
   void do_conf(const nlohmann::json& config);
   void do_start(const nlohmann::json& obj);

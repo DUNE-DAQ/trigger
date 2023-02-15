@@ -57,6 +57,9 @@ TPBuffer::do_conf(const nlohmann::json& args)
   m_latency_buffer_impl->conf(args);
   m_request_handler_impl->conf(args);
 
+  // Initialize the object that holds the latency timing
+  m_latencies.init(1e6, 1e3);
+
   TLOG_DEBUG(2) << get_name() + " configured.";
 }
 
@@ -74,6 +77,9 @@ TPBuffer::do_stop(const nlohmann::json& args)
   m_thread.stop_working_thread();
   m_request_handler_impl->stop(args);
   m_latency_buffer_impl->flush();
+
+  m_latencies.PrintAll();
+
   TLOG_DEBUG(2) << get_name() + " successfully stopped.";
 }
 
@@ -97,12 +103,16 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
     std::optional<TPSet> tpset = m_input_queue_tps->try_receive(std::chrono::milliseconds(0));
     if (tpset.has_value()) {
       popped_anything = true;
+
+      // Fill the latency measurements.
+      // @todo TODO: Filling each TP separately still too slow. Perhaps save the log not through TLOG() but through faster file-writing methods
+      m_latencies.FillTPIn(tpset->objects[0].time_start, tpset->objects[0].adc_integral, tpset->start_diagnostic_time);
+
       for (auto const& tp: tpset->objects) {
         m_latency_buffer_impl->write(TPWrapper(tp));
         ++n_tps_received;
       }
     }
-
 
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
     if (data_request.has_value()) {
@@ -110,9 +120,8 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
       ++n_requests_received;
       m_request_handler_impl->issue_request(*data_request, false);
 
-      using namespace std::chrono;
-      uint64_t  time_latency = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-      TLOG() << "TPs being requested: window_begin: " << data_request->request_information.window_begin << " window_end: " << data_request->request_information.window_end << " time_latency_ns: " << time_latency; 
+       m_latencies.FillTPDataRequest(data_request->request_information.window_begin,
+                                     data_request->request_information.window_end);
     }
 
     if (!popped_anything) {
