@@ -107,6 +107,7 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
       // Fill the latency measurements.
       // @todo TODO: Filling each TP separately still too slow. Perhaps save the log not through TLOG() but through faster file-writing methods
       m_latencies.FillTPIn(tpset->objects[0].time_start, tpset->objects[0].adc_integral, tpset->start_diagnostic_time);
+      m_latencies.FillTPBuff(tpset->objects[0].time_start, tpset->objects[0].adc_integral);
 
       for (auto const& tp: tpset->objects) {
         m_latency_buffer_impl->write(TPWrapper(tp));
