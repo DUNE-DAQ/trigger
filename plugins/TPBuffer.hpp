@@ -106,67 +106,55 @@ private:
   struct LatencyBuffer
   {
     /// @brief start_time of the TP as it enters triggerapp
-    std::vector<uint64_t> tpin_start_time;
+    std::vector<uint64_t> tpset_start_time;
     /// @brief adc_integral of the TP as it enters triggerapp
-    std::vector<uint32_t> tpin_adc_integral;
+    std::vector<uint32_t> tpset_adc_integral;
     /// @brief walltime of the TP as it enters triggerapp
-    std::vector<uint64_t> tpin_timestamp;
-    /// @brief number of TP latencies currently stored
-    size_t tpin_count;
-    /// @brief maxumum number of TP latencies to be stored
-    size_t tpin_count_max;
-
-    /// @brief start_time of the TP as it enters the TPBuffer 
-    std::vector<uint64_t> tpbuff_start_time;
-    /// @brief adc_integral of the TP as it enters the TPBuffer 
-    std::vector<uint32_t> tpbuff_adc_integral;
+    std::vector<uint64_t> tpset_in_timestamp;
     /// @brief walltime of the TP as it enters the buffer
-    std::vector<uint64_t> tpbuff_timestamp;
-    /// @brief number of TP buff latencies currently stored
-    size_t tpbuff_count;
-    /// @brief maxumum number of TP buff latencies to be stored
-    size_t tpbuff_count_max;
+    std::vector<uint64_t> tpset_buff_timestamp;
+    /// @brief number of TP latencies currently stored
+    size_t tpset_count;
+    /// @brief maxumum number of TP latencies to be stored
+    size_t tpset_count_max;
+
 
     /// @brief window_time_start of the DataReuqest for TP
-    std::vector<uint64_t> tpreq_window_begin;
+    std::vector<uint64_t> tpdr_window_begin;
     /// @brief end_time of the DataReuqest for TP
-    std::vector<uint64_t> tpreq_window_end;
-    /// @brief walltime of the DataReuqest for TP
-    std::vector<uint64_t> tpreq_timestamp;
+    std::vector<uint64_t> tpdr_window_end;
+    /// @brief walltime for when DataReuqest was received
+    std::vector<uint64_t> tpdr_requested_timestamp;
+    /// @brief walltime for when DataReuqest was handled by TPBuffer
+    std::vector<uint64_t> tpdr_handled_timestamp;
     /// @brief number of DataReuqest for TP latencies stored
-    size_t tpreq_count;
+    size_t tpdr_count;
     /// @brief max number of TP DataRequest to be stored
-    size_t tpreq_count_max;
+    size_t tpdr_count_max;
 
     /**
      * @brief Initialize the LatencyBuffer based on max sizes
      *
-     * @parameter _tpin_count_max max number of input TP latencies
-     * @parameter _tpreq_count_max max number of output DataRequest latencies
+     * @parameter _tpset_count_max max number of input TP latencies
+     * @parameter _tpdr_count_max max number of output DataRequest latencies
      */
-    void init(size_t _tpin_count_max = 1e6, size_t _tpreq_count_max = 1e3)
+    void init(size_t _tpset_count_max = 1e6, size_t _tpdr_count_max = 1e3)
     {
-      // Init the TPs that enter the trigger app
-      tpin_count_max    = _tpin_count_max;
-      tpin_count        = 0;
-      tpin_start_time   = std::vector<uint64_t>(tpin_count_max, 0);
-      tpin_adc_integral = std::vector<uint32_t>(tpin_count_max, 0);
-      tpin_timestamp    = std::vector<uint64_t>(tpin_count_max, 0);
-
-      // Init the TPs that enter the TPBuffer. Expect the same amount of TPs in
-      // the TPBuffer as ones that enter the triggerapp?
-      tpbuff_count_max    = _tpin_count_max;
-      tpbuff_count        = 0;
-      tpbuff_start_time   = std::vector<uint64_t>(tpbuff_count_max, 0);
-      tpbuff_adc_integral = std::vector<uint32_t>(tpbuff_count_max, 0);
-      tpbuff_timestamp    = std::vector<uint64_t>(tpbuff_count_max, 0);
+      // Init the TPSets
+      tpset_count_max     = _tpset_count_max;
+      tpset_count         = 0;
+      tpset_start_time    = std::vector<uint64_t>(tpset_count_max, 0);
+      tpset_adc_integral  = std::vector<uint32_t>(tpset_count_max, 0);
+      tpset_in_timestamp  = std::vector<uint64_t>(tpset_count_max, 0);
+      tpset_buff_timestamp= std::vector<uint64_t>(tpset_count_max, 0);
 
       // Init the DataRequests for the TPs
-      tpreq_count_max   = _tpreq_count_max;
-      tpreq_count       = 0;
-      tpreq_window_begin= std::vector<uint64_t>(tpreq_count_max, 0);
-      tpreq_window_end  = std::vector<uint64_t>(tpreq_count_max, 0);
-      tpreq_timestamp   = std::vector<uint64_t>(tpreq_count_max, 0);
+      tpdr_count_max          = _tpdr_count_max;
+      tpdr_count              = 0;
+      tpdr_window_begin       = std::vector<uint64_t>(tpdr_count_max, 0);
+      tpdr_window_end         = std::vector<uint64_t>(tpdr_count_max, 0);
+      tpdr_requested_timestamp = std::vector<uint64_t>(tpdr_count_max, 0);
+      tpdr_handled_timestamp  = std::vector<uint64_t>(tpdr_count_max, 0);
     }
 
     /**
@@ -174,36 +162,19 @@ private:
      *
      * @parameter _start_time the start_time of a TriggerPrimitive
      * @parameter _adc_integral the adc_integral of a TriggerPrimitive
-     * @parameter _timestamp the chrono walltime saved when TP enters triggerapp
+     * @parameter _in_timestamp the chrono walltime saved when TP enters triggerapp
+     * @parameter _buff_timestamp the chrono walltime saved when TP enters TPBuffer
      */
-    void FillTPIn(uint64_t _start_time, uint32_t _adc_integral, uint64_t _timestamp)
+    void FillTPIn(uint64_t _start_time, uint32_t _adc_integral,
+                  uint64_t _in_timestamp, uint64_t _buff_timestamp)
     {
-      if(tpin_count < tpin_count_max){
+      if(tpset_count < tpset_count_max){
         // Fill the TP latency (using data held by the TPSet itself).
-        tpin_start_time[tpin_count]   = _start_time;
-        tpin_adc_integral[tpin_count] = _adc_integral;
-        tpin_timestamp[tpin_count]    = _timestamp;
-        tpin_count++;
-      }
-    }
-
-    /**
-     * @brief fills the timestamps of a TP that entered the buffer
-     *
-     * @parameter _start_time the start_time of a TriggerPrimitive
-     * @parameter _adc_integral the adc_integral of a TriggerPrimitive
-     * @parameter _timestamp the chrono walltime saved when TP enters TPBuffer
-     */
-    void FillTPBuff(uint64_t _start_time, uint32_t _adc_integral)
-    {
-      if(tpbuff_count < tpbuff_count_max){
-        using namespace std::chrono;
-        uint64_t  timestamp = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-        // Fill the TP latency (using data held by the TPSet itself).
-        tpbuff_start_time[tpbuff_count]   = _start_time;
-        tpbuff_adc_integral[tpbuff_count] = _adc_integral;
-        tpbuff_timestamp[tpbuff_count]    = timestamp;
-        tpbuff_count++;
+        tpset_start_time[tpset_count]     = _start_time;
+        tpset_adc_integral[tpset_count]   = _adc_integral;
+        tpset_in_timestamp[tpset_count]   = _in_timestamp;
+        tpset_buff_timestamp[tpset_count] = _buff_timestamp;
+        tpset_count++;
       }
     }
 
@@ -212,19 +183,20 @@ private:
      *
      * @parameter _start_time the start_time of the DataRequest
      * @parameter _end_time the end_time of the DataRequest
+     * @parameter _requested_timestamp walltime for received DataRequest 
+     * @parameter _handled_timestamp walltime for handled DataRequest 
      */
-    void FillTPDataRequest(uint64_t _start_time, uint64_t _end_time)
+    void FillTPDataRequest(uint64_t _start_time, uint64_t _end_time,
+                           uint64_t _requested_timestamp, uint64_t _handled_timestamp)
     {
-      if(tpreq_count < tpreq_count_max){
+      if(tpdr_count < tpdr_count_max){
         // Get the current timestamp
-        using namespace std::chrono;
-        uint64_t  timestamp = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
         // Fill the data request latencies
-        tpreq_window_begin[tpreq_count] = _start_time;
-        tpreq_window_end[tpreq_count]   = _end_time;
-        tpreq_timestamp[tpreq_count]    = timestamp;
-        tpreq_count++;
+        tpdr_window_begin[tpdr_count]       = _start_time;
+        tpdr_window_end[tpdr_count]         = _end_time;
+        tpdr_requested_timestamp[tpdr_count]= _requested_timestamp;
+        tpdr_handled_timestamp[tpdr_count]  = _handled_timestamp;
+        tpdr_count++;
       }
     }
 
@@ -232,24 +204,19 @@ private:
     void PrintAll()
     {
       // Print the input TPs first
-      for(size_t i = 0; i < tpin_count; ++i){
-        TLOG() << "TPs Received. time_start: " << tpin_start_time[i]
-                            << " ADC integral: " << tpin_adc_integral[i]
-                            << " real_time: " << tpin_timestamp[i];
-      }
-
-      // Print the TPs that entered the buffer
-      for(size_t i = 0; i < tpbuff_count; ++i){
-        TLOG() << "TPs Buffered. time_start: " << tpbuff_start_time[i]
-                            << " ADC integral: " << tpbuff_adc_integral[i]
-                            << " real_time: " << tpbuff_timestamp[i];
+      for(size_t i = 0; i < tpset_count; ++i){
+        TLOG() << "TPs Received. time_start: "    << tpset_start_time[i]
+                            << " ADC integral: "  << tpset_adc_integral[i]
+                            << " real_time_in: "  << tpset_in_timestamp[i]
+                            << " real_time_buff: "<< tpset_buff_timestamp[i];
       }
 
       // Now print the DataRequests for the TPs
-      for(size_t i = 0; i < tpreq_count; ++i){
-        TLOG() << "TPs being requested: window_begin: " << tpreq_window_begin[i]
-                                   << " window_end: " << tpreq_window_end[i]
-                                   << " real_time: " << tpreq_timestamp[i];
+      for(size_t i = 0; i < tpdr_count; ++i){
+        TLOG() << "TPs Requested: window_begin: " << tpdr_window_begin[i]
+                               << " window_end: "   << tpdr_window_end[i]
+                               << " real_time_req: "<< tpdr_requested_timestamp[i]
+                               << " real_time_han: "<< tpdr_handled_timestamp[i];
       }
     }
   };

@@ -41,6 +41,9 @@ TPBuffer::init(const nlohmann::json& init_data)
   m_latency_buffer_impl = std::make_unique<latency_buffer_t>();
   m_request_handler_impl = std::make_unique<request_handler_t>(m_latency_buffer_impl, m_error_registry);
   m_request_handler_impl->init(init_data);
+
+  // Initialize the object that holds the latency timing
+  m_latencies.init(1e6, 1e3);
 }
 
 void
@@ -56,9 +59,6 @@ TPBuffer::do_conf(const nlohmann::json& args)
 
   m_latency_buffer_impl->conf(args);
   m_request_handler_impl->conf(args);
-
-  // Initialize the object that holds the latency timing
-  m_latencies.init(1e6, 1e3);
 
   TLOG_DEBUG(2) << get_name() + " configured.";
 }
@@ -98,31 +98,36 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
   
   while (running_flag.load()) {
     
+    using namespace std::chrono;
     bool popped_anything=false;
     
     std::optional<TPSet> tpset = m_input_queue_tps->try_receive(std::chrono::milliseconds(0));
     if (tpset.has_value()) {
       popped_anything = true;
 
-      // Fill the latency measurements.
-      // @todo TODO: Filling each TP separately still too slow. Perhaps save the log not through TLOG() but through faster file-writing methods
-      m_latencies.FillTPIn(tpset->objects[0].time_start, tpset->objects[0].adc_integral, tpset->start_diagnostic_time);
-      m_latencies.FillTPBuff(tpset->objects[0].time_start, tpset->objects[0].adc_integral);
-
       for (auto const& tp: tpset->objects) {
         m_latency_buffer_impl->write(TPWrapper(tp));
         ++n_tps_received;
       }
+
+      // Fill the latency measurements.
+      // @todo TODO: Filling each TP separately still too slow. Perhaps save the log not through TLOG() but through faster file-writing methods
+      uint64_t timestamp_buffered = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+      m_latencies.FillTPIn(tpset->objects[0].time_start, tpset->objects[0].adc_integral, tpset->start_diagnostic_time, timestamp_buffered);
+
     }
 
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
     if (data_request.has_value()) {
+      uint64_t timestamp_requested = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
       popped_anything = true;
       ++n_requests_received;
       m_request_handler_impl->issue_request(*data_request, false);
 
-       m_latencies.FillTPDataRequest(data_request->request_information.window_begin,
-                                     data_request->request_information.window_end);
+      uint64_t timestamp_handled = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+      m_latencies.FillTPDataRequest(data_request->request_information.window_begin,
+                                    data_request->request_information.window_end,
+                                    timestamp_requested, timestamp_handled);
     }
 
     if (!popped_anything) {
