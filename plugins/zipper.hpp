@@ -9,6 +9,8 @@
 #ifndef TRIGGER_PLUGINS_ZIPPER_HPP_
 #define TRIGGER_PLUGINS_ZIPPER_HPP_
 
+#include "logging/Logging.hpp"
+
 #include <chrono>
 #include <queue>
 #include <vector>
@@ -151,6 +153,7 @@ public:
     auto& s = streams[node.identity];
     s.occupancy += 1;
     s.last_seen = node.debut;
+    //TLOG_DEBUG(18) << "Pushing node " << (node.ordering >> 1) << " 0x" << std::hex << node.identity << std::dec << " " << std::chrono::duration_cast<std::chrono::milliseconds>(node.debut-timepoint_t::min()).count();
     this->push(node);
     return true;
   }
@@ -185,6 +188,7 @@ public:
     s.occupancy -= 1;
     origin = node.ordering;
 
+    //TLOG_DEBUG(18) << "Popped node " << (node.ordering >> 1) << " 0x" << std::hex << node.identity << std::dec << " " << std::chrono::duration_cast<std::chrono::milliseconds>(node.debut-timepoint_t::min()).count();
     return node;
   }
 
@@ -213,6 +217,9 @@ public:
   template<typename OutputIterator>
   OutputIterator drain_prompt(OutputIterator result, const timepoint_t& now = clock_t::now())
   {
+    //if (complete(now)) {
+    //  TLOG_DEBUG(18) << "drain_prompt";
+    //}
     while (complete(now)) {
       *result = next(); // hey, dev: do not forget back_inserter
       ++result;
@@ -264,8 +271,17 @@ public:
     const size_t target_cardinality = streams.size();
 
     if (target_cardinality < cardinality) { // absent streams
+      TLOG_DEBUG(18) << "target_cardinality < cardinality: " << target_cardinality << " " << cardinality;
       if (latency == duration_t::zero()) { // unbound latency
         return false;
+      }
+      else if (now != timepoint_t::min()) {
+        auto delta = now - this->top().debut;
+        TLOG_DEBUG(18) << "delta and latency are " << std::chrono::duration_cast<std::chrono::milliseconds>(delta).count()
+                       << " and " << std::chrono::duration_cast<std::chrono::milliseconds>(latency).count();
+        if (delta < latency) {
+          return false;
+        }
       }
     }
 
@@ -308,6 +324,9 @@ public:
         //           << std::endl;
         return false;
       }
+      //      TLOG_DEBUG(18) << "delta is larger than latency for 0x" << std::hex << ident << std::dec
+      //              << " " << std::chrono::duration_cast<std::chrono::milliseconds>(delta).count()
+      //             << " " << std::chrono::duration_cast<std::chrono::milliseconds>(latency).count();
 
       // std::cerr << "missing but stale " << ident
       //           << " [" << completeness
