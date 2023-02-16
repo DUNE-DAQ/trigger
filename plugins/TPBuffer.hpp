@@ -117,7 +117,7 @@ private:
     size_t tpin_count_max;
 
     /// @brief start_time of the TP as it enters the TPBuffer 
-    std::Vector<uint64_t> tpbuff_start_time;
+    std::vector<uint64_t> tpbuff_start_time;
     /// @brief adc_integral of the TP as it enters the TPBuffer 
     std::vector<uint32_t> tpbuff_adc_integral;
     /// @brief walltime of the TP as it enters the buffer
@@ -200,10 +200,10 @@ private:
         using namespace std::chrono;
         uint64_t  timestamp = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
         // Fill the TP latency (using data held by the TPSet itself).
-        tbuff_start_time[tpbuff_count]   = _start_time;
-        tbuff_adc_integral[tpbuff_count] = _adc_integral;
-        tbuff_timestamp[tpbuff_count]    = timestamp;
-        tbuff_count++;
+        tpbuff_start_time[tpbuff_count]   = _start_time;
+        tpbuff_adc_integral[tpbuff_count] = _adc_integral;
+        tpbuff_timestamp[tpbuff_count]    = timestamp;
+        tpbuff_count++;
       }
     }
 
