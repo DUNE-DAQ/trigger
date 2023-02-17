@@ -56,6 +56,9 @@ ModuleLevelTrigger::init(const nlohmann::json& iniobj)
 {
   m_candidate_source =
     get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_inst(iniobj, "trigger_candidate_source"));
+
+  // Initialize the object that holds the latency timing
+  m_latencies.init(1e6);
 }
 
 void
@@ -161,6 +164,10 @@ ModuleLevelTrigger::do_stop(const nlohmann::json& /*stopobj*/)
   m_livetime_counter.reset(); // Calls LivetimeCounter dtor?
 
   m_inhibit_receiver->remove_callback();
+
+  // Prints the latencies for debugging
+  m_latencies.print_latencies();
+
   ers::info(TriggerEndOfRun(ERS_HERE, m_run_number));
 }
 
@@ -369,6 +376,10 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
       m_td_sent_tc_count += pending_td.contributing_tcs.size();
       m_last_trigger_number++;
       add_td(pending_td);
+
+      using namespace std::chrono;
+      uint64_t timestamp_td_sent= duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+      m_latencies.fill_latencies(pending_td.readout_start, pending_td.readout_end, timestamp_td_sent);
     } catch (const ers::Issue& e) {
       ers::error(e);
       TLOG_DEBUG(1) << "The network is misbehaving: it accepted TD but the send failed for "

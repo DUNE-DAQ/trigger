@@ -65,6 +65,46 @@ public:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
+
+  struct LatencyBuffer
+  {
+    std::vector<uint64_t> m_readout_start;
+    std::vector<uint64_t> m_readout_end;
+    std::vector<uint64_t> m_time_td_sent;
+
+    size_t m_max_latencies;
+    size_t m_current_latencies;
+
+    void init(size_t _max_latencies)
+    {
+      m_max_latencies = _max_latencies;
+      m_readout_start = std::vector<uint64_t>(m_max_latencies, 0);
+      m_readout_end   = std::vector<uint64_t>(m_max_latencies, 0);
+      m_time_td_sent  = std::vector<uint64_t>(m_max_latencies, 0);
+      m_current_latencies = 0;
+    };
+
+    void fill_latencies(uint64_t _time_start, uint64_t _time_end, uint64_t _time_td_sent)
+    {
+      // No overflow
+      if(m_current_latencies <= m_max_latencies)
+        return;
+        
+      m_readout_start[m_current_latencies]  = _time_start;
+      m_readout_end[m_current_latencies]    = _time_end;
+      m_time_td_sent[m_current_latencies]   = _time_td_sent;
+      m_current_latencies++;
+    }
+
+    void print_latencies()
+    {
+      for(int i = 0; i < m_current_latencies; ++i){
+        TLOG() << "MLT TD Sent: " << "readout_start: " << m_readout_start[i]
+                                  << "readout_end: "   << m_readout_end[i]
+                                  << "time_td_sent: "  << m_time_td_sent[i];
+      }
+    }
+  };
   // Commands
   void do_configure(const nlohmann::json& obj);
   void do_start(const nlohmann::json& obj);
@@ -144,6 +184,9 @@ private:
   std::vector<int> m_ignored_tc_types;
   bool m_ignoring_tc_types;
   bool check_trigger_type_ignore(int tc_type);
+
+  /// Buffer that measures latencies for debugging
+  LatencyBuffer m_latencies;
 
   // Opmon variables
   using metric_counter_type = decltype(moduleleveltriggerinfo::Info::tc_received_count);

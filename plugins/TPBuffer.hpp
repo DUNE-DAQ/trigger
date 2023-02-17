@@ -189,15 +189,17 @@ private:
     void FillTPDataRequest(uint64_t _start_time, uint64_t _end_time,
                            uint64_t _requested_timestamp, uint64_t _handled_timestamp)
     {
-      if(tpdr_count < tpdr_count_max){
-        // Get the current timestamp
-        // Fill the data request latencies
-        tpdr_window_begin[tpdr_count]       = _start_time;
-        tpdr_window_end[tpdr_count]         = _end_time;
-        tpdr_requested_timestamp[tpdr_count]= _requested_timestamp;
-        tpdr_handled_timestamp[tpdr_count]  = _handled_timestamp;
-        tpdr_count++;
-      }
+      // No overflow
+      if(tpdr_count >= tpdr_count_max)
+        return;
+
+      // Get the current timestamp
+      // Fill the data request latencies
+      tpdr_window_begin[tpdr_count]       = _start_time;
+      tpdr_window_end[tpdr_count]         = _end_time;
+      tpdr_requested_timestamp[tpdr_count]= _requested_timestamp;
+      tpdr_handled_timestamp[tpdr_count]  = _handled_timestamp;
+      tpdr_count++;
     }
 
     /// @brief Prints all the stored latencies
