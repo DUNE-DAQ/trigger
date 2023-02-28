@@ -16,13 +16,12 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
-#include "daqdataformats/GeoID.hpp"
+#include "daqdataformats/SourceID.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 #include "utilities/WorkerThread.hpp"
-#include "trigger/triggerzipperinfo/InfoNljs.hpp"
 
 #include <chrono>
 #include <list>
@@ -45,10 +44,9 @@ namespace dunedaq::trigger {
 // >
 
 size_t
-zipper_stream_id(const daqdataformats::GeoID& geoid)
+zipper_stream_id(const daqdataformats::SourceID& sourceid)
 {
-  return (0xffff000000000000 & (static_cast<size_t>(geoid.system_type) << 48)) |
-         (0x0000ffff00000000 & (static_cast<size_t>(geoid.region_id) << 32)) | (0x00000000ffffffff & geoid.element_id);
+  return (0xffff000000000000 & (static_cast<size_t>(sourceid.subsystem) << 48)) | (0x00000000ffffffff & sourceid.id);
 }
 
 template<typename TSET>
@@ -92,7 +90,7 @@ public:
   std::atomic<metric_counter_type> m_n_sent{ 0 };
   std::atomic<metric_counter_type> m_n_tardy{ 0 };
 
-  std::map<daqdataformats::GeoID, size_t> m_tardy_counts;
+  std::map<daqdataformats::SourceID, size_t> m_tardy_counts;
 
   explicit TriggerZipper(const std::string& name)
     : DAQModule(name)
@@ -122,8 +120,7 @@ public:
 
     ci.add(i);
   }
-
-
+  
   void set_input(const std::string& name)
   {
     m_inq = get_iom_receiver<TSET>(name);
@@ -138,6 +135,8 @@ public:
     m_cfg = cfgobj.get<cfg_t>();
     m_zm.set_max_latency(std::chrono::milliseconds(m_cfg.max_latency_ms));
     m_zm.set_cardinality(m_cfg.cardinality);
+    m_zm.set_tolerance(m_cfg.completeness_tolerance);
+    m_zm.set_tolerate_incompleteness(m_cfg.tolerate_incompleteness);
   }
 
   void do_scrap(const nlohmann::json& /*stopobj*/)
@@ -226,12 +225,13 @@ public:
       sort_value |= 0x1;
 
     bool accepted = m_zm.feed(m_cache.begin(), sort_value, zipper_stream_id(tset.origin));
+
     if (!accepted) {
       ++m_n_tardy;
       ++m_tardy_counts[tset.origin];
 
       ers::warning(TardyInputSet(
-                                 ERS_HERE, get_name(), tset.origin.region_id, tset.origin.element_id, tset.start_time, m_zm.get_origin() >> 1));
+                                 ERS_HERE, get_name(), tset.origin.id, tset.start_time, m_zm.get_origin() >> 1));
       m_cache.pop_front(); // vestigial
     }
     drain();
@@ -245,15 +245,13 @@ public:
       auto& tset = *lit; // list iterator
 
       // tell consumer "where" the set was produced
-      tset.origin.region_id = m_cfg.region_id;
-      tset.origin.element_id = m_cfg.element_id;
+      tset.origin.id = m_cfg.element_id;
       tset.seqno = m_next_seqno;
       ++m_next_seqno;
 
       try {
         m_outq->send(std::move(tset), std::chrono::milliseconds(10));
         ++m_n_sent;
-        TLOG_DEBUG(2) << "Successfuly sent something. Number of things tried to send: " << m_n_sent; 
       } catch (const iomanager::TimeoutExpired& err) {
         // our output queue is stuffed.  should more be done
         // here than simply complain and drop?
