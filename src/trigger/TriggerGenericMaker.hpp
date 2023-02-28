@@ -112,9 +112,6 @@ private:
   std::atomic<metric_counter_type> m_received_count;
   std::atomic<metric_counter_type> m_sent_count;
 
-  size_t m_received_count;
-  size_t m_sent_count;
-
   using source_t = dunedaq::iomanager::ReceiverConcept<IN>;
   std::shared_ptr<source_t> m_input_queue;
 
