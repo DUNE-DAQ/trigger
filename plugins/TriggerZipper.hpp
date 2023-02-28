@@ -13,6 +13,8 @@
 
 #include "trigger/Issues.hpp"
 #include "trigger/triggerzipper/Nljs.hpp"
+#include "trigger/triggerzipperinfo/InfoNljs.hpp"
+
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
@@ -22,6 +24,7 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 #include "utilities/WorkerThread.hpp"
+
 
 #include <chrono>
 #include <list>
