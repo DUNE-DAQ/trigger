@@ -361,7 +361,10 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
       << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
            pending_td.contributing_tcs[m_earliest_tc_index].type);
 
+    using namespace std::chrono;
+    //uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     try {
+      //TLOG() << "tp_prescale_lat_end, td_trigger_lat: " <<  end_lat_prescale << " td_trigger_ts: " << decision.trigger_timestamp;
       auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_trigger_decision_connection);
       td_sender->send(std::move(decision), std::chrono::milliseconds(1));
       m_td_sent_count++;

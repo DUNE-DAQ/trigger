@@ -21,7 +21,7 @@ TPChannelFilter::TPChannelFilter(const std::string& name)
   , m_thread(std::bind(&TPChannelFilter::do_work, this, std::placeholders::_1))
   , m_input_queue(nullptr)
   , m_output_queue(nullptr)
-  , m_queue_timeout(100)
+  , m_queue_timeout(1000)
 {
 
   register_command("conf", &TPChannelFilter::do_conf);
@@ -50,6 +50,7 @@ TPChannelFilter::do_conf(const nlohmann::json& conf_arg)
 {
   m_conf = conf_arg.get<dunedaq::trigger::tpchannelfilter::Conf>();
   m_channel_map = dunedaq::detchannelmaps::make_map(m_conf.channel_map_name);
+  TLOG() << "Configured the TPChannelFilter!";
 }
 
 void
@@ -98,6 +99,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
 {
   while (true) {
     std::optional<TPSet> tpset = m_input_queue->try_receive(m_queue_timeout);;
+    using namespace std::chrono;
 
     if (!tpset.has_value()) {
       // The condition to exit the loop is that we've been stopped and
@@ -125,6 +127,13 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
 
     // The rule is that we don't send empty TPSets, so ensure that
     if (!tpset->objects.empty()) {
+      
+      /*uint64_t lat_start = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+      for (auto const& tp : tpset->objects){
+        TLOG() << "tp_prescale_lat_start. lat_start: " << lat_start << " tp_start: " << tp.time_start <<
+                 " channel: " << tp.channel << " sadc: " << tp.adc_integral;
+      }*/
+      
       try {
         m_output_queue->send(std::move(*tpset), m_queue_timeout);
       } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
