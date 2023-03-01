@@ -34,8 +34,8 @@ void
 FakeTPCreatorHeartbeatMaker::init(const nlohmann::json& iniobj)
 {
   try {
-    m_input_queue = get_iom_receiver<trigger::TPSet>(appfwk::connection_inst(iniobj, "tpset_source"));
-    m_output_queue = get_iom_sender<trigger::TPSet>(appfwk::connection_inst(iniobj, "tpset_sink"));
+    m_input_queue = get_iom_receiver<trigger::TPSet>(appfwk::connection_uid(iniobj, "tpset_source"));
+    m_output_queue = get_iom_sender<trigger::TPSet>(appfwk::connection_uid(iniobj, "tpset_sink"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
@@ -109,8 +109,8 @@ FakeTPCreatorHeartbeatMaker::do_work(std::atomic<bool>& running_flag)
 
     // We got a TPSet
     m_tpset_received_count++;
-    if (m_geoid.region_id == daqdataformats::GeoID::s_invalid_region_id) {
-      m_geoid = tpset->origin;
+    if (m_sourceid.id == daqdataformats::SourceID::s_invalid_id) {
+      m_sourceid = tpset->origin;
     }
     TLOG_DEBUG(3) << "Activity received.";
 
@@ -187,7 +187,7 @@ FakeTPCreatorHeartbeatMaker::get_heartbeat(TPSet& tpset_heartbeat,
   tpset_heartbeat.start_time = current_tpset_start_time;
   tpset_heartbeat.end_time = current_tpset_start_time;
   tpset_heartbeat.run_number = m_run_number;
-  tpset_heartbeat.origin = m_geoid;
+  tpset_heartbeat.origin = m_sourceid;
 }
 
 } // namespace trigger

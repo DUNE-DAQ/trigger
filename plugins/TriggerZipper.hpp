@@ -13,15 +13,18 @@
 
 #include "trigger/Issues.hpp"
 #include "trigger/triggerzipper/Nljs.hpp"
+#include "trigger/triggerzipperinfo/InfoNljs.hpp"
+
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
-#include "daqdataformats/GeoID.hpp"
+#include "daqdataformats/SourceID.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 #include "utilities/WorkerThread.hpp"
+
 
 #include <chrono>
 #include <list>
@@ -44,10 +47,9 @@ namespace dunedaq::trigger {
 // >
 
 size_t
-zipper_stream_id(const daqdataformats::GeoID& geoid)
+zipper_stream_id(const daqdataformats::SourceID& sourceid)
 {
-  return (0xffff000000000000 & (static_cast<size_t>(geoid.system_type) << 48)) |
-         (0x0000ffff00000000 & (static_cast<size_t>(geoid.region_id) << 32)) | (0x00000000ffffffff & geoid.element_id);
+  return (0xffff000000000000 & (static_cast<size_t>(sourceid.subsystem) << 48)) | (0x00000000ffffffff & sourceid.id);
 }
 
 template<typename TSET>
@@ -86,10 +88,12 @@ public:
   cache_type m_cache;
   seqno_type m_next_seqno{ 0 };
 
-  size_t m_n_received{ 0 };
-  size_t m_n_sent{ 0 };
-  size_t m_n_tardy{ 0 };
-  std::map<daqdataformats::GeoID, size_t> m_tardy_counts;
+  using metric_counter_type = decltype(triggerzipperinfo::Info::n_received);
+  std::atomic<metric_counter_type> m_n_received{ 0 };
+  std::atomic<metric_counter_type> m_n_sent{ 0 };
+  std::atomic<metric_counter_type> m_n_tardy{ 0 };
+
+  std::map<daqdataformats::SourceID, size_t> m_tardy_counts;
 
   explicit TriggerZipper(const std::string& name)
     : DAQModule(name)
@@ -105,9 +109,21 @@ public:
 
   void init(const nlohmann::json& ini)
   {
-    set_input(appfwk::connection_inst(ini, "input").uid);
-    set_output(appfwk::connection_inst(ini, "output").uid);
+    set_input(appfwk::connection_uid(ini, "input"));
+    set_output(appfwk::connection_uid(ini, "output"));
   }
+
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  {
+    triggerzipperinfo::Info i;
+
+    i.n_received = m_n_received.load();
+    i.n_sent = m_n_sent.load();
+    i.n_tardy = m_n_tardy.load();
+
+    ci.add(i);
+  }
+  
   void set_input(const std::string& name)
   {
     m_inq = get_iom_receiver<TSET>(name);
@@ -122,6 +138,8 @@ public:
     m_cfg = cfgobj.get<cfg_t>();
     m_zm.set_max_latency(std::chrono::milliseconds(m_cfg.max_latency_ms));
     m_zm.set_cardinality(m_cfg.cardinality);
+    m_zm.set_tolerance(m_cfg.completeness_tolerance);
+    m_zm.set_tolerate_incompleteness(m_cfg.tolerate_incompleteness);
   }
 
   void do_scrap(const nlohmann::json& /*stopobj*/)
@@ -138,6 +156,7 @@ public:
     m_tardy_counts.clear();
     m_running.store(true);
     m_thread = std::thread(&TriggerZipper::worker, this);
+    pthread_setname_np(m_thread.native_handle(), "zipper");
   }
 
   void do_stop(const nlohmann::json& /*stopobj*/)
@@ -216,7 +235,7 @@ public:
       ++m_tardy_counts[tset.origin];
 
       ers::warning(TardyInputSet(
-                                 ERS_HERE, get_name(), tset.origin.region_id, tset.origin.element_id, tset.start_time, m_zm.get_origin() >> 1));
+                                 ERS_HERE, get_name(), tset.origin.id, tset.start_time, m_zm.get_origin() >> 1));
       m_cache.pop_front(); // vestigial
     }
     drain();
@@ -230,8 +249,7 @@ public:
       auto& tset = *lit; // list iterator
 
       // tell consumer "where" the set was produced
-      tset.origin.region_id = m_cfg.region_id;
-      tset.origin.element_id = m_cfg.element_id;
+      tset.origin.id = m_cfg.element_id;
       tset.seqno = m_next_seqno;
       ++m_next_seqno;
 

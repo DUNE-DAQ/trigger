@@ -1,5 +1,5 @@
 #include "trigger/Tee.hpp"
-#include "triggeralgs/TriggerCandidate.hpp"
+#include "trigger/TriggerCandidate_serialization.hpp"
 
 namespace dunedaq {
 namespace trigger {

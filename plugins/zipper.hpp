@@ -14,6 +14,8 @@
 #include <vector>
 #include <functional>
 #include <unordered_map>
+#include <stdexcept>
+#include <iostream>
 
 namespace zipper {
 
@@ -112,7 +114,9 @@ public:
       considered complete and thus will exhibit permanent
       undefined behavior as described above.
   */
-  void set_cardinality(size_t k) { cardinality = k; }
+  void set_cardinality(size_t k)           { cardinality = k; }
+  void set_tolerance(size_t t)             { completeness_tolerance = t; }
+  void set_tolerate_incompleteness(bool b) { tolerate_incompleteness = b; }
 
   /**
      Set the maximum latency
@@ -253,15 +257,23 @@ public:
    */
   bool complete(const timepoint_t& now = timepoint_t::min()) const
   {
-    if (this->empty()) {
+    if (this->empty()) { 
       return false;
+    }
+
+    const size_t target_cardinality = streams.size();
+
+    if (target_cardinality < cardinality) { // absent streams
+      if (latency == duration_t::zero()) { // unbound latency
+        return false;
+      }
     }
 
     size_t completeness = 0;
 
     const auto top_ident = this->top().identity;
 
-    // check each stream to see if it is "represented"
+    // check each known stream to see if it is "represented"
     for (const auto& sit : streams) {
       const auto& ident = sit.first;
       auto have = sit.second.occupancy;
@@ -275,9 +287,7 @@ public:
         continue; // stream is represented
       }
 
-      // check last ditch check where latency
-      // bounding allows us to ignore stale streams.
-
+      // unbound latency, wait as long as needed
       if (latency == duration_t::zero()) {
         // std::cerr << "no latency " << ident << std::endl;
         return false;
@@ -308,13 +318,23 @@ public:
       ++completeness;
     }
 
-    return completeness >= cardinality;
+    // If we are choosing to tolerate "incompleteness", then check we are within the
+    // configurable tolerance level, and return a "pseudo-complete" state.
+    auto d = cardinality - completeness;
+    if(tolerate_incompleteness && (completeness < target_cardinality) && d<=completeness_tolerance){
+      return true;
+    }  
+
+    // Otherwise, completeness has been achieved.
+    return completeness >= target_cardinality;
   }
 
 private:
   size_t cardinality;
   duration_t latency{ 0 };
   ordering_t origin;
+  bool tolerate_incompleteness = false;
+  size_t completeness_tolerance = 1;
   struct Stream
   {
     size_t occupancy{ 0 };
