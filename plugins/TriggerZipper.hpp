@@ -13,6 +13,8 @@
 
 #include "trigger/Issues.hpp"
 #include "trigger/triggerzipper/Nljs.hpp"
+#include "trigger/triggerzipperinfo/InfoNljs.hpp"
+
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
@@ -22,6 +24,7 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 #include "utilities/WorkerThread.hpp"
+
 
 #include <chrono>
 #include <list>
@@ -85,9 +88,11 @@ public:
   cache_type m_cache;
   seqno_type m_next_seqno{ 0 };
 
-  size_t m_n_received{ 0 };
-  size_t m_n_sent{ 0 };
-  size_t m_n_tardy{ 0 };
+  using metric_counter_type = decltype(triggerzipperinfo::Info::n_received);
+  std::atomic<metric_counter_type> m_n_received{ 0 };
+  std::atomic<metric_counter_type> m_n_sent{ 0 };
+  std::atomic<metric_counter_type> m_n_tardy{ 0 };
+
   std::map<daqdataformats::SourceID, size_t> m_tardy_counts;
 
   explicit TriggerZipper(const std::string& name)
@@ -107,6 +112,18 @@ public:
     set_input(appfwk::connection_uid(ini, "input"));
     set_output(appfwk::connection_uid(ini, "output"));
   }
+
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  {
+    triggerzipperinfo::Info i;
+
+    i.n_received = m_n_received.load();
+    i.n_sent = m_n_sent.load();
+    i.n_tardy = m_n_tardy.load();
+
+    ci.add(i);
+  }
+  
   void set_input(const std::string& name)
   {
     m_inq = get_iom_receiver<TSET>(name);
@@ -121,6 +138,8 @@ public:
     m_cfg = cfgobj.get<cfg_t>();
     m_zm.set_max_latency(std::chrono::milliseconds(m_cfg.max_latency_ms));
     m_zm.set_cardinality(m_cfg.cardinality);
+    m_zm.set_tolerance(m_cfg.completeness_tolerance);
+    m_zm.set_tolerate_incompleteness(m_cfg.tolerate_incompleteness);
   }
 
   void do_scrap(const nlohmann::json& /*stopobj*/)

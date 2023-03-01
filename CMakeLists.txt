@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(trigger VERSION 1.5.3)
+project(trigger VERSION 1.5.5)
 
 find_package(daq-cmake REQUIRED)
 
@@ -102,6 +102,12 @@ daq_add_plugin(TriggerCandidateMakerPrescalePlugin duneTCMaker LINK_LIBRARIES tr
 daq_add_plugin(TriggerActivityMakerSupernovaPlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMakerSupernovaPlugin duneTCMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDecisionMakerSupernovaPlugin duneTDMaker LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerActivityMakerLowEnergyEventPlugin duneTAMaker LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerCandidateMakerLowEnergyEventPlugin duneTCMaker LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerActivityMakerMichelElectronPlugin duneTAMaker LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerCandidateMakerMichelElectronPlugin duneTCMaker LINK_LIBRARIES trigger)
+# daq_add_plugin(TriggerActivityMakerDBSCANPlugin duneTAMaker LINK_LIBRARIES trigger)
+
 
 daq_add_plugin(TriggerActivityMakerDBSCANPlugin duneTAMaker LINK_LIBRARIES trigger)
 
