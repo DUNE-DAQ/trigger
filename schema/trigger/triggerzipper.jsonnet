@@ -9,9 +9,10 @@ local hier = {
     //               doc="Maximum time in milliseconds to wait to send output"),
     card: s.number("Count", dtype='u8'),
     delay: s.number("Delay", dtype='u8'),
+    tolerance: s.number("Tolerance", dtype='u8'),
+    bool: s.boolean("Boolean"),
 
     // fixme: this should be factored, not copy-pasted
-    region_id : s.number("RegionId", "u2"),
     element_id : s.number("ElementId", "u4"),
 
     conf : s.record("ConfParams", [
@@ -19,10 +20,12 @@ local hier = {
                 doc="Expected number of streams"),
         s.field("max_latency_ms", hier.delay,
                 doc="Max bound on latency, zero for unbound but lossless"),
-        s.field("region_id", hier.region_id,
-                doc="The GeoID region of output"),
         s.field("element_id", hier.element_id,
-                doc="The GeoID element of output"),
+                doc="The element of output"),
+        s.field("tolerate_incompleteness", hier.bool, false,
+                doc="Bool to configure whether or not we will tolerate incompleteness of active TSET queues."),    
+        s.field("completeness_tolerance", hier.tolerance, 1,
+                doc="Maximum number of inactive TSET queues we are willing to tolerate."),
     ], doc="TriggerZipper configuration"),
 
   

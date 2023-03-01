@@ -10,10 +10,11 @@
 #define TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_
 
 #include "appfwk/DAQModule.hpp"
-#include "daqdataformats/GeoID.hpp"
+#include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/Types.hpp"
 #include "ers/Issue.hpp"
 #include "triggeralgs/Types.hpp"
+#include "trigger/serialize.hpp"
 
 #include <string>
 #include <bitset>
@@ -34,7 +35,7 @@ ERS_DECLARE_ISSUE(trigger, TriggerInhibited, "Trigger is inhibited in run " << r
 ERS_DECLARE_ISSUE(trigger, TriggerStartOfRun, "Start of run " << runno, ((int64_t)runno))
 ERS_DECLARE_ISSUE(trigger, TriggerEndOfRun, "End of run " << runno, ((int64_t)runno))
 
-ERS_DECLARE_ISSUE(trigger, UnknownGeoID, "Unknown GeoID: " << geo_id, ((daqdataformats::GeoID)geo_id))
+ERS_DECLARE_ISSUE(trigger, UnknownGeoID, "Unknown SourceID: " << source_id, ((daqdataformats::SourceID)source_id))
 ERS_DECLARE_ISSUE(trigger, InvalidSystemType, "Unknown system type " << type, ((std::string)type))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
@@ -96,10 +97,9 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 ERS_DECLARE_ISSUE_BASE(trigger,
                        TardyInputSet,
                        appfwk::GeneralDAQModuleIssue,
-                       "Tardy input set from region " << region << " element " << element
+                       "Tardy input set from element " << element
                        << ". Set start time " << start_time << " but last sent time " << last_sent_time,
                        ((std::string)name),
-                       ((uint16_t)region) // NOLINT(build/unsigned)
                        ((uint32_t)element) // NOLINT(build/unsigned)
                        ((daqdataformats::timestamp_t)start_time)
                        ((daqdataformats::timestamp_t)last_sent_time))
@@ -156,6 +156,25 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        "The trigger type contains high bits: " << trigger_type,
                        ((std::string)name),
                        ((std::bitset<16>)trigger_type))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       TCOutOfTimeout,
+                       appfwk::GeneralDAQModuleIssue,
+                       "TC of type " << tc_type << ", timestamp " << tc_timestamp << " overlaps with previous TD readout window: [" << td_start << ", " << td_end << "]",
+                       ((std::string)name),
+                       ((int)tc_type)
+                       ((triggeralgs::timestamp_t)tc_timestamp)
+                       ((triggeralgs::timestamp_t)td_start)
+                       ((triggeralgs::timestamp_t)td_end))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       InvalidHSIEventRunNumber,
+                       appfwk::GeneralDAQModuleIssue,
+                       "An invalid run number was received in an HSIEvent, "
+                         << "received=" << received << ", expected=" << expected << ", timestamp=" << ts
+                         << ", sequence_count=" << seq,
+                       ((std::string)name),
+                       ((size_t)received)((size_t)expected)((size_t)ts)((size_t)seq))
 
 } // namespace dunedaq
 

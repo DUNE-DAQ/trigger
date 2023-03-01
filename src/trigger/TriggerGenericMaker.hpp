@@ -13,10 +13,11 @@
 #include "trigger/Set.hpp"
 #include "trigger/TimeSliceInputBuffer.hpp"
 #include "trigger/TimeSliceOutputBuffer.hpp"
+#include "trigger/triggergenericmakerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
-#include "daqdataformats/GeoID.hpp"
+#include "daqdataformats/SourceID.hpp"
 #include "detdataformats/trigger/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
@@ -50,12 +51,13 @@ public:
   explicit TriggerGenericMaker(const std::string& name)
     : DAQModule(name)
     , m_thread(std::bind(&TriggerGenericMaker::do_work, this, std::placeholders::_1))
+    , m_received_count(0)
+    , m_sent_count(0)
     , m_input_queue(nullptr)
     , m_output_queue(nullptr)
     , m_queue_timeout(100)
     , m_algorithm_name("[uninitialized]")
-    , m_geoid_region_id(dunedaq::daqdataformats::GeoID::s_invalid_region_id)
-    , m_geoid_element_id(dunedaq::daqdataformats::GeoID::s_invalid_element_id)
+    , m_sourceid(dunedaq::daqdataformats::SourceID::s_invalid_id)
     , m_buffer_time(0)
     , m_window_time(625000)
     , worker(*this) // should be last; may use other members
@@ -74,18 +76,27 @@ public:
 
   void init(const nlohmann::json& obj) override
   {
-    m_input_queue = get_iom_receiver<IN>(appfwk::connection_inst(obj, "input"));
-    m_output_queue = get_iom_sender<OUT>(appfwk::connection_inst(obj, "output"));
+    m_input_queue = get_iom_receiver<IN>(appfwk::connection_uid(obj, "input"));
+    m_output_queue = get_iom_sender<OUT>(appfwk::connection_uid(obj, "output"));
   }
 
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  {
+    triggergenericmakerinfo::Info i;
+
+    i.received_count = m_received_count.load();
+    i.sent_count = m_sent_count.load();
+
+    ci.add(i);
+  }
+  
 protected:
   void set_algorithm_name(const std::string& name) { m_algorithm_name = name; }
 
   // Only applies to makers that output Set<B>
-  void set_geoid(uint16_t region_id, uint32_t element_id) // NOLINT(build/unsigned)
+  void set_sourceid(uint32_t element_id) // NOLINT(build/unsigned)
   {
-    m_geoid_region_id = region_id;
-    m_geoid_element_id = element_id;
+    m_sourceid = element_id;
   }
 
   // Only applies to makers that output Set<B>
@@ -98,8 +109,9 @@ protected:
 private:
   dunedaq::utilities::WorkerThread m_thread;
 
-  size_t m_received_count;
-  size_t m_sent_count;
+  using metric_counter_type = decltype(triggergenericmakerinfo::Info::received_count);
+  std::atomic<metric_counter_type> m_received_count;
+  std::atomic<metric_counter_type> m_sent_count;
 
   using source_t = dunedaq::iomanager::ReceiverConcept<IN>;
   std::shared_ptr<source_t> m_input_queue;
@@ -111,15 +123,15 @@ private:
 
   std::string m_algorithm_name;
 
-  uint16_t m_geoid_region_id;  // NOLINT(build/unsigned)
-  uint32_t m_geoid_element_id; // NOLINT(build/unsigned)
   daqdataformats::run_number_t m_run_number;
+  uint32_t m_sourceid; // NOLINT(build/unsigned)
 
   daqdataformats::timestamp_t m_buffer_time;
   daqdataformats::timestamp_t m_window_time;
 
   std::shared_ptr<MAKER> m_maker;
-
+  nlohmann::json m_maker_conf;
+  
   TriggerGenericWorker<IN, OUT, MAKER> worker;
 
   // This should return a shared_ptr to the MAKER created from conf command arguments.
@@ -132,6 +144,8 @@ private:
       m_run_number = start_params.run;
     m_received_count = 0;
     m_sent_count = 0;
+    m_maker = make_maker(m_maker_conf);
+    worker.reconfigure();
     m_thread.start_working_thread(get_name());
   }
 
@@ -139,7 +153,13 @@ private:
 
   void do_configure(const nlohmann::json& obj)
   {
-    m_maker = make_maker(obj);
+    // P. Rodrigues 2022-07-13
+    // We stash the config here and don't actually create the maker
+    // algorithm until start time, so that the algorithm doesn't
+    // persist between runs and hold onto its state from the previous
+    // run
+    m_maker_conf = obj;
+   
     // worker should be notified that configuration potentially changed
     worker.reconfigure();
   }
@@ -155,7 +175,15 @@ private:
         worker.process(in);
       }
     }
-    worker.drain();
+    // P. Rodrigues 2022-06-01. The argument here is whether to drop
+    // buffered outputs. We choose 'true' because some significant
+    // time can pass between the last input sent by readout and when
+    // we receive a stop. (This happens because stop is sent serially
+    // to readout units before trigger, and each RU takes ~1s to
+    // stop). So by the time we receive a stop command, our buffered
+    // outputs are stale and will cause tardy warnings from the zipper
+    // downstream
+    worker.drain(true);
     TLOG() << get_name() << ": Exiting do_work() method, received " << m_received_count << " inputs and successfully sent "
            << m_sent_count << " outputs. ";
     worker.reset();
@@ -229,7 +257,7 @@ public:
     }
   }
 
-  void drain() {}
+  void drain(bool) {}
 };
 
 // Partial specialization for IN = Set<A>, OUT = Set<B> and assumes the MAKER has:
@@ -316,8 +344,8 @@ public: // NOLINT
         heartbeat.type = Set<B>::Type::kHeartbeat;
         heartbeat.start_time = in.start_time;
         heartbeat.end_time = in.end_time;
-        heartbeat.origin = daqdataformats::GeoID(
-          daqdataformats::GeoID::SystemType::kDataSelection, m_parent.m_geoid_region_id, m_parent.m_geoid_element_id);
+        heartbeat.origin = daqdataformats::SourceID(
+          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
         TLOG_DEBUG(4) << "Buffering heartbeat with start time " << heartbeat.start_time;
         m_out_buffer.buffer_heartbeat(heartbeat);
@@ -351,8 +379,8 @@ public: // NOLINT
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
       out.run_number = in.run_number;
-      out.origin = daqdataformats::GeoID(
-          daqdataformats::GeoID::SystemType::kDataSelection, m_parent.m_geoid_region_id, m_parent.m_geoid_element_id);
+      out.origin = daqdataformats::SourceID(
+          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
         TLOG_DEBUG(4) << "Sending heartbeat with start time " << out.start_time;
@@ -374,7 +402,7 @@ public: // NOLINT
     TLOG_DEBUG(4) << "process() done. Advanced output buffer by " << n_output_windows << " output windows";
   }
 
-  void drain()
+  void drain(bool drop)
   {
     // First, send anything in the input buffer to the algorithm, and add any
     // results to output buffer
@@ -394,22 +422,26 @@ public: // NOLINT
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
       out.run_number = m_parent.m_run_number;
-      out.origin = daqdataformats::GeoID(
-          daqdataformats::GeoID::SystemType::kDataSelection, m_parent.m_geoid_region_id, m_parent.m_geoid_element_id);
+      out.origin = daqdataformats::SourceID(
+          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
-        if (!m_parent.send(std::move(out))) {
-          ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
-          // out is dropped
+        if(!drop) {
+          if (!m_parent.send(std::move(out))) {
+            ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
+            // out is dropped
+          }
         }
       }
       // Only form and send Set<B> if it has a nonzero number of objects
       else if (out.type == Set<B>::Type::kPayload && out.objects.size() != 0) {
         TLOG_DEBUG(1) << "Output set window ready with start time " << out.start_time << " end time " << out.end_time
                       << " and " << out.objects.size() << " members";
-        if (!m_parent.send(std::move(out))) {
-          ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
-          // out is dropped
+        if (!drop) {
+          if (!m_parent.send(std::move(out))) {
+            ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
+            // out is dropped
+          }
         }
       }
     }
@@ -500,7 +532,7 @@ public: // NOLINT
     }
   }
 
-  void drain()
+  void drain(bool drop)
   {
     // Send anything in the input buffer to the algorithm, and put any results
     // on the output queue
@@ -510,11 +542,13 @@ public: // NOLINT
       std::vector<OUT> out_vec;
       process_slice(time_slice, out_vec);
       while (out_vec.size()) {
-        if (!m_parent.send(std::move(out_vec.back()))) {
-          ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
-          // out.back() is dropped
+        if (!drop) {
+          if (!m_parent.send(std::move(out_vec.back()))) {
+            ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
+            // out.back() is dropped
+          }
+          out_vec.pop_back();
         }
-        out_vec.pop_back();
       }
     }
   }

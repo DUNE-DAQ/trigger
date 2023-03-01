@@ -10,7 +10,9 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "detdataformats/trigger/Types.hpp"
+#include "trigger/TriggerCandidate_serialization.hpp"
 #include "iomanager/IOManager.hpp"
+#include "rcif/cmd/Nljs.hpp"
 
 #include <regex>
 #include <string>
@@ -80,20 +82,23 @@ void
 TimingTriggerCandidateMaker::init(const nlohmann::json& iniobj)
 {
   try {
-    m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_inst(iniobj, "output"));
+    m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(iniobj, "output"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
 }
 
 void
-TimingTriggerCandidateMaker::do_start(const nlohmann::json&)
+TimingTriggerCandidateMaker::do_start(const nlohmann::json& startobj)
 {
   // OpMon.
   m_tsd_received_count.store(0);
   m_tc_sent_count.store(0);
   m_tc_sig_type_err_count.store(0);
   m_tc_total_count.store(0);
+
+  auto start_params = startobj.get<rcif::cmd::StartParams>();
+  m_run_number.store(start_params.run);
 
   m_hsievent_receiver = get_iom_receiver<dfmessages::HSIEvent>(m_hsievent_receive_connection);
   m_hsievent_receiver->add_callback(std::bind(&TimingTriggerCandidateMaker::receive_hsievent, this, std::placeholders::_1));
@@ -114,7 +119,15 @@ TimingTriggerCandidateMaker::do_stop(const nlohmann::json&)
 void
 TimingTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
 {
-  TLOG_DEBUG(3) << "Activity received.";
+  TLOG_DEBUG(3) << "Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
+                << ", and run_number " << data.run_number;
+
+  if (data.run_number != m_run_number) {
+    ers::error(dunedaq::trigger::InvalidHSIEventRunNumber(ERS_HERE, get_name(), data.run_number, m_run_number,
+                                                          data.timestamp, data.sequence_counter));
+    return;
+  }
+
   ++m_tsd_received_count;
   
   if (m_hsi_passthrough == true){

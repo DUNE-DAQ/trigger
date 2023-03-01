@@ -36,7 +36,7 @@ TriggerPrimitiveMaker::TriggerPrimitiveMaker(const std::string& name)
   // clang-format off
   register_command("conf",  &TriggerPrimitiveMaker::do_configure);
   register_command("start", &TriggerPrimitiveMaker::do_start);
-  register_command("stop",  &TriggerPrimitiveMaker::do_stop);
+  register_command("stop_trigger_sources",  &TriggerPrimitiveMaker::do_stop);
   register_command("scrap", &TriggerPrimitiveMaker::do_scrap);
   // clang-format on
 }
@@ -63,9 +63,9 @@ TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
 
   for (auto& stream : m_conf.tp_streams) {
     TPStream this_stream;
-    this_stream.tpset_sink = get_iom_sender<TPSet>(appfwk::connection_inst(m_init_obj, stream.output_sink_name));
+    this_stream.tpset_sink = get_iom_sender<TPSet>(appfwk::connection_uid(m_init_obj, stream.output_sink_name));
 
-    this_stream.tpsets = read_tpsets(stream.filename, stream.region_id, stream.element_id);
+    this_stream.tpsets = read_tpsets(stream.filename, stream.element_id);
 
     m_earliest_first_tpset_timestamp =
       std::min(m_earliest_first_tpset_timestamp, this_stream.tpsets.front().start_time);
@@ -100,6 +100,11 @@ TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
                                                       std::ref(stream.tpset_sink),
                                                       earliest_timestamp_time));
   }
+  for (int i=0; i < m_threads.size(); ++i) {
+    std::string name("replay");
+    name += std::to_string(i);
+    pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
+  }
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -126,7 +131,7 @@ TriggerPrimitiveMaker::do_scrap(const nlohmann::json& /*args*/)
 }
 
 std::vector<TPSet>
-TriggerPrimitiveMaker::read_tpsets(std::string filename, int region, int element)
+TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
 {
   std::ifstream file(filename);
   if (!file || file.bad()) {
@@ -161,8 +166,7 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int region, int element
         ++seqno;
 
         // 12-Jul-2021, KAB: setting origin fields from configuration
-        tpset.origin.region_id = region;
-        tpset.origin.element_id = element;
+        tpset.origin.id = element;
 
         tpset.type = TPSet::Type::kPayload;
 
@@ -257,7 +261,7 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
       ++generated_count;
       generated_tp_count += tpset.objects.size();
       try {
-          TPSet tpset_copy(tpset);
+        TPSet tpset_copy(tpset);
         tpset_sink->send(std::move(tpset_copy), m_queue_timeout);
       } catch (const dunedaq::iomanager::TimeoutExpired& e) {
         ers::warning(e);

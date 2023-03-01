@@ -10,7 +10,8 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dfmessages/DataRequest.hpp"
-#include "daqdataformats/GeoID.hpp"
+#include "daqdataformats/SourceID.hpp"
+#include "trigger/TriggerCandidate_serialization.hpp"
 
 #include <chrono>
 #include <string>
@@ -34,8 +35,10 @@ void
 TCBuffer::init(const nlohmann::json& init_data)
 {
   try {
-    m_input_queue_tcs = get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_inst(init_data, "tc_source").uid);
-    m_input_queue_dr = get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_inst(init_data, "data_request_source").uid);
+    m_input_queue_tcs =
+      get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(init_data, "tc_source"));
+    m_input_queue_dr =
+      get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
@@ -107,10 +110,15 @@ TCBuffer::do_work(std::atomic<bool>& running_flag)
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
     if (data_request.has_value()) {
       auto& info = data_request->request_information;
-      TLOG_DEBUG(2) << "Got data request with component " << info.component << ", window_begin " << info.window_begin << ", window_end " << info.window_end;
+      TLOG_DEBUG(2) << "Got data request with component " << info.component << ", window_begin " << info.window_begin
+                    << ", window_end " << info.window_end << ", trig/seq_number "
+                    << data_request->trigger_number << "." << data_request->sequence_number
+                    << ", runno " << data_request->run_number
+                    << ", trig timestamp " << data_request->trigger_timestamp
+                    << ", dest: " << data_request->data_destination;
       popped_anything = true;
       ++n_requests_received;
-      m_request_handler_impl->issue_request(*data_request, false);
+      m_request_handler_impl->issue_request(*data_request, true);
     }
 
     if (!popped_anything) {
