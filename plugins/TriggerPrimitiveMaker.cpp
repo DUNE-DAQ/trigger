@@ -63,7 +63,7 @@ TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
 
   for (auto& stream : m_conf.tp_streams) {
     TPStream this_stream;
-    this_stream.tpset_sink = get_iom_sender<TPSet>(appfwk::connection_inst(m_init_obj, stream.output_sink_name));
+    this_stream.tpset_sink = get_iom_sender<TPSet>(appfwk::connection_uid(m_init_obj, stream.output_sink_name));
 
     this_stream.tpsets = read_tpsets(stream.filename, stream.element_id);
 
@@ -99,6 +99,11 @@ TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
                                                       std::ref(stream.tpsets),
                                                       std::ref(stream.tpset_sink),
                                                       earliest_timestamp_time));
+  }
+  for (int i=0; i < m_threads.size(); ++i) {
+    std::string name("replay");
+    name += std::to_string(i);
+    pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
   }
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -257,7 +262,7 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
       generated_tp_count += tpset.objects.size();
       try {
         TPSet tpset_copy(tpset);
-        tpset_sink->send(std::move(tpset_copy), m_queue_timeout, "TPSets");
+        tpset_sink->send(std::move(tpset_copy), m_queue_timeout);
       } catch (const dunedaq::iomanager::TimeoutExpired& e) {
         ers::warning(e);
         ++push_failed_count;

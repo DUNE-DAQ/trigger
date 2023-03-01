@@ -14,6 +14,7 @@
 #include "daqdataformats/Types.hpp"
 #include "ers/Issue.hpp"
 #include "triggeralgs/Types.hpp"
+#include "trigger/serialize.hpp"
 
 #include <string>
 #include <bitset>

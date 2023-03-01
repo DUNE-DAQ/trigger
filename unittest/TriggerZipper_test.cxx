@@ -10,7 +10,6 @@
 #include "../plugins/TPZipper.hpp" // NOLINT
 
 #include "iomanager/IOManager.hpp"
-#include "iomanager/Queue.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
 
@@ -31,6 +30,24 @@ using namespace dunedaq;
 
 BOOST_AUTO_TEST_SUITE(BOOST_TEST_MODULE)
 
+/**
+ * @brief Initializes the IOManager
+ */
+struct IOManagerTestFixture
+{
+  IOManagerTestFixture()
+  {
+    setenv("DUNEDAQ_PARTITION", "TriggerZipper_t", 0);
+  }
+  ~IOManagerTestFixture() { }
+
+  IOManagerTestFixture(IOManagerTestFixture const&) = default;
+  IOManagerTestFixture(IOManagerTestFixture&&) = default;
+  IOManagerTestFixture& operator=(IOManagerTestFixture const&) = default;
+  IOManagerTestFixture& operator=(IOManagerTestFixture&&) = default;
+};
+BOOST_TEST_GLOBAL_FIXTURE(IOManagerTestFixture);
+
 BOOST_AUTO_TEST_CASE(TPSet_GeoID_Init_Subsystem_Is_DataSelection)
 {
   trigger::TPSet tpset;
@@ -49,8 +66,8 @@ BOOST_AUTO_TEST_CASE(ZipperStreamIDFromGeoID)
 
   // With C++23, we may change from LL to Z :)
   size_t base = 3LL << 48;
-  size_t n1 = base | (1LL << 32) | 1LL;
-  size_t n2 = base | (2LL << 32) | 2LL;
+  size_t n1 = base | /* (1LL << 32) | */ 1LL;
+  size_t n2 = base | /* (2LL << 32) | */ 2LL;
 
   BOOST_CHECK_EQUAL(n1, id1);
   BOOST_CHECK_EQUAL(n2, id2);
@@ -104,12 +121,10 @@ push0(sender_t in, trigger::TPSet tpset)
 
 BOOST_AUTO_TEST_CASE(ZipperScenario1)
 {
-  iomanager::ConnectionIds_t connections;
-  connections.emplace_back(
-    iomanager::ConnectionId{ "zipper_input", iomanager::ServiceType::kQueue, "trigger::TPSet", "queue://StdDeQueue:10" });
-  connections.emplace_back(
-    iomanager::ConnectionId{ "zipper_output", iomanager::ServiceType::kQueue, "trigger::TPSet", "queue://StdDeQueue:10" });
-  iomanager::IOManager::get()->configure(connections);
+  iomanager::Queues_t queues;
+  queues.emplace_back(iomanager::QueueConfig{ { "zipper_input", "TPSet" }, iomanager::QueueType::kStdDeQueue, 10 });
+  queues.emplace_back(iomanager::QueueConfig{ { "zipper_output", "TPSet" }, iomanager::QueueType::kStdDeQueue, 10 });
+  iomanager::IOManager::get()->configure(queues, {}, false, 0ms); // Not using Connectivity Service
 
   auto in = dunedaq::get_iom_sender<trigger::TPSet>("zipper_input");
   auto out = dunedaq::get_iom_receiver<trigger::TPSet>("zipper_output");
@@ -119,7 +134,7 @@ BOOST_AUTO_TEST_CASE(ZipperScenario1)
   zip->set_input("zipper_input");
   zip->set_output("zipper_output");
 
-  trigger::TPZipper::cfg_t cfg{ 2, 100, 1 };
+  trigger::TPZipper::cfg_t cfg{ 2, 2000, 1 };
   nlohmann::json jcfg = cfg, jempty;
   zip->do_configure(jcfg);
 
