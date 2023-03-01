@@ -13,6 +13,7 @@
 #include "trigger/Set.hpp"
 #include "trigger/TimeSliceInputBuffer.hpp"
 #include "trigger/TimeSliceOutputBuffer.hpp"
+#include "trigger/triggergenericmakerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
@@ -49,6 +50,8 @@ public:
   explicit TriggerGenericMaker(const std::string& name)
     : DAQModule(name)
     , m_thread(std::bind(&TriggerGenericMaker::do_work, this, std::placeholders::_1))
+    , m_received_count(0)
+    , m_sent_count(0)
     , m_input_queue(nullptr)
     , m_output_queue(nullptr)
     , m_queue_timeout(100)
@@ -76,6 +79,16 @@ public:
     m_output_queue = get_iom_sender<OUT>(appfwk::connection_inst(obj, "output"));
   }
 
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  {
+    triggergenericmakerinfo::Info i;
+
+    i.received_count = m_received_count.load();
+    i.sent_count = m_sent_count.load();
+
+    ci.add(i);
+  }
+  
 protected:
   void set_algorithm_name(const std::string& name) { m_algorithm_name = name; }
 
@@ -95,8 +108,9 @@ protected:
 private:
   dunedaq::utilities::WorkerThread m_thread;
 
-  size_t m_received_count;
-  size_t m_sent_count;
+  using metric_counter_type = decltype(triggergenericmakerinfo::Info::received_count);
+  std::atomic<metric_counter_type> m_received_count;
+  std::atomic<metric_counter_type> m_sent_count;
 
   using source_t = dunedaq::iomanager::ReceiverConcept<IN>;
   std::shared_ptr<source_t> m_input_queue;
