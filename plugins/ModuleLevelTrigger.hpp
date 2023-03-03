@@ -123,6 +123,7 @@ private:
 
   void add_tc(const triggeralgs::TriggerCandidate& tc);
   void add_td(const PendingTD& pending_td);
+  void add_tc_ignored(const triggeralgs::TriggerCandidate& tc);
   void call_tc_decision(const PendingTD& pending_td, bool override_flag = false);
   bool check_overlap(const triggeralgs::TriggerCandidate& tc, const PendingTD& pending_td);
   bool check_overlap_td(const PendingTD& pending_td);
@@ -135,6 +136,11 @@ private:
   std::atomic<bool> m_send_timed_out_tds;
   int m_earliest_tc_index;
   int get_earliest_tc_index(const PendingTD& pending_td);
+
+  // Readout map config
+  nlohmann::json m_readout_window_map_data;
+  std::map<detdataformats::trigger::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> m_readout_window_map;
+  void parse_readout_map(const nlohmann::json& data);
 
   // Create the next trigger decision
   dfmessages::TriggerDecision create_decision(const PendingTD& pending_td);
