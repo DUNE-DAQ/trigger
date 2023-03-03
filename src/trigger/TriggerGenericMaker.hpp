@@ -92,6 +92,8 @@ protected:
     m_buffer_time = buffer_time;
   }
 
+auto maker() const { return m_maker; }
+
 private:
   dunedaq::utilities::WorkerThread m_thread;
 

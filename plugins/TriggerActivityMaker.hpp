@@ -10,6 +10,7 @@
 #define TRIGGER_PLUGINS_TRIGGERACTIVITYMAKER_HPP_
 
 #include "trigger/TriggerGenericMaker.hpp"
+#include "trigger/triggeractivitymakerinfo/InfoNljs.hpp"
 
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerActivityMaker.hpp"
@@ -35,8 +36,23 @@ public:
   TriggerActivityMaker(TriggerActivityMaker&&) = delete;
   TriggerActivityMaker& operator=(TriggerActivityMaker&&) = delete;
 
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  {
+    triggeractivitymakerinfo::Info i;
+    auto maker_ptr = maker();
+    if (maker_ptr){ 
+     i.data_vs_system_time = maker()->m_data_vs_system_time;
+    }
+    else {i.data_vs_system_time = 0;}
+
+    ci.add(i);
+  }
+
 private:
   virtual std::shared_ptr<triggeralgs::TriggerActivityMaker> make_maker(const nlohmann::json& obj);
+  
+  // using metric_latency_type = decltype(triggeractivitymakerinfo::Info::data_vs_system_time);
+  // std::atomic<metric_latency_type> m_data_vs_system_time;
 };
 
 } // namespace dunedaq::trigger
