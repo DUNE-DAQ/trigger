@@ -85,6 +85,8 @@ public:
 
     i.received_count = m_received_count.load();
     i.sent_count = m_sent_count.load();
+    if (m_maker) { i.data_vs_system_ms = m_maker->m_data_vs_system_time; }
+    else i.data_vs_system_ms = 0;    
 
     ci.add(i);
   }
@@ -104,8 +106,6 @@ protected:
     m_window_time = window_time;
     m_buffer_time = buffer_time;
   }
-
-auto maker() const { return m_maker; }
 
 private:
   dunedaq::utilities::WorkerThread m_thread;
