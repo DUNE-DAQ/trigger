@@ -37,7 +37,6 @@ namespace trigger {
 
 CustomTriggerCandidateMaker::CustomTriggerCandidateMaker(const std::string& name)
   : DAQModule(name)
-  //, m_time_sync_source(nullptr)
   , m_trigger_candidate_sink(nullptr)
   , m_run_number(0)
 {
@@ -51,7 +50,6 @@ void
 CustomTriggerCandidateMaker::init(const nlohmann::json& obj)
 {
   TLOG_DEBUG(3) << "WE ARE ACTUALLY HERE KID";
-  //m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(appfwk::connection_inst(obj, "time_sync_source"));
   m_trigger_candidate_sink = get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(obj, "trigger_candidate_sink"));
 }
 
@@ -81,7 +79,7 @@ CustomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
   switch (m_conf.timestamp_method) {
     case customtriggercandidatemaker::timestamp_estimation::kTimeSync:
       TLOG_DEBUG(0) << "Creating TimestampEstimator";
-      m_timestamp_estimator.reset(new timinglibs::TimestampEstimator( m_conf.clock_frequency_hz));
+      m_timestamp_estimator.reset(new timinglibs::TimestampEstimator(m_conf.clock_frequency_hz));
       break;
     case customtriggercandidatemaker::timestamp_estimation::kSystemClock:
       TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
@@ -147,10 +145,10 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
   TLOG_DEBUG(3) << "PRE CHECK";
   std::mt19937 gen(m_run_number);
   // Wait for there to be a valid timestamp estimate before we start
-  //if (m_timestamp_estimator->wait_for_valid_timestamp(m_running_flag) ==
-  //    timinglibs::TimestampEstimatorBase::kInterrupted) {
-  //  return;
-  //}
+  if (m_timestamp_estimator->wait_for_valid_timestamp(m_running_flag) ==
+    timinglibs::TimestampEstimatorBase::kInterrupted) {
+    return;
+  }
   TLOG_DEBUG(3) << "POST CHECK";
 
   dfmessages::timestamp_t initial_timestamp = m_timestamp_estimator->get_timestamp_estimate();
