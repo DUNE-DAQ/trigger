@@ -54,8 +54,14 @@ ModuleLevelTrigger::ModuleLevelTrigger(const std::string& name)
 void
 ModuleLevelTrigger::init(const nlohmann::json& iniobj)
 {
-  m_candidate_source =
-    get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(iniobj, "trigger_candidate_source"));
+
+  auto ci = appfwk::connection_index(iniobj, { "trigger_candidate_input", "dfo_inhibit_input", "td_output" });
+
+  m_candidate_input = get_iom_receiver<triggeralgs::TriggerCandidate>(ci["trigger_candidate_input"]);
+
+  m_inhibit_input = get_iom_receiver<dfmessages::TriggerInhibit>(ci["dfo_inhibit_input"]);
+
+  m_td_output_connection = ci["td_output"];
 }
 
 void
@@ -99,8 +105,8 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
     m_links.push_back(
       dfmessages::SourceID{ daqdataformats::SourceID::string_to_subsystem(link.subsystem), link.element });
   }
-  m_trigger_decision_connection = params.dfo_connection;
-  m_inhibit_connection = params.dfo_busy_connection;
+  //m_trigger_decision_connection = params.dfo_connection;
+  //m_inhibit_connection = params.dfo_busy_connection;
   m_hsi_passthrough = params.hsi_trigger_type_passthrough;
 
   m_configured_flag.store(true);
@@ -132,8 +138,7 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 
   m_livetime_counter.reset(new LivetimeCounter(LivetimeCounter::State::kPaused));
 
-  m_inhibit_receiver = get_iom_receiver<dfmessages::TriggerInhibit>(m_inhibit_connection);
-  m_inhibit_receiver->add_callback(std::bind(&ModuleLevelTrigger::dfo_busy_callback, this, std::placeholders::_1));
+  m_inhibit_input->add_callback(std::bind(&ModuleLevelTrigger::dfo_busy_callback, this, std::placeholders::_1));
 
   m_send_trigger_decisions_thread = std::thread(&ModuleLevelTrigger::send_trigger_decisions, this);
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-trig-dec");
@@ -160,7 +165,7 @@ ModuleLevelTrigger::do_stop(const nlohmann::json& /*stopobj*/)
   TLOG(3) << "LivetimeCounter - total deadtime+paused: " << m_lc_deadtime << std::endl;
   m_livetime_counter.reset(); // Calls LivetimeCounter dtor?
 
-  m_inhibit_receiver->remove_callback();
+  m_inhibit_input->remove_callback();
   ers::info(TriggerEndOfRun(ERS_HERE, m_run_number));
 }
 
@@ -265,7 +270,7 @@ ModuleLevelTrigger::send_trigger_decisions()
 
   // New buffering logic here
   while (m_running_flag) {
-    std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_source->try_receive(std::chrono::milliseconds(10));
+    std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_input->try_receive(std::chrono::milliseconds(10));
     if (tc.has_value()) {
       TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
                     << ", start/end " << tc->time_start << "/" << tc->time_end;
@@ -362,7 +367,7 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
            pending_td.contributing_tcs[m_earliest_tc_index].type);
 
     try {
-      auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_trigger_decision_connection);
+      auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_td_output_connection);
       td_sender->send(std::move(decision), std::chrono::milliseconds(1));
       m_td_sent_count++;
       m_new_td_sent_count++;
