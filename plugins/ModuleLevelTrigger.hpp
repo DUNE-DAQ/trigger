@@ -79,8 +79,9 @@ private:
   void dfo_busy_callback(dfmessages::TriggerInhibit& inhibit);
 
   // Queue sources and sinks
-  std::shared_ptr<iomanager::ReceiverConcept<triggeralgs::TriggerCandidate>> m_candidate_source;
-  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerInhibit>> m_inhibit_receiver;
+  std::shared_ptr<iomanager::ReceiverConcept<triggeralgs::TriggerCandidate>> m_candidate_input;
+  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerInhibit>> m_inhibit_input;
+  std::string m_td_output_connection;
 
   std::vector<dfmessages::SourceID> m_links;
 
@@ -89,8 +90,6 @@ private:
   // paused state, in which we don't send triggers
   std::atomic<bool> m_paused;
   std::atomic<bool> m_dfo_is_busy;
-  std::string m_trigger_decision_connection;
-  std::string m_inhibit_connection;
   std::atomic<bool> m_hsi_passthrough;
 
   dfmessages::trigger_number_t m_last_trigger_number;
