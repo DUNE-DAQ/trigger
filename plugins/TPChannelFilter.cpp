@@ -41,16 +41,16 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
   }
 }
 
-  void 
-  TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-  {
-    tpchannelfilterinfo::Info i;
+void 
+TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+{
+  tpchannelfilterinfo::Info i;
 
-    i.received_count = m_received_count.load();
-    i.sent_count = m_sent_count.load();
+  i.received_count = m_received_count.load();
+  i.sent_count = m_sent_count.load();
 
-    ci.add(i);
-  }
+  ci.add(i);
+}
 
 void
 TPChannelFilter::do_conf(const nlohmann::json& conf_arg)

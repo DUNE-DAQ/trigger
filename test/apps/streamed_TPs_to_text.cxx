@@ -48,14 +48,14 @@ main(int argc, char** argv)
     assert(remainder == 0);
     const TriggerPrimitive* prim = reinterpret_cast<TriggerPrimitive*>(frag->get_data());
     for (size_t i = 0; i < n_tps; ++i) {
-      fout << "\t" << prim->time_start
-                << "\t" << prim->time_over_threshold
-                << "\t" << prim->time_peak
-                << "\t" << prim->channel
-                << "\t" << prim->adc_integral
-                << "\t" << prim->adc_peak
-                << "\t" << prim->detid
-                << "\t" << prim->type << std::endl;
+      fout  << prim->time_start
+                << " " << prim->time_over_threshold
+                << " " << prim->time_peak
+                << " " << prim->channel
+                << " " << prim->adc_integral
+                << " " << prim->adc_peak
+                << " " << prim->detid
+                << " " << prim->type << std::endl;
       ++prim;
     }
 
