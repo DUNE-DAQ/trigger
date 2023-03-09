@@ -85,6 +85,8 @@ public:
 
     i.received_count = m_received_count.load();
     i.sent_count = m_sent_count.load();
+    if (m_maker) { i.data_vs_system_ms = m_maker->m_data_vs_system_time; }
+    else i.data_vs_system_ms = 0;    
 
     ci.add(i);
   }

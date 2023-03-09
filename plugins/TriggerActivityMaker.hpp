@@ -36,7 +36,8 @@ public:
   TriggerActivityMaker& operator=(TriggerActivityMaker&&) = delete;
 
 private:
-  virtual std::shared_ptr<triggeralgs::TriggerActivityMaker> make_maker(const nlohmann::json& obj);
+  virtual std::shared_ptr<triggeralgs::TriggerActivityMaker> make_maker(const nlohmann::json& obj) override;
+  
 };
 
 } // namespace dunedaq::trigger
