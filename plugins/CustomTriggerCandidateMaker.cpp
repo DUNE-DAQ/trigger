@@ -49,7 +49,6 @@ CustomTriggerCandidateMaker::CustomTriggerCandidateMaker(const std::string& name
 void
 CustomTriggerCandidateMaker::init(const nlohmann::json& obj)
 {
-  TLOG_DEBUG(3) << "WE ARE ACTUALLY HERE KID";
   m_trigger_candidate_sink = get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(obj, "trigger_candidate_sink"));
 }
 
@@ -89,6 +88,7 @@ CustomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
 
   m_send_trigger_candidates_thread = std::thread(&CustomTriggerCandidateMaker::send_trigger_candidates, this);
   pthread_setname_np(m_send_trigger_candidates_thread.native_handle(), "custom-tc-maker");
+
 }
 
 void
@@ -142,14 +142,13 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
   // OpMon.
   m_tc_sent_count.store(0);
 
-  TLOG_DEBUG(3) << "PRE CHECK";
   std::mt19937 gen(m_run_number);
   // Wait for there to be a valid timestamp estimate before we start
-  if (m_timestamp_estimator->wait_for_valid_timestamp(m_running_flag) ==
+  TLOG_DEBUG(3) << "CTCM: waiting for valid timestamp ...";
+  if ((m_timestamp_estimator->wait_for_valid_timestamp(m_running_flag)) == 
     timinglibs::TimestampEstimatorBase::kInterrupted) {
     return;
   }
-  TLOG_DEBUG(3) << "POST CHECK";
 
   dfmessages::timestamp_t initial_timestamp = m_timestamp_estimator->get_timestamp_estimate();
   dfmessages::timestamp_t first_interval = get_interval(gen);
@@ -159,7 +158,8 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
                 << ", next_trigger_timestamp is " << next_trigger_timestamp;
 
   while (m_running_flag.load()) {
-    if (!m_timestamp_estimator->wait_for_timestamp(next_trigger_timestamp, m_running_flag) ==
+    TLOG_DEBUG(3) << "CTCM: waiting for next timestamp ...";
+    if ((m_timestamp_estimator->wait_for_timestamp(next_trigger_timestamp, m_running_flag)) ==
         timinglibs::TimestampEstimatorBase::kInterrupted) {
       break;
     }
