@@ -99,22 +99,22 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
       popped_anything = true;
       for (auto const& ta: taset->objects) {
         uint64_t ta_rec_sys_time  = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-        TLOG() << "Got TA at the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy(); 
+        //TLOG() << "Got TA at the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy(); 
         m_latency_buffer_impl->write(TAWrapper(ta));
         ++n_tas_received;
-        TLOG() << "Written TA to the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy();
+        //TLOG() << "Written TA to the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy();
       }
     }
     
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
     if (data_request.has_value()) {
-      TLOG() << "Received a data request, occupancy is: " << m_latency_buffer_impl->occupancy();
+      //TLOG() << "Received a data request, occupancy is: " << m_latency_buffer_impl->occupancy();
       popped_anything = true;
       uint64_t dr_rec_sys_time  = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-      TLOG() << "Got TA data request, with window request datatime starting: " << data_request->trigger_timestamp << " and system time is: " << dr_rec_sys_time;
+      //TLOG() << "Got TA data request, with window request datatime starting: " << data_request->trigger_timestamp << " and system time is: " << dr_rec_sys_time;
       ++n_requests_received;
       m_request_handler_impl->issue_request(*data_request, false);
-      TLOG() << "Handled data request, occupancy is: " << m_latency_buffer_impl->occupancy();
+      //TLOG() << "Handled data request, occupancy is: " << m_latency_buffer_impl->occupancy();
     }
 
     if (!popped_anything) {
@@ -122,7 +122,7 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  TLOG() << get_name() << " exiting do_work() method. Received " << n_tas_received << " TAs " << " and " << n_requests_received << " data requests";
+  //TLOG() << get_name() << " exiting do_work() method. Received " << n_tas_received << " TAs " << " and " << n_requests_received << " data requests";
 }
 
 } // namespace trigger
