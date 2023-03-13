@@ -75,10 +75,13 @@ private:
   triggeralgs::TriggerCandidate create_candidate(dfmessages::timestamp_t timestamp);
 
   // Queue sources and sinks
-  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
+  // Config parameters
   customtriggercandidatemaker::Conf m_conf;
+  std::vector<int> m_tc_types;
+  std::vector<long int> m_tc_intervals;
+  void print_config();
 
   int get_interval(std::mt19937& gen);
 

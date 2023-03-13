@@ -66,6 +66,9 @@ void
 CustomTriggerCandidateMaker::do_configure(const nlohmann::json& obj)
 {
   m_conf = obj.get<customtriggercandidatemaker::Conf>();
+  m_tc_types = m_conf.trigger_types;
+  m_tc_intervals = m_conf.trigger_intervals;
+  print_config();
 }
 
 void
@@ -129,9 +132,11 @@ CustomTriggerCandidateMaker::get_interval(std::mt19937& gen)
       TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
       // fall through
     case customtriggercandidatemaker::distribution_type::kUniform:
-      return m_conf.trigger_interval_ticks;
+      //return m_conf.trigger_interval_ticks;
+      return 10000000;
     case customtriggercandidatemaker::distribution_type::kPoisson:
-      std::exponential_distribution<double> d(1.0 / m_conf.trigger_interval_ticks);
+      //std::exponential_distribution<double> d(1.0 / m_conf.trigger_interval_ticks);
+      std::exponential_distribution<double> d(1.0 / 10000000);
       return static_cast<int>(0.5 + d(gen));
   }
 }
@@ -173,6 +178,22 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
 
     next_trigger_timestamp += get_interval(gen);
   }
+}
+
+void
+CustomTriggerCandidateMaker::print_config()
+{
+  TLOG_DEBUG(3) << "CTCM Trigger types to use: ";
+  for (std::vector<int>::iterator it = m_tc_types.begin(); it != m_tc_types.end();) {
+    TLOG_DEBUG(3) << *it;
+    ++it;
+  }
+  TLOG_DEBUG(3) << "CTCM Trigger intervals to use: ";
+  for (std::vector<long int>::iterator it = m_tc_intervals.begin(); it != m_tc_intervals.end();) {
+    TLOG_DEBUG(3) << *it;
+    ++it;
+  }
+  return;
 }
 
 } // namespace trigger
