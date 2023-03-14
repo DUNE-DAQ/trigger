@@ -72,18 +72,22 @@ private:
   std::unique_ptr<timinglibs::TimestampEstimatorBase> m_timestamp_estimator;
 
   // Create the next trigger decision
-  triggeralgs::TriggerCandidate create_candidate(dfmessages::timestamp_t timestamp);
+  triggeralgs::TriggerCandidate create_candidate(dfmessages::timestamp_t timestamp, int tc_type);
 
   // Queue sources and sinks
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
   // Config parameters
   customtriggercandidatemaker::Conf m_conf;
-  std::vector<int> m_tc_types;
-  std::vector<long int> m_tc_intervals;
+  std::vector<std::pair<int, long int>> m_tc_settings;
   void print_config();
 
-  int get_interval(std::mt19937& gen);
+  // Logic for timestamps
+  std::vector<std::pair<int, dfmessages::timestamp_t>> get_initial_timestamps(dfmessages::timestamp_t initial_timestamp);
+  std::vector<std::pair<int, dfmessages::timestamp_t>> get_next_timestamps(std::vector<std::pair<int, dfmessages::timestamp_t>> last_timestamps);
+  dfmessages::timestamp_t get_last_ts_of_type(int tc_type, std::vector<std::pair<int, dfmessages::timestamp_t>> last_timestamps);
+  std::vector<std::pair<int, dfmessages::timestamp_t>> get_next_ts_of_type(int tc_type, long int tc_interval, dfmessages::timestamp_t last_ts_of_type);
+  void print_timestamps_vector(std::vector<std::pair<int, dfmessages::timestamp_t>> timestamps);
 
   dfmessages::run_number_t m_run_number;
 
