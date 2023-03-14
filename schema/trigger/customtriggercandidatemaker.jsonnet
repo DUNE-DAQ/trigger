@@ -6,7 +6,6 @@ local types = {
   ticks: s.number("ticks", dtype="i8"),
   freq: s.number("frequency", dtype="u8"),
   timestamp_estimation: s.enum("timestamp_estimation", ["kTimeSync", "kSystemClock"]),
-  distribution_type: s.enum("distribution_type", ["kUniform", "kPoisson"]),
   tc_type : s.number("tc_type", "i4", doc="TC type"), 
   tc_types : s.sequence("tc_types", self.tc_type, doc="List of TC types"),
   tc_interval : s.number("tc_interval", "i8", doc="interval (in clock ticks) for a TC type"),
@@ -21,9 +20,6 @@ local types = {
 
     s.field("timestamp_method", self.timestamp_estimation, "kTimeSync",
       doc="Use TimeSync queues to estimate timestamp (instead of system clock)"),
-
-    s.field("time_distribution", self.distribution_type, "kUniform",
-      doc="Type of distribution used for random timestamps"),
 
     s.field("trigger_types", self.tc_types, [],
       doc="List of TC types to be used by CTCM"),

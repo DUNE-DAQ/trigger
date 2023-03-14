@@ -32,6 +32,7 @@
 #include <string>
 #include <vector>
 
+// This is used to sort vector of pairs based on the value (ie second element) of the pair
 bool
 sortbysec(const std::pair<int, dunedaq::dfmessages::timestamp_t> &a, const std::pair<int, dunedaq::dfmessages::timestamp_t> &b)
 {
@@ -44,7 +45,6 @@ namespace trigger {
 CustomTriggerCandidateMaker::CustomTriggerCandidateMaker(const std::string& name)
   : DAQModule(name)
   , m_trigger_candidate_sink(nullptr)
-  , m_run_number(0)
 {
   register_command("conf", &CustomTriggerCandidateMaker::do_configure);
   register_command("start", &CustomTriggerCandidateMaker::do_start);
@@ -72,17 +72,22 @@ void
 CustomTriggerCandidateMaker::do_configure(const nlohmann::json& obj)
 {
   m_conf = obj.get<customtriggercandidatemaker::Conf>();
+  
+  // Parsing configuration object into map
   for (int i=0; i<static_cast<int>(m_conf.trigger_types.size()); i++) {
     std::pair<int, long int> temp_pair{m_conf.trigger_types[i], m_conf.trigger_intervals[i]}; 
     m_tc_settings.push_back(temp_pair);
   }
+
   print_config();
+
+  // This parameter controls how many new timestamps are calculated when needed
+  sorting_size_limit = 10;
 }
 
 void
 CustomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
 {
-  m_run_number = obj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   m_running_flag.store(true);
 
@@ -110,6 +115,9 @@ CustomTriggerCandidateMaker::do_stop(const nlohmann::json& /*obj*/)
   m_send_trigger_candidates_thread.join();
 
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
+
+  // Prints final counts of each used TC type
+  print_final_tc_counts(m_tc_sent_count_type);
 }
 
 void
@@ -118,6 +126,9 @@ CustomTriggerCandidateMaker::do_scrap(const nlohmann::json& /*obj*/)
   m_configured_flag.store(false);
 }
 
+// This creates TCs of given time at the provided timestamp
+// The algo used is kCustom
+// Other parameters are default
 triggeralgs::TriggerCandidate
 CustomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp, int tc_type)
 {
@@ -127,7 +138,7 @@ CustomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp,
   candidate.time_candidate = timestamp;
   candidate.detid = { 0 };
   candidate.type = static_cast<dunedaq::detdataformats::trigger::TriggerCandidateData::Type>(tc_type);
-  candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kUnknown;
+  candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kCustom;
 
   return candidate;
 }
@@ -145,53 +156,67 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
     return;
   }
 
-  dfmessages::timestamp_t initial_timestamp = m_timestamp_estimator->get_timestamp_estimate();
+  m_initial_timestamp = m_timestamp_estimator->get_timestamp_estimate();
 
-  std::vector<std::pair<int, dfmessages::timestamp_t>> tc_timestamps = get_initial_timestamps(initial_timestamp);
-  print_timestamps_vector(tc_timestamps);
-  std::vector<std::pair<int, dfmessages::timestamp_t>> tc_timestamps_old = tc_timestamps;
+  m_tc_timestamps = get_initial_timestamps(m_initial_timestamp);
+  print_timestamps_vector(m_tc_timestamps);
 
-  dfmessages::timestamp_t next_trigger_timestamp = tc_timestamps.front().second;
-  TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp
-                << ", next_trigger_timestamp is " << next_trigger_timestamp;
+  m_next_trigger_timestamp = m_tc_timestamps.front().second;
+  TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << m_initial_timestamp
+                << ", next_trigger_timestamp is " << m_next_trigger_timestamp;
 
   while (m_running_flag.load()) {
     TLOG_DEBUG(3) << "CTCM: waiting for next timestamp ...";
-    if ((m_timestamp_estimator->wait_for_timestamp(next_trigger_timestamp, m_running_flag)) ==
+    if ((m_timestamp_estimator->wait_for_timestamp(m_next_trigger_timestamp, m_running_flag)) ==
         timinglibs::TimestampEstimatorBase::kInterrupted) {
       break;
     }
 
-    triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp, tc_timestamps.front().first);
+    triggeralgs::TriggerCandidate candidate = create_candidate(m_next_trigger_timestamp, m_tc_timestamps.front().first);
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
     m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
     m_tc_sent_count++;
+    m_tc_sent_count_type[m_tc_timestamps.front().first] += 1;
 
-    tc_timestamps.erase(tc_timestamps.begin());
-    next_trigger_timestamp = tc_timestamps.front().second;
-    if (tc_timestamps.size() < 1){
+    // Need to record last used TS for calculation of next ones
+    m_last_timestamps_of_type[m_tc_timestamps.front().first] = m_tc_timestamps.front().second;
+
+    // Progress the vector of next TCs
+    m_tc_timestamps.erase(m_tc_timestamps.begin());
+    m_next_trigger_timestamp = m_tc_timestamps.front().second;
+
+    // Generate new timestamps for each source
+    if (m_tc_timestamps.size() < 1){
       TLOG_DEBUG(3) << "Need next timestamps!";
-      tc_timestamps.clear();
-      tc_timestamps = get_next_timestamps(tc_timestamps_old);
-    } else if (tc_timestamps.size() < 1) {
-      // make error here
+      m_tc_timestamps.clear();
+      m_tc_timestamps = get_next_timestamps(m_last_timestamps_of_type);
+    }
+
+    // Should not happen
+    if (m_tc_timestamps.size() == 0){
+      ers::error(TCTimestampsSizeError(ERS_HERE,
+                                       get_name(),
+                                       m_tc_timestamps.size()));
     }
   }
 }
 
+// This function generates initial TS for each TC type
+// Small offset is applied so we don't start with all at once
+// Also rounds up to the next multiple of the interval ticks
+// The returning vector is sorted by TS
 std::vector<std::pair<int, dfmessages::timestamp_t>>
 CustomTriggerCandidateMaker::get_initial_timestamps(dfmessages::timestamp_t initial_timestamp)
 {
   TLOG_DEBUG(3) << "GIT, init ts: " << initial_timestamp;
   std::vector<std::pair<int, dfmessages::timestamp_t>> initial_timestamps;
   for (int i=0; i<static_cast<int>(m_conf.trigger_types.size()); i++) { 
-    // Round up to the next multiple of trigger_interval_ticks
-    // also adding little offset so we don't start all at once
     dfmessages::timestamp_t next_trigger_timestamp = ((initial_timestamp+i*5000) / m_tc_settings[i].second + 1) * m_tc_settings[i].second;
     std::pair<int, dfmessages::timestamp_t> initial_pair{ m_tc_settings[i].first, next_trigger_timestamp };
     initial_timestamps.push_back( initial_pair );
+    m_last_timestamps_of_type[i] = next_trigger_timestamp;
     TLOG_DEBUG(3) << "GIT TS pair, type: " << m_tc_settings[i].first << ", inter: " << m_tc_settings[i].second 
     << ", ts: " << next_trigger_timestamp;
   }
@@ -199,48 +224,40 @@ CustomTriggerCandidateMaker::get_initial_timestamps(dfmessages::timestamp_t init
   return initial_timestamps;
 }
 
+// This function generates next {sorting_size_limit} timestamps for each TC type
+// Then merges to final vector
+// And partial sorts first {sorting_size_limit} elements 
+// Rest is dropped
 std::vector<std::pair<int, dfmessages::timestamp_t>>
-CustomTriggerCandidateMaker::get_next_timestamps(std::vector<std::pair<int, dfmessages::timestamp_t>> last_timestamps)
+CustomTriggerCandidateMaker::get_next_timestamps(std::map<int, dfmessages::timestamp_t> last_timestamps)
 {
   std::vector<std::pair<int, dfmessages::timestamp_t>> next_timestamps;
   for(auto it = m_tc_settings.begin(); it != m_tc_settings.end(); it++){
-    dfmessages::timestamp_t last_ts_of_type = get_last_ts_of_type(it->first, last_timestamps);
-    std::vector<std::pair<int, dfmessages::timestamp_t>> next_ts_of_type = get_next_ts_of_type(it->first, it->second, last_ts_of_type);
+    std::vector<std::pair<int, dfmessages::timestamp_t>> next_ts_of_type = get_next_ts_of_type(it->first, it->second, last_timestamps[it->first]);
     next_timestamps.insert(next_timestamps.end(), next_ts_of_type.begin(), next_ts_of_type.end());
   }
-  sort(next_timestamps.begin(), next_timestamps.end(), sortbysec);
+  std::partial_sort(next_timestamps.begin(), next_timestamps.begin()+sorting_size_limit, next_timestamps.end(), sortbysec);
   TLOG_DEBUG(3) << "New next ts (all):";
   print_timestamps_vector(next_timestamps);
-  next_timestamps.resize(10);
-  TLOG_DEBUG(3) << "New next ts (10):";
+  next_timestamps.resize(sorting_size_limit);
+  TLOG_DEBUG(3) << "New next ts (" << sorting_size_limit << "):";
   print_timestamps_vector(next_timestamps);
   return next_timestamps;
 }
 
-dfmessages::timestamp_t
-CustomTriggerCandidateMaker::get_last_ts_of_type(int tc_type, std::vector<std::pair<int, dfmessages::timestamp_t>> last_timestamps)
-{
-  for(auto r_it = last_timestamps.rbegin(); r_it != last_timestamps.rend(); r_it++){
-    if (r_it->first == tc_type){
-      TLOG_DEBUG(3) << "Last TS type: " << tc_type << " is: " << r_it->second;
-      return r_it->second;
-    } else {
-      // make error here
-    }
-  }
-}
-
+// This function calculates next {sorting_size_limit} TS for a given TC type
+// Uses the configurable interval and the last TS of this type as base
 std::vector<std::pair<int, dfmessages::timestamp_t>> 
 CustomTriggerCandidateMaker::get_next_ts_of_type(int tc_type, long int tc_interval, dfmessages::timestamp_t last_ts_of_type)
 {
   std::vector<std::pair<int, dfmessages::timestamp_t>> next_ts_of_type;
-  for(int i=0; i<10; i++){
+  for(int i=0; i<sorting_size_limit; i++){
     dfmessages::timestamp_t next_trigger_timestamp = ((last_ts_of_type) / tc_interval + 1) * tc_interval;
     std::pair<int, dfmessages::timestamp_t> next_pair{ tc_type, next_trigger_timestamp };
     next_ts_of_type.push_back( next_pair );
     last_ts_of_type = next_trigger_timestamp;
   }
-  TLOG_DEBUG(3) << "Next 10 ts for type: " << tc_type << ":";
+  TLOG_DEBUG(3) << "Next " << sorting_size_limit << " ts for type: " << tc_type << ":";
   print_timestamps_vector(next_ts_of_type);
   return next_ts_of_type;
 }
@@ -261,6 +278,16 @@ CustomTriggerCandidateMaker::print_timestamps_vector(std::vector<std::pair<int, 
   TLOG_DEBUG(3) << "Next timestamps:";
   for (auto it = timestamps.begin(); it != timestamps.end(); it++) {
     TLOG_DEBUG(3) << "TC type: " << it->first << ", timestamp: " << it->second;
+  }
+  return;
+}
+
+void
+CustomTriggerCandidateMaker::print_final_tc_counts(std::map<int, int> counts)
+{
+  TLOG_DEBUG(3) << "CTCM final counts:";
+  for (auto it = m_tc_settings.begin(); it != m_tc_settings.end(); it++) {
+    TLOG_DEBUG(3) << "TC type: " << it->first << ", interval: " << it->second << ", count: " << counts[it->first];
   }
   return;
 }

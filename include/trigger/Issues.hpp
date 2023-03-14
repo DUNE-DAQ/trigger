@@ -168,6 +168,13 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((triggeralgs::timestamp_t)td_end))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
+                       TCTimestampsSizeError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "There are no next timestamps!",
+                       ((std::string)name),
+		       ((int)size))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
                        InvalidHSIEventRunNumber,
                        appfwk::GeneralDAQModuleIssue,
                        "An invalid run number was received in an HSIEvent, "
