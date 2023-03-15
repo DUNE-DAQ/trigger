@@ -128,9 +128,8 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
 
   m_readout_window_map_data = params.td_readout_map;
   parse_readout_map(m_readout_window_map_data);
-  TLOG_DEBUG(3) << "Readout map: ";
-  TLOG_DEBUG(3) << m_readout_window_map[static_cast<detdataformats::trigger::TriggerCandidateData::Type>(5)].first;
-  TLOG_DEBUG(3) << m_readout_window_map[static_cast<detdataformats::trigger::TriggerCandidateData::Type>(5)].second;
+  print_readout_map(m_readout_window_map);
+
 }
 
 void
@@ -599,6 +598,18 @@ ModuleLevelTrigger::parse_readout_map(const nlohmann::json& data)
   {
     m_readout_window_map[static_cast<detdataformats::trigger::TriggerCandidateData::Type>(readout_type["candidate_type"])] = { readout_type["time_before"], readout_type["time_after"] };
   }
+  return;
+}
+
+void
+ModuleLevelTrigger::print_readout_map(std::map<detdataformats::trigger::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
+{
+  TLOG_DEBUG(3) << "MLT TD Readout map:";
+  for (auto const& [key, val] : map)
+  {
+    TLOG_DEBUG(3) << "Type: " << static_cast<int>(key) << ", before: " << val.first << ", after: " << val.second;
+  }
+  return;
 }
 
 } // namespace trigger
