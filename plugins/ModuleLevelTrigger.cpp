@@ -105,8 +105,8 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
     m_links.push_back(
       dfmessages::SourceID{ daqdataformats::SourceID::string_to_subsystem(link.subsystem), link.element });
   }
-  //m_trigger_decision_connection = params.dfo_connection;
-  //m_inhibit_connection = params.dfo_busy_connection;
+  // m_trigger_decision_connection = params.dfo_connection;
+  // m_inhibit_connection = params.dfo_busy_connection;
   m_hsi_passthrough = params.hsi_trigger_type_passthrough;
 
   m_configured_flag.store(true);
@@ -129,7 +129,6 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   m_readout_window_map_data = params.td_readout_map;
   parse_readout_map(m_readout_window_map_data);
   print_readout_map(m_readout_window_map);
-
 }
 
 void
@@ -286,11 +285,11 @@ ModuleLevelTrigger::send_trigger_decisions()
         TLOG_DEBUG(3) << "TC type: " << static_cast<int>(tc->type);
         if (check_trigger_type_ignore(static_cast<int>(tc->type)) == true) {
           TLOG_DEBUG(3) << "ignoring...";
-	  m_tc_ignored_count++;
-	 
-	  // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend readout
+          m_tc_ignored_count++;
+
+          // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend readout
           std::lock_guard<std::mutex> lock(m_td_vector_mutex);
-	  add_tc_ignored(*tc);
+          add_tc_ignored(*tc);
           continue;
         }
       }
@@ -420,8 +419,12 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
       TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
                     << " overlaps with pending TD with start/end times " << it->readout_start << "/" << it->readout_end;
       it->contributing_tcs.push_back(tc);
-      it->readout_start = ( (tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start) ? it->readout_start : (tc.time_candidate - m_readout_window_map[tc.type].first);
-      it->readout_end = ( (tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end) ? (tc.time_candidate + m_readout_window_map[tc.type].second) : it->readout_end;
+      it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
+                            ? it->readout_start
+                            : (tc.time_candidate - m_readout_window_map[tc.type].first);
+      it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
+                          ? (tc.time_candidate + m_readout_window_map[tc.type].second)
+                          : it->readout_end;
       it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
       added_to_existing = true;
       break;
@@ -458,7 +461,8 @@ ModuleLevelTrigger::add_tc_ignored(const triggeralgs::TriggerCandidate& tc)
 bool
 ModuleLevelTrigger::check_overlap(const triggeralgs::TriggerCandidate& tc, const PendingTD& pending_td)
 {
-  return !(( (tc.time_candidate + m_readout_window_map[tc.type].second) < pending_td.readout_start) || ( (tc.time_candidate - m_readout_window_map[tc.type].first > pending_td.readout_end) ));
+  return !(((tc.time_candidate + m_readout_window_map[tc.type].second) < pending_td.readout_start) ||
+           ((tc.time_candidate - m_readout_window_map[tc.type].first > pending_td.readout_end)));
 }
 
 bool
@@ -594,19 +598,19 @@ ModuleLevelTrigger::check_trigger_type_ignore(int tc_type)
 void
 ModuleLevelTrigger::parse_readout_map(const nlohmann::json& data)
 {
-  for (auto readout_type : data)
-  {
-    m_readout_window_map[static_cast<detdataformats::trigger::TriggerCandidateData::Type>(readout_type["candidate_type"])] = { readout_type["time_before"], readout_type["time_after"] };
+  for (auto readout_type : data) {
+    m_readout_window_map[static_cast<detdataformats::trigger::TriggerCandidateData::Type>(
+      readout_type["candidate_type"])] = { readout_type["time_before"], readout_type["time_after"] };
   }
   return;
 }
 
 void
-ModuleLevelTrigger::print_readout_map(std::map<detdataformats::trigger::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
+ModuleLevelTrigger::print_readout_map(std::map<detdataformats::trigger::TriggerCandidateData::Type,
+                                               std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
 {
   TLOG_DEBUG(3) << "MLT TD Readout map:";
-  for (auto const& [key, val] : map)
-  {
+  for (auto const& [key, val] : map) {
     TLOG_DEBUG(3) << "Type: " << static_cast<int>(key) << ", before: " << val.first << ", after: " << val.second;
   }
   return;

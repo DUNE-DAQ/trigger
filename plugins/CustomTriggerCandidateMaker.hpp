@@ -34,8 +34,8 @@ namespace dunedaq {
 namespace trigger {
 
 /**
- * @brief CustomTriggerCandidateMaker creates TriggerCandidates of specified types at configurable intervals, based on input from a TimeSync queue or the system
- * clock. The TCs can be fed directly into the MLT.
+ * @brief CustomTriggerCandidateMaker creates TriggerCandidates of specified types at configurable intervals, based on
+ * input from a TimeSync queue or the system clock. The TCs can be fed directly into the MLT.
  */
 class CustomTriggerCandidateMaker : public dunedaq::appfwk::DAQModule
 {
@@ -87,9 +87,13 @@ private:
   dfmessages::timestamp_t m_initial_timestamp;
   dfmessages::timestamp_t m_next_trigger_timestamp;
   std::map<int, dfmessages::timestamp_t> m_last_timestamps_of_type;
-  std::vector<std::pair<int, dfmessages::timestamp_t>> get_initial_timestamps(dfmessages::timestamp_t initial_timestamp);
-  std::vector<std::pair<int, dfmessages::timestamp_t>> get_next_timestamps(std::map<int, dfmessages::timestamp_t> last_timestamps);
-  std::vector<std::pair<int, dfmessages::timestamp_t>> get_next_ts_of_type(int tc_type, long int tc_interval, dfmessages::timestamp_t last_ts_of_type);
+  std::vector<std::pair<int, dfmessages::timestamp_t>> get_initial_timestamps(
+    dfmessages::timestamp_t initial_timestamp);
+  std::vector<std::pair<int, dfmessages::timestamp_t>> get_next_timestamps(
+    std::map<int, dfmessages::timestamp_t> last_timestamps);
+  std::vector<std::pair<int, dfmessages::timestamp_t>> get_next_ts_of_type(int tc_type,
+                                                                           long int tc_interval,
+                                                                           dfmessages::timestamp_t last_ts_of_type);
   void print_timestamps_vector(std::vector<std::pair<int, dfmessages::timestamp_t>> timestamps);
   std::map<int, int> m_tc_sent_count_type;
   void print_final_tc_counts(std::map<int, int> counts);
