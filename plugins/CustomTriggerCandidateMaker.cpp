@@ -127,7 +127,7 @@ CustomTriggerCandidateMaker::do_scrap(const nlohmann::json& /*obj*/)
   m_configured_flag.store(false);
 }
 
-// This creates TCs of given time at the provided timestamp
+// This creates TCs of given type at the provided timestamp
 // The algo used is kCustom
 // Other parameters are default
 triggeralgs::TriggerCandidate
