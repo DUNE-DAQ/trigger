@@ -163,6 +163,8 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
   print_timestamps_vector(m_tc_timestamps);
 
   m_next_trigger_timestamp = m_tc_timestamps.front().second;
+  m_next_trigger_type = m_tc_timestamps.front().first;
+
   TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << m_initial_timestamp
                 << ", next_trigger_timestamp is " << m_next_trigger_timestamp;
 
@@ -186,7 +188,6 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
 
     // Progress the vector of next TCs
     m_tc_timestamps.erase(m_tc_timestamps.begin());
-    m_next_trigger_timestamp = m_tc_timestamps.front().second;
 
     // Generate new timestamps for each source
     if (m_tc_timestamps.size() < 1) {
@@ -194,6 +195,10 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
       m_tc_timestamps.clear();
       m_tc_timestamps = get_next_timestamps(m_last_timestamps_of_type);
     }
+
+    // Set new TS and type
+    m_next_trigger_timestamp = m_tc_timestamps.front().second;
+    m_next_trigger_type = m_tc_timestamps.front().first;
 
     // Should not happen
     if (m_tc_timestamps.size() == 0) {

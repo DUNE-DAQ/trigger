@@ -86,6 +86,7 @@ private:
   std::vector<std::pair<int, dfmessages::timestamp_t>> m_tc_timestamps;
   dfmessages::timestamp_t m_initial_timestamp;
   dfmessages::timestamp_t m_next_trigger_timestamp;
+  int m_next_trigger_type;
   std::map<int, dfmessages::timestamp_t> m_last_timestamps_of_type;
   std::vector<std::pair<int, dfmessages::timestamp_t>> get_initial_timestamps(
     dfmessages::timestamp_t initial_timestamp);
