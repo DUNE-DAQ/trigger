@@ -84,7 +84,8 @@ CustomTriggerCandidateMaker::do_configure(const nlohmann::json& obj)
   print_config();
 
   // This parameter controls how many new timestamps are calculated when needed
-  sorting_size_limit = 10;
+  // Currently precalculates events for the next 60 seconds
+  m_sorting_size_limit = 60 * m_conf.clock_frequency_hz;
 }
 
 void
@@ -160,7 +161,7 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
   m_initial_timestamp = m_timestamp_estimator->get_timestamp_estimate();
 
   m_tc_timestamps = get_initial_timestamps(m_initial_timestamp);
-  print_timestamps_vector(m_tc_timestamps);
+  //print_timestamps_vector(m_tc_timestamps);
 
   m_next_trigger_timestamp = m_tc_timestamps.front().second;
   m_next_trigger_type = m_tc_timestamps.front().first;
@@ -225,14 +226,12 @@ CustomTriggerCandidateMaker::get_initial_timestamps(dfmessages::timestamp_t init
     TLOG_DEBUG(3) << "GIT TS pair, type: " << m_tc_settings[i].first << ", inter: " << m_tc_settings[i].second
                   << ", ts: " << next_trigger_timestamp;
   }
-  sort(initial_timestamps.begin(), initial_timestamps.end(), sortbysec);
+  std::sort(initial_timestamps.begin(), initial_timestamps.end(), sortbysec);
   return initial_timestamps;
 }
 
-// This function generates next {sorting_size_limit} timestamps for each TC type
-// Then merges to final vector
-// And partial sorts first {sorting_size_limit} elements
-// Rest is dropped
+// This function generates next {m_sorting_size_limit} timestamps for each TC type
+// Then merges to final vector and sorts it by value
 std::vector<std::pair<int, dfmessages::timestamp_t>>
 CustomTriggerCandidateMaker::get_next_timestamps(std::map<int, dfmessages::timestamp_t> last_timestamps)
 {
@@ -242,17 +241,14 @@ CustomTriggerCandidateMaker::get_next_timestamps(std::map<int, dfmessages::times
       get_next_ts_of_type(it->first, it->second, last_timestamps[it->first]);
     next_timestamps.insert(next_timestamps.end(), next_ts_of_type.begin(), next_ts_of_type.end());
   }
-  std::partial_sort(
-    next_timestamps.begin(), next_timestamps.begin() + sorting_size_limit, next_timestamps.end(), sortbysec);
-  TLOG_DEBUG(3) << "New next ts (all):";
-  print_timestamps_vector(next_timestamps);
-  next_timestamps.resize(sorting_size_limit);
-  TLOG_DEBUG(3) << "New next ts (" << sorting_size_limit << "):";
-  print_timestamps_vector(next_timestamps);
+  sort(
+    next_timestamps.begin(), next_timestamps.end(), sortbysec);
+  //TLOG_DEBUG(3) << "New next ts (all):";
+  //print_timestamps_vector(next_timestamps);
   return next_timestamps;
 }
 
-// This function calculates next {sorting_size_limit} TS for a given TC type
+// This function calculates next {m_sorting_size_limit} TS for a given TC type
 // Uses the configurable interval and the last TS of this type as base
 std::vector<std::pair<int, dfmessages::timestamp_t>>
 CustomTriggerCandidateMaker::get_next_ts_of_type(int tc_type,
@@ -260,14 +256,16 @@ CustomTriggerCandidateMaker::get_next_ts_of_type(int tc_type,
                                                  dfmessages::timestamp_t last_ts_of_type)
 {
   std::vector<std::pair<int, dfmessages::timestamp_t>> next_ts_of_type;
-  for (int i = 0; i < sorting_size_limit; i++) {
-    dfmessages::timestamp_t next_trigger_timestamp = ((last_ts_of_type) / tc_interval + 1) * tc_interval;
+  dfmessages::timestamp_t ts_limit = last_ts_of_type + m_sorting_size_limit;
+  dfmessages::timestamp_t loop_ts = last_ts_of_type;
+  while (loop_ts < ts_limit) {
+    dfmessages::timestamp_t next_trigger_timestamp = ((loop_ts) / tc_interval + 1) * tc_interval;
     std::pair<int, dfmessages::timestamp_t> next_pair{ tc_type, next_trigger_timestamp };
     next_ts_of_type.push_back(next_pair);
-    last_ts_of_type = next_trigger_timestamp;
+    loop_ts = next_trigger_timestamp;
   }
-  TLOG_DEBUG(3) << "Next " << sorting_size_limit << " ts for type: " << tc_type << ":";
-  print_timestamps_vector(next_ts_of_type);
+  //TLOG_DEBUG(3) << "Next calculated ts for type: " << tc_type << ":";
+  //TLOG_DEBUG(3) << print_timestamps_vector(next_ts_of_type);
   return next_ts_of_type;
 }
 

@@ -82,7 +82,7 @@ private:
   void print_config();
 
   // Logic for timestamps
-  int sorting_size_limit;
+  uint64_t m_sorting_size_limit;
   std::vector<std::pair<int, dfmessages::timestamp_t>> m_tc_timestamps;
   dfmessages::timestamp_t m_initial_timestamp;
   dfmessages::timestamp_t m_next_trigger_timestamp;
