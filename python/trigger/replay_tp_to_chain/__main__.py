@@ -25,6 +25,7 @@ import click
 @click.option('--trigger-candidate-plugin', default='TriggerCandidateMakerPrescalePlugin', help="Trigger candidate algorithm plugin")
 @click.option('--trigger-candidate-config', default='dict(prescale=100)', help="Trigger candidate algorithm config (string containing python dictionary)")
 @click.option('-l', '--number-of-loops', default='-1', help="Number of times to loop over the input files (-1 for infinite)")
+#@click.option('-h', '--hardware-map', type=click.Path(exists=True, dir_okay=False), help="Hardware map file.")
 @click.argument('json_dir', type=click.Path())
 def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_config, trigger_candidate_plugin, trigger_candidate_config, number_of_loops, json_dir):
     """
@@ -53,6 +54,15 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         NUMBER_OF_LOOPS = number_of_loops
     )
 
+    # Create a hw map file based on the input files we were given on
+    # the command line. Then we can get the SourceIDBroker to make the
+    # necessary TPInfo objects for get_trigger_app()
+    hw_map_file = open("hardware_map.txt", "x")
+    for idx,f in enumerate(input_file):
+        hw_map_file.write(f"0 0 0 {idx} 3 localhost {idx} 0 0\n")
+    hw_map_file.close() # Save the file so the next line sees the changes
+    hw_map_service = HardwareMapService(hw_map_file.name)
+
     the_system.apps["dataflow0"] = get_dataflow_app(
         HOSTIDX = 0,
         # OUTPUT_PATH = ".",
@@ -63,6 +73,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         # MAX_EXPECTED_TR_SEQUENCES = max_expected_tr_sequences,
         # TOKEN_COUNT = trigemu_token_count,
         # TRB_TIMEOUT = trigger_record_building_timeout,
+        HARDWARE_MAP=hardware_map_file,  # get_dataflow_app() complaining this is a garbage string?
         HOST="localhost",
         # HAS_DQM=enable_dqm,
         # DEBUG=debug
@@ -98,11 +109,11 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     # Create a hw map file based on the input files we were given on
     # the command line. Then we can get the SourceIDBroker to make the
     # necessary TPInfo objects for get_trigger_app()
-    hw_map_file = NamedTemporaryFile("w")
-    for idx,f in enumerate(input_file):
-        hw_map_file.write(f"0 0 0 {idx} 3 localhost {idx} 0 0\n")
-    hw_map_file.flush() # Flush the file so the next line sees the changes
-    hw_map_service = HardwareMapService(hw_map_file.name)
+    #hw_map_file = NamedTemporaryFile("w")
+    #for idx,f in enumerate(input_file):
+    #    hw_map_file.write(f"0 0 0 {idx} 3 localhost {idx} 0 0\n")
+    #hw_map_file.flush() # Flush the file so the next line sees the changes
+    #hw_map_service = HardwareMapService(hw_map_file.name)
 
     # Get the list of RU processes - required to create instances of TXInfo later
     dro_infos = hw_map_service.get_all_dro_info()
@@ -119,7 +130,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         # SOFTWARE_TPG_ENABLED = True,
         # FIRMWARE_TPG_ENABLED = False,
         DATA_RATE_SLOWDOWN_FACTOR = slowdown_factor,
-        CLOCK_SPEED_HZ = 50_000_000,
+        CLOCK_SPEED_HZ = 62_500_000,
         TP_CONFIG = tp_infos,
         # RU_CONFIG = ru_configs,
         ACTIVITY_PLUGIN = trigger_activity_plugin,
