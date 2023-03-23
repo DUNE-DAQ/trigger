@@ -32,8 +32,8 @@ void
 TPBuffer::init(const nlohmann::json& init_data)
 {
   try {
-    m_input_queue_tps = get_iom_receiver<TPSet>(appfwk::connection_inst(init_data, "tpset_source").uid);
-    m_input_queue_dr = get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_inst(init_data, "data_request_source").uid);
+    m_input_queue_tps = get_iom_receiver<TPSet>(appfwk::connection_uid(init_data, "tpset_source"));
+    m_input_queue_dr = get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }

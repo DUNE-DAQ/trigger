@@ -55,7 +55,7 @@ void
 ModuleLevelTrigger::init(const nlohmann::json& iniobj)
 {
   m_candidate_source =
-    get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_inst(iniobj, "trigger_candidate_source"));
+    get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(iniobj, "trigger_candidate_source"));
 }
 
 void

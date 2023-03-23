@@ -75,8 +75,8 @@ public:
 
   void init(const nlohmann::json& obj) override
   {
-    m_input_queue = get_iom_receiver<IN>(appfwk::connection_inst(obj, "input"));
-    m_output_queue = get_iom_sender<OUT>(appfwk::connection_inst(obj, "output"));
+    m_input_queue = get_iom_receiver<IN>(appfwk::connection_uid(obj, "input"));
+    m_output_queue = get_iom_sender<OUT>(appfwk::connection_uid(obj, "output"));
   }
 
   void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
