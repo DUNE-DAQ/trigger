@@ -10,6 +10,7 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "detdataformats/trigger/Types.hpp"
+#include "trigger/TriggerCandidate_serialization.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
@@ -70,7 +71,6 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   m_detid_offsets_map[params.s0.signal_type] = { params.s0.time_before, params.s0.time_after };
   m_detid_offsets_map[params.s1.signal_type] = { params.s1.time_before, params.s1.time_after };
   m_detid_offsets_map[params.s2.signal_type] = { params.s2.time_before, params.s2.time_after };
-  m_hsievent_receive_connection = params.hsievent_connection_name;
   m_hsi_passthrough = params.hsi_trigger_type_passthrough;
   m_hsi_pt_before = params.s0.time_before;
   m_hsi_pt_after = params.s0.time_after;
@@ -81,7 +81,9 @@ void
 TimingTriggerCandidateMaker::init(const nlohmann::json& iniobj)
 {
   try {
-    m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(iniobj, "output"));
+    auto ci = appfwk::connection_index(iniobj, {"output", "hsi_input"});	   
+    m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(ci["output"]);
+    m_hsievent_input = get_iom_receiver<dfmessages::HSIEvent>(ci["hsi_input"]);
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
@@ -99,8 +101,7 @@ TimingTriggerCandidateMaker::do_start(const nlohmann::json& startobj)
   auto start_params = startobj.get<rcif::cmd::StartParams>();
   m_run_number.store(start_params.run);
 
-  m_hsievent_receiver = get_iom_receiver<dfmessages::HSIEvent>(m_hsievent_receive_connection);
-  m_hsievent_receiver->add_callback(std::bind(&TimingTriggerCandidateMaker::receive_hsievent, this, std::placeholders::_1));
+  m_hsievent_input->add_callback(std::bind(&TimingTriggerCandidateMaker::receive_hsievent, this, std::placeholders::_1));
   
   TLOG_DEBUG(2) << get_name() + " successfully started.";
 }
@@ -108,7 +109,7 @@ TimingTriggerCandidateMaker::do_start(const nlohmann::json& startobj)
 void
 TimingTriggerCandidateMaker::do_stop(const nlohmann::json&)
 {
-  m_hsievent_receiver->remove_callback();
+  m_hsievent_input->remove_callback();
 
   TLOG() << "Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
          << " TriggerCandidates";

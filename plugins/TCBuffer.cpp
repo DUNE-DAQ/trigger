@@ -11,6 +11,7 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "daqdataformats/SourceID.hpp"
+#include "trigger/TriggerCandidate_serialization.hpp"
 
 #include <chrono>
 #include <string>
@@ -34,8 +35,10 @@ void
 TCBuffer::init(const nlohmann::json& init_data)
 {
   try {
-    m_input_queue_tcs = get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(init_data, "tc_source"));
-    m_input_queue_dr = get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
+    m_input_queue_tcs =
+      get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(init_data, "tc_source"));
+    m_input_queue_dr =
+      get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }

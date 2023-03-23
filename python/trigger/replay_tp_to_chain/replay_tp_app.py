@@ -31,18 +31,30 @@ def get_replay_app(INPUT_FILES: [str],
                                output_sink_name = f"output{istream}")
                   for istream,input_file in enumerate(INPUT_FILES)]
 
-    modules.append(DAQModule(name = "tpm",
-                             plugin = "TriggerPrimitiveMaker",
-                             conf = tpm.ConfParams(tp_streams = tp_streams,
-                                                   number_of_loops=NUMBER_OF_LOOPS,
-                                                   tpset_time_offset=0,
-                                                   tpset_time_width=10000,
-                                                   clock_frequency_hz=clock_frequency_hz,
-                                                   maximum_wait_time_us=1000,)))
+    modules.append(
+        DAQModule(
+            name = "tpm",
+            plugin = "TriggerPrimitiveMaker",
+            conf = tpm.ConfParams(
+                tp_streams = tp_streams,
+                number_of_loops=NUMBER_OF_LOOPS,
+                tpset_time_offset=0,
+                tpset_time_width=10000,
+                clock_frequency_hz=clock_frequency_hz,
+                maximum_wait_time_us=1000,
+            )
+        )
+    )
 
     mgraph = ModuleGraph(modules)
     for istream in range(n_streams):
-        mgraph.add_endpoint(f"tpsets_rulocalhost_{istream}_link0", f"tpm.output{istream}", Direction.OUT, topic=["TPSets"])
+        # mgraph.add_endpoint(f"tpsets_rulocalhost_{istream}_link0", f"tpm.output{istream}", Direction.OUT, topic=["TPSets"])
+        mgraph.add_endpoint(
+            external_name = f"tpsets_rulocalhost_{istream}_link0",
+            data_type = 'TPSet',
+            internal_name = f"tpm.output{istream}",
+            inout = Direction.OUT,
+            is_pubsub = True
+        )
 
     return App(modulegraph=mgraph, host="localhost", name="ReplayApp")
-

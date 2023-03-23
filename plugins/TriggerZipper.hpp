@@ -109,8 +109,8 @@ public:
 
   void init(const nlohmann::json& ini)
   {
-    set_input(appfwk::connection_inst(ini, "input").uid);
-    set_output(appfwk::connection_inst(ini, "output").uid);
+    set_input(appfwk::connection_uid(ini, "input"));
+    set_output(appfwk::connection_uid(ini, "output"));
   }
 
   void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
@@ -156,6 +156,7 @@ public:
     m_tardy_counts.clear();
     m_running.store(true);
     m_thread = std::thread(&TriggerZipper::worker, this);
+    pthread_setname_np(m_thread.native_handle(), "zipper");
   }
 
   void do_stop(const nlohmann::json& /*stopobj*/)

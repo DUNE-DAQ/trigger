@@ -14,6 +14,8 @@
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerActivityMaker.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
+#include "trigger/TASet.hpp"
+#include "trigger/TPSet.hpp"
 
 #include <memory>
 #include <string>

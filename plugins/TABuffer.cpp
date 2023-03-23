@@ -33,7 +33,8 @@ TABuffer::init(const nlohmann::json& init_data)
 {
   try {
     m_input_queue_tas = get_iom_receiver<TASet>(appfwk::connection_uid(init_data, "taset_source"));
-    m_input_queue_dr = get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
+    m_input_queue_dr =
+      get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
