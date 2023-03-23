@@ -73,7 +73,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         # MAX_EXPECTED_TR_SEQUENCES = max_expected_tr_sequences,
         # TOKEN_COUNT = trigemu_token_count,
         # TRB_TIMEOUT = trigger_record_building_timeout,
-        HARDWARE_MAP=hardware_map_file,  # get_dataflow_app() complaining this is a garbage string?
+        HARDWARE_MAP="hardware_map.txt",  # get_dataflow_app() complaining this is a garbage string?
         HOST="localhost",
         # HAS_DQM=enable_dqm,
         # DEBUG=debug
