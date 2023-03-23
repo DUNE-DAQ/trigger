@@ -125,7 +125,6 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
     ++m_received_count;
 
     // Actually do the removal for payload TPSets. Leave heartbeat TPSets unmolested
-
     if (tpset->type == TPSet::kPayload) {
       size_t n_before = tpset->objects.size();
       auto it = std::remove_if(tpset->objects.begin(), tpset->objects.end(), [this](triggeralgs::TriggerPrimitive p) {
@@ -138,13 +137,6 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
 
     // The rule is that we don't send empty TPSets, so ensure that
     if (!tpset->objects.empty()) {
-      
-      //uint64_t lat_start = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-      //for (auto const& tp : tpset->objects){
-      // TLOG() << "tp_prescale_lat_start. lat_start: " << lat_start << " tp_start: " << tp.time_start <<
-      //           " channel: " << tp.channel << " sadc: " << tp.adc_integral;
-      // }
-      
       try {
         m_output_queue->send(std::move(*tpset), m_queue_timeout);
         ++m_sent_count;
