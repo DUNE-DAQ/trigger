@@ -46,7 +46,7 @@ struct Node
   using timepoint_t = TimePoint;
 
   payload_t payload;
-  ordering_t ordering;
+  ordering_t ordering; // This is essentially the start time of the TSET, and will be bit shifted by 1, in Phil's hack.
   identity_t identity;
   timepoint_t debut;
 
@@ -120,6 +120,7 @@ public:
   void set_tolerance(size_t t)             { completeness_tolerance = t; }
   void set_tolerate_incompleteness(bool b) { tolerate_incompleteness = b; }
 
+  ordering_t get_origin() {return origin;}
   /**
      Set the maximum latency
    */
@@ -266,14 +267,11 @@ public:
     const size_t target_cardinality = streams.size();
 
     if (target_cardinality < cardinality) { // absent streams
-      //TLOG_DEBUG(18) << "target_cardinality < cardinality: " << target_cardinality << " " << cardinality;
       if (latency == duration_t::zero()) { // unbound latency
         return false;
       }
       else if (now != timepoint_t::min()) {
         auto delta = now - this->top().debut;
-        //TLOG_DEBUG(18) << "delta and latency are " << std::chrono::duration_cast<std::chrono::milliseconds>(delta).count()
-        //               << " and " << std::chrono::duration_cast<std::chrono::milliseconds>(latency).count();
         if (delta < latency) {
           return false;
         }

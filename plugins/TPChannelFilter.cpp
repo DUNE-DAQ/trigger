@@ -21,7 +21,7 @@ TPChannelFilter::TPChannelFilter(const std::string& name)
   , m_thread(std::bind(&TPChannelFilter::do_work, this, std::placeholders::_1))
   , m_input_queue(nullptr)
   , m_output_queue(nullptr)
-  , m_queue_timeout(100)
+  , m_queue_timeout(1000)
 {
 
   register_command("conf", &TPChannelFilter::do_conf);
@@ -41,22 +41,23 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
   }
 }
 
-  void 
-  TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-  {
-    tpchannelfilterinfo::Info i;
+void 
+TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+{
+  tpchannelfilterinfo::Info i;
 
-    i.received_count = m_received_count.load();
-    i.sent_count = m_sent_count.load();
+  i.received_count = m_received_count.load();
+  i.sent_count = m_sent_count.load();
 
-    ci.add(i);
-  }
+  ci.add(i);
+}
 
 void
 TPChannelFilter::do_conf(const nlohmann::json& conf_arg)
 {
   m_conf = conf_arg.get<dunedaq::trigger::tpchannelfilter::Conf>();
   m_channel_map = dunedaq::detchannelmaps::make_map(m_conf.channel_map_name);
+  TLOG() << "Configured the TPChannelFilter!";
 }
 
 void
@@ -108,6 +109,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
 {
   while (true) {
     std::optional<TPSet> tpset = m_input_queue->try_receive(m_queue_timeout);;
+    using namespace std::chrono;
 
     if (!tpset.has_value()) {
       // The condition to exit the loop is that we've been stopped and
@@ -123,7 +125,6 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
     ++m_received_count;
 
     // Actually do the removal for payload TPSets. Leave heartbeat TPSets unmolested
-
     if (tpset->type == TPSet::kPayload) {
       size_t n_before = tpset->objects.size();
       auto it = std::remove_if(tpset->objects.begin(), tpset->objects.end(), [this](triggeralgs::TriggerPrimitive p) {

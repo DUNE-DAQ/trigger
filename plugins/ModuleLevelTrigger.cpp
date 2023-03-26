@@ -360,12 +360,14 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
 
     dfmessages::TriggerDecision decision = create_decision(pending_td);
 
-    TLOG_DEBUG(1)
+    TLOG()
       << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
       << decision.trigger_timestamp << " number of links " << decision.components.size() << " based on TC of type "
       << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
            pending_td.contributing_tcs[m_earliest_tc_index].type);
 
+    using namespace std::chrono;
+    uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     try {
       auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_td_output_connection);
       td_sender->send(std::move(decision), std::chrono::milliseconds(1));
