@@ -1,5 +1,5 @@
 /**
- * @file TriggerActivityMakerLowEnergyEvent.cpp
+ * @file TriggerCandidateMakerPlaneCoincidence.cpp
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -7,6 +7,6 @@
  */
 
 #include "trigger/AlgorithmPlugins.hpp"
-#include "triggeralgs/LowEnergyEvent/TriggerActivityMakerLowEnergyEvent.hpp"
+#include "triggeralgs/PlaneCoincidence/TriggerCandidateMakerPlaneCoincidence.hpp"
 
-DEFINE_DUNE_TA_MAKER(triggeralgs::TriggerActivityMakerLowEnergyEvent)
+DEFINE_DUNE_TC_MAKER(triggeralgs::TriggerCandidateMakerPlaneCoincidence)
