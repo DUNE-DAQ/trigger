@@ -15,8 +15,8 @@ local types = {
 
   tc_readout: s.record("tc_readout", [
     s.field("candidate_type", self.tc_type,        default=0,     doc="The TC type"),
-    s.field("time_before",    self.time_t,    default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.time_t,     default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.time_t,    default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.time_t,     default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
 
   sourceid : s.record("SourceID", [
@@ -26,53 +26,53 @@ local types = {
 
   c0_readout: s.record("c0_readout", [
     s.field("candidate_type", self.tc_type,      default=0,     doc="The TC type, 0=Unknown"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
   c1_readout: s.record("c1_readout", [
     s.field("candidate_type", self.tc_type,      default=1,     doc="The TC type, 1=Timing"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
   c2_readout: s.record("c2_readout", [
     s.field("candidate_type", self.tc_type,      default=2,     doc="The TC type, 2=TPCLowE"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
   c3_readout: s.record("c3_readout", [
     s.field("candidate_type", self.tc_type,      default=3,     doc="The TC type, 3=Supernova"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
   c4_readout: s.record("c4_readout", [
     s.field("candidate_type", self.tc_type,      default=4,     doc="The TC type, 4=Random"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
   c5_readout: s.record("c5_readout", [
     s.field("candidate_type", self.tc_type,      default=5,     doc="The TC type, 5=Prescale"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
   c6_readout: s.record("c6_readout", [
     s.field("candidate_type", self.tc_type,      default=6,     doc="The TC type, 6=ADCSimpleWindow"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
   c7_readout: s.record("c7_readout", [
     s.field("candidate_type", self.tc_type,      default=7,     doc="The TC type, 7=HorizontalMuon"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
   c8_readout: s.record("c8_readout", [
     s.field("candidate_type", self.tc_type,      default=8,     doc="The TC type, 8=MichelElectron"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
   c9_readout: s.record("c9_readout", [
     s.field("candidate_type", self.tc_type,      default=9,     doc="The TC type, 9=LowEnergyEvent"),
-    s.field("time_before",    self.readout_time, default=10000, doc="Time to readout before TC time [ticks]"),
-    s.field("time_after",     self.readout_time, default=20000, doc="Time to readout after TC time [ticks]"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
 
   tc_readout_map: s.record("tc_readout_map", [
