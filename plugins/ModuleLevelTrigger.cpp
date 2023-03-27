@@ -128,7 +128,7 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
     ++it;
   }
 
-  if (m_use_readout_map){
+  if (m_use_readout_map) {
     m_readout_window_map_data = params.td_readout_map;
     parse_readout_map(m_readout_window_map_data);
     print_readout_map(m_readout_window_map);
@@ -187,7 +187,10 @@ ModuleLevelTrigger::do_pause(const nlohmann::json& /*pauseobj*/)
   m_livetime_counter->set_state(LivetimeCounter::State::kPaused);
   TLOG() << "******* Triggers PAUSED! in run " << m_run_number << " *********";
   ers::info(TriggerPaused(ERS_HERE));
-  TLOG_DEBUG(3) << "TS End: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  TLOG_DEBUG(3) << "TS End: "
+                << std::chrono::duration_cast<std::chrono::microseconds>(
+                     std::chrono::system_clock::now().time_since_epoch())
+                     .count();
 }
 
 void
@@ -197,7 +200,10 @@ ModuleLevelTrigger::do_resume(const nlohmann::json& /*resumeobj*/)
   TLOG() << "******* Triggers RESUMED! in run " << m_run_number << " *********";
   m_livetime_counter->set_state(LivetimeCounter::State::kLive);
   m_paused.store(false);
-  TLOG_DEBUG(3) << "TS Start: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  TLOG_DEBUG(3) << "TS Start: "
+                << std::chrono::duration_cast<std::chrono::microseconds>(
+                     std::chrono::system_clock::now().time_since_epoch())
+                     .count();
 }
 
 void
@@ -284,10 +290,11 @@ ModuleLevelTrigger::send_trigger_decisions()
   while (m_running_flag) {
     std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_input->try_receive(std::chrono::milliseconds(10));
     if (tc.has_value()) {
-      if (m_use_readout_map){
+      if (m_use_readout_map) {
         TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
-                      << ", start/end " << tc->time_start << "/" << tc->time_end
-                      << ", readout start/end " << tc->time_candidate-m_readout_window_map[tc->type].first << "/" << tc->time_candidate+m_readout_window_map[tc->type].second;
+                      << ", start/end " << tc->time_start << "/" << tc->time_end << ", readout start/end "
+                      << tc->time_candidate - m_readout_window_map[tc->type].first << "/"
+                      << tc->time_candidate + m_readout_window_map[tc->type].second;
       } else {
         TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
                       << ", start/end " << tc->time_start << "/" << tc->time_end;
@@ -322,7 +329,7 @@ ModuleLevelTrigger::send_trigger_decisions()
     std::lock_guard<std::mutex> lock(m_td_vector_mutex);
     auto ready_tds = get_ready_tds(m_pending_tds);
     TLOG_DEBUG(10) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size()
-                  << ", sent tds: " << m_sent_tds.size();
+                   << ", sent tds: " << m_sent_tds.size();
 
     for (std::vector<PendingTD>::iterator it = ready_tds.begin(); it != ready_tds.end();) {
       if (check_overlap_td(*it)) {
@@ -382,11 +389,10 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
 
     dfmessages::TriggerDecision decision = create_decision(pending_td);
 
-    TLOG()
-      << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
-      << decision.trigger_timestamp << " number of links " << decision.components.size() << " based on TC of type "
-      << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
-           pending_td.contributing_tcs[m_earliest_tc_index].type);
+    TLOG() << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
+           << decision.trigger_timestamp << " number of links " << decision.components.size() << " based on TC of type "
+           << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
+                pending_td.contributing_tcs[m_earliest_tc_index].type);
 
     using namespace std::chrono;
     uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -432,9 +438,11 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
 
   for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
     if (check_overlap(tc, *it)) {
-      if (m_use_readout_map){
-        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate-m_readout_window_map[tc.type].first << "/" << tc.time_candidate+m_readout_window_map[tc.type].second
-                      << " overlaps with pending TD with start/end times " << it->readout_start << "/" << it->readout_end;
+      if (m_use_readout_map) {
+        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
+                      << tc.time_candidate + m_readout_window_map[tc.type].second
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
         it->contributing_tcs.push_back(tc);
         it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
                               ? it->readout_start
@@ -444,14 +452,11 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
                             : it->readout_end;
       } else {
         TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
-                      << " overlaps with pending TD with start/end times " << it->readout_start << "/" << it->readout_end;
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
         it->contributing_tcs.push_back(tc);
-        it->readout_start = (tc.time_start >= it->readout_start)
-                             ? it->readout_start
-                             : tc.time_start;
-        it->readout_end = (tc.time_end >= it->readout_end)
-                           ? tc.time_end
-                           : it->readout_end;
+        it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
+        it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
       }
       it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
       added_to_existing = true;
@@ -463,7 +468,7 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
   if (!added_to_existing) {
     PendingTD td_candidate;
     td_candidate.contributing_tcs.push_back(tc);
-    if (m_use_readout_map){
+    if (m_use_readout_map) {
       td_candidate.readout_start = tc.time_candidate - m_readout_window_map[tc.type].first;
       td_candidate.readout_end = tc.time_candidate + m_readout_window_map[tc.type].second;
     } else {
@@ -481,12 +486,15 @@ ModuleLevelTrigger::add_tc_ignored(const triggeralgs::TriggerCandidate& tc)
 {
   for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
     if (check_overlap(tc, *it)) {
-      if (m_use_readout_map){
-        TLOG_DEBUG(3) << "!Ignored! TC with start/end times " << tc.time_candidate-m_readout_window_map[tc.type].first << "/" << tc.time_candidate+m_readout_window_map[tc.type].second
-                      << " overlaps with pending TD with start/end times " << it->readout_start << "/" << it->readout_end;
+      if (m_use_readout_map) {
+        TLOG_DEBUG(3) << "!Ignored! TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first
+                      << "/" << tc.time_candidate + m_readout_window_map[tc.type].second
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
       } else {
         TLOG_DEBUG(3) << "!Ignored! TC with start/end times " << tc.time_start << "/" << tc.time_end
-                      << " overlaps with pending TD with start/end times " << it->readout_start << "/" << it->readout_end;
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
       }
       it->contributing_tcs.push_back(tc);
       break;
@@ -499,12 +507,11 @@ ModuleLevelTrigger::add_tc_ignored(const triggeralgs::TriggerCandidate& tc)
 bool
 ModuleLevelTrigger::check_overlap(const triggeralgs::TriggerCandidate& tc, const PendingTD& pending_td)
 {
-  if (m_use_readout_map){
+  if (m_use_readout_map) {
     return !(((tc.time_candidate + m_readout_window_map[tc.type].second) < pending_td.readout_start) ||
              ((tc.time_candidate - m_readout_window_map[tc.type].first > pending_td.readout_end)));
   } else {
-    return !((tc.time_end < pending_td.readout_start) ||
-             (tc.time_start > pending_td.readout_end));
+    return !((tc.time_end < pending_td.readout_start) || (tc.time_start > pending_td.readout_end));
   }
 }
 
