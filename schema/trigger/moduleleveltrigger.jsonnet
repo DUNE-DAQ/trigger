@@ -11,6 +11,7 @@ local types = {
   time_t : s.number("time_t", "i8", doc="Time"),
   tc_type : s.number("tc_type", "i4", doc="TC type"),
   tc_types : s.sequence("tc_types", self.tc_type, doc="List of TC types"),
+  use_ro_map : s.boolean("use_ro_map", doc="Flaf to use custom readout map"),
   readout_time:    s.number(   "ROTime",        "i8", doc="A readout time in ticks"),
 
   tc_readout: s.record("tc_readout", [
@@ -98,6 +99,7 @@ local types = {
       s.field("buffer_timeout", self.time_t, 100, doc="Buffering timeout [ms] for new TCs"),
       s.field("td_readout_limit", self.time_t, 1000, doc="Time limit [ms] for the length of TD readout window"),
       s.field("ignore_tc", self.tc_types, [], doc="List of TC types to be ignored"),
+      s.field("use_readout_map", self.use_ro_map, default=false, doc="Option to use defalt readout windows (tc.time_start and tc.time_end) or a custom readout map from daqconf"),
       s.field("td_readout_map", self.tc_readout_map, self.tc_readout_map, doc="A map holding readout pre/post depending on TC type"),
   ], doc="ModuleLevelTrigger configuration parameters"),
   

@@ -137,6 +137,7 @@ private:
   int get_earliest_tc_index(const PendingTD& pending_td);
 
   // Readout map config
+  bool m_use_readout_map;
   nlohmann::json m_readout_window_map_data;
   std::map<detdataformats::trigger::TriggerCandidateData::Type,
            std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
