@@ -106,9 +106,7 @@ daq_add_plugin(TriggerCandidateMakerSupernovaPlugin duneTCMaker LINK_LIBRARIES t
 daq_add_plugin(TriggerDecisionMakerSupernovaPlugin duneTDMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMakerMichelElectronPlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMakerMichelElectronPlugin duneTCMaker LINK_LIBRARIES trigger)
-# daq_add_plugin(TriggerActivityMakerDBSCANPlugin duneTAMaker LINK_LIBRARIES trigger)
-
-
+daq_add_plugin(TriggerActivityMakerMultiProngPlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMakerDBSCANPlugin duneTAMaker LINK_LIBRARIES trigger)
 
 ##############################################################################
