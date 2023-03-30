@@ -23,7 +23,7 @@ find_package(readoutlibs REQUIRED)
 find_package(CLI11 REQUIRED)
 
 ##############################################################################
-# Main library
+# Main library 
 
 daq_add_library(TokenManager.cpp LivetimeCounter.cpp
   LINK_LIBRARIES
