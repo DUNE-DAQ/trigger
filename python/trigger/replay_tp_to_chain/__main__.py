@@ -24,17 +24,16 @@ import click
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('-s', '--slowdown-factor', default=1.0)
 @click.option('-f', '--input-file', type=click.Path(exists=True, dir_okay=False), multiple=True)
-@click.option('--trigger-activity-plugin', default='TriggerActivityMakerPrescalePlugin', help="Trigger activity algorithm plugin")
-@click.option('--trigger-activity-config', default='dict(prescale=100)', help="Trigger activity algorithm config (string containing python dictionary)")
-@click.option('--trigger-candidate-plugin', default='TriggerCandidateMakerPrescalePlugin', help="Trigger candidate algorithm plugin")
-@click.option('--trigger-candidate-config', default='dict(prescale=100)', help="Trigger candidate algorithm config (string containing python dictionary)")
+@click.option('--trigger-activity-plugin', default=['TriggerActivityMakerPrescalePlugin'], multiple=True, help="List of activity algorithm plugins")
+@click.option('--trigger-activity-config', default=['dict(prescale=100)'], multiple=True, help="Trigger activity algorithm config (string containing python dictionary)")
+@click.option('--trigger-candidate-plugin', default=['TriggerCandidateMakerPrescalePlugin'], multiple=True, help="Trigger candidate algorithm plugin")
+@click.option('--trigger-candidate-config', default=['dict(prescale=100)'], multiple=True, help="Trigger candidate algorithm config (string containing python dictionary)")
 @click.option('-l', '--number-of-loops', default='-1', help="Number of times to loop over the input files (-1 for infinite)")
 @click.argument('json_dir', type=click.Path())
 def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_config, trigger_candidate_plugin, trigger_candidate_config, number_of_loops, json_dir):
     """
       JSON_DIR: Json file output folder
     """
-
     the_system = System()
 
     console.log("Loading faketp config generator")
@@ -130,9 +129,10 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         TP_CONFIG = tp_infos,
         # RU_CONFIG = ru_configs,
         ACTIVITY_PLUGIN = trigger_activity_plugin,
-        ACTIVITY_CONFIG = eval(trigger_activity_config),
+        ACTIVITY_PLUGINS = trigger_activity_plugin,
+        ACTIVITY_CONFIG = trigger_activity_config,
         CANDIDATE_PLUGIN = trigger_candidate_plugin,
-        CANDIDATE_CONFIG = eval(trigger_candidate_config),
+        CANDIDATE_CONFIG = trigger_candidate_config,
         USE_HSI_INPUT = False,
         # SYSTEM_TYPE = system_type,
         # TTCM_S1=ttcm_s1,
@@ -144,7 +144,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         # CHANNEL_MAP_NAME = tpg_channel_map,
         # DATA_REQUEST_TIMEOUT=trigger_data_request_timeout,
         HOST="localhost",
-        # DEBUG=debug
+        # DEBUG=True
     )
 
     from daqconf.core.fragment_producers import connect_all_fragment_producers, set_mlt_links

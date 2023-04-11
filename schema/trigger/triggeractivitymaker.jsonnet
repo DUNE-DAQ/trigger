@@ -3,14 +3,14 @@ local ns = "dunedaq.trigger.triggeractivitymaker";
 local s = moo.oschema.schema(ns);
 
 local types = {
-  name: s.string("Name", ".*", doc="Name of a plugin etc"),
+  name: s.string("Name", ".*", doc="Name of a TAMaker to setup."),
   element: s.number("Element", "u4", doc="32bit element identifier for a GeoID"),
   time: s.number("Time", "u8", doc="A count of timestamp ticks"),
   any: s.any("Data", doc="Any"),
 
   conf: s.record("Conf", [
     s.field("activity_maker", self.name,
-      doc="Name of the activity maker implementation to be used via plugin"),
+      doc="Name of a TAMaker implementation to be used via plugin"),
     s.field("geoid_element", self.element,
       doc="The element used in the GeoID for TASets produced by this maker"),
     s.field("window_time", self.time,
