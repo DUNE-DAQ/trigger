@@ -61,7 +61,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
     # necessary TPInfo objects for get_trigger_app()
     hw_map_file = open("hardware_map.txt", "x")
     for idx,f in enumerate(input_file):
-        hw_map_file.write(f"0 0 0 {idx} 3 localhost {idx} 0 0\n")
+        hw_map_file.write(f"0{idx} 0 1 3 localhost 0 0 {idx}\n")
     hw_map_file.close() # Save the file so the next line sees the changes
     hw_map_service = HardwareMapService(hw_map_file.name)
     serialized_hw_map = hw_map_service.get_hardware_map_json()
