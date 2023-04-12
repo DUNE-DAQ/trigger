@@ -147,6 +147,10 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         # DEBUG=True
     )
 
+    print("Building graph .dot files...")
+    for name in the_system.apps:
+        the_system.apps[name].export(f"{name}.dot")
+
     from daqconf.core.fragment_producers import connect_all_fragment_producers, set_mlt_links
 
     connect_all_fragment_producers(the_system)
