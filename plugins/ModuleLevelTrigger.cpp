@@ -311,7 +311,8 @@ ModuleLevelTrigger::send_trigger_decisions()
           m_tc_ignored_count++;
 
           if (m_tc_merging) {
-            // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend readout
+            // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend
+            // readout
             std::lock_guard<std::mutex> lock(m_td_vector_mutex);
             add_tc_ignored(*tc);
           }
@@ -340,11 +341,11 @@ ModuleLevelTrigger::send_trigger_decisions()
         m_earliest_tc_index = get_earliest_tc_index(*it);
         auto const& earliest_tc = it->contributing_tcs[m_earliest_tc_index];
         ers::warning(TCOutOfTimeout(ERS_HERE,
-                                  get_name(),
-                                  static_cast<int>(earliest_tc.type),
-                                  earliest_tc.time_candidate,
-                                  it->readout_start,
-                                  it->readout_end));
+                                    get_name(),
+                                    static_cast<int>(earliest_tc.type),
+                                    earliest_tc.time_candidate,
+                                    it->readout_start,
+                                    it->readout_end));
         if (!m_send_timed_out_tds) { // if this is not set, drop the td
           ++m_td_dropped_count;
           m_td_dropped_tc_count += it->contributing_tcs.size();
