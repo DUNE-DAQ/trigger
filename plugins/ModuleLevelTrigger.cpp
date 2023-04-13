@@ -111,12 +111,14 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
 
   m_configured_flag.store(true);
 
+  m_tc_merging = params.merge_overlapping_tcs;
   m_buffer_timeout = params.buffer_timeout;
   m_send_timed_out_tds = params.td_out_of_timeout;
   m_td_readout_limit = params.td_readout_limit;
   m_ignored_tc_types = params.ignore_tc;
   m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
   m_use_readout_map = params.use_readout_map;
+  TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
@@ -436,33 +438,36 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
   int64_t tc_wallclock_arrived =
     std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-  for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
-    if (check_overlap(tc, *it)) {
-      if (m_use_readout_map) {
-        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
-                      << tc.time_candidate + m_readout_window_map[tc.type].second
-                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
-                      << it->readout_end;
-        it->contributing_tcs.push_back(tc);
-        it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
-                              ? it->readout_start
-                              : (tc.time_candidate - m_readout_window_map[tc.type].first);
-        it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
-                            ? (tc.time_candidate + m_readout_window_map[tc.type].second)
-                            : it->readout_end;
-      } else {
-        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
-                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
-                      << it->readout_end;
-        it->contributing_tcs.push_back(tc);
-        it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
-        it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
+  if (m_tc_merging) {
+
+    for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
+      if (check_overlap(tc, *it)) {
+        if (m_use_readout_map) {
+          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
+                        << tc.time_candidate + m_readout_window_map[tc.type].second
+                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                        << it->readout_end;
+          it->contributing_tcs.push_back(tc);
+          it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
+                                ? it->readout_start
+                                : (tc.time_candidate - m_readout_window_map[tc.type].first);
+          it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
+                              ? (tc.time_candidate + m_readout_window_map[tc.type].second)
+                              : it->readout_end;
+        } else {
+          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
+                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                        << it->readout_end;
+          it->contributing_tcs.push_back(tc);
+          it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
+          it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
+        }
+        it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
+        added_to_existing = true;
+        break;
       }
-      it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
-      added_to_existing = true;
-      break;
+      ++it;
     }
-    ++it;
   }
 
   if (!added_to_existing) {

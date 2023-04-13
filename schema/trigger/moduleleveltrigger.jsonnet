@@ -5,13 +5,11 @@ local s = moo.oschema.schema(ns);
 local types = {
   element_id : s.number("element_id_t", "u4"),
   subsystem : s.string("subsystem_t"),
-  hsi_tt_pt : s.boolean("hsi_tt_pt"),
-  td_out_of_timeout_b : s.boolean("td_out_of_timeout_b"),
+  flag : s.boolean("Boolean", doc="Option for flags, true/false"),
   candidate_type_t : s.number("candidate_type_t", "u4", doc="Candidate type"),
   time_t : s.number("time_t", "i8", doc="Time"),
   tc_type : s.number("tc_type", "i4", doc="TC type"),
   tc_types : s.sequence("tc_types", self.tc_type, doc="List of TC types"),
-  use_ro_map : s.boolean("use_ro_map", doc="Flaf to use custom readout map"),
   readout_time:    s.number(   "ROTime",        "i8", doc="A readout time in ticks"),
 
   tc_readout: s.record("tc_readout", [
@@ -94,12 +92,13 @@ local types = {
   conf : s.record("ConfParams", [
     s.field("links", self.linkvec,
       doc="List of link identifiers that may be included into trigger decision"),
-      s.field("hsi_trigger_type_passthrough", self.hsi_tt_pt, doc="Option to override the trigger type inside MLT"),
-      s.field("td_out_of_timeout", self.td_out_of_timeout_b, doc="Option to drop TD if TC comes out of timeout window"),
+      s.field("hsi_trigger_type_passthrough", self.flag, default=false, doc="Option to override the trigger type inside MLT"),
+      s.field("merge_overlapping_tcs", self.flag, default=true, doc="Flag to allow(true)/disable(false) merging of overlapping TCs when forming TD"),
+      s.field("td_out_of_timeout", self.flag, default=true, doc="Option to send TD if TC comes out of timeout window (late, overlapping already sent TD"),
       s.field("buffer_timeout", self.time_t, 100, doc="Buffering timeout [ms] for new TCs"),
       s.field("td_readout_limit", self.time_t, 1000, doc="Time limit [ms] for the length of TD readout window"),
       s.field("ignore_tc", self.tc_types, [], doc="List of TC types to be ignored"),
-      s.field("use_readout_map", self.use_ro_map, default=false, doc="Option to use defalt readout windows (tc.time_start and tc.time_end) or a custom readout map from daqconf"),
+      s.field("use_readout_map", self.flag, default=false, doc="Option to use defalt readout windows (tc.time_start and tc.time_end) or a custom readout map from daqconf"),
       s.field("td_readout_map", self.tc_readout_map, self.tc_readout_map, doc="A map holding readout pre/post depending on TC type"),
   ], doc="ModuleLevelTrigger configuration parameters"),
   

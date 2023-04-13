@@ -91,6 +91,7 @@ private:
   std::atomic<bool> m_paused;
   std::atomic<bool> m_dfo_is_busy;
   std::atomic<bool> m_hsi_passthrough;
+  std::atomic<bool> m_tc_merging;
 
   dfmessages::trigger_number_t m_last_trigger_number;
 
