@@ -7,7 +7,7 @@
  */
 #include "CLI/CLI.hpp"
 
-#include "detdataformats/trigger/TriggerPrimitive.hpp"
+#include "trgdataformats/TriggerPrimitive.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include <daqdataformats/TimeSlice.hpp>
@@ -37,7 +37,7 @@ main(int argc, char** argv)
   
   auto fragment_paths = hdf5file.get_all_fragment_dataset_paths();
 
-  using dunedaq::detdataformats::trigger::TriggerPrimitive;
+  using dunedaq::trgdataformats::TriggerPrimitive;
   
   // Populate the map with the TRHs and DS fragments
   for (auto fragment_path: fragment_paths){
