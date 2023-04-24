@@ -31,7 +31,7 @@ class TestChannelFilterApp(App):
                  KEEP_COLLECTION: bool,
                  KEEP_INDUCTION: bool):
 
-        clock_frequency_hz = 50_000_000 / SLOWDOWN_FACTOR
+        clock_frequency_hz = 62_500_000 / SLOWDOWN_FACTOR
         modules = []
 
         n_streams = len(INPUT_FILES)

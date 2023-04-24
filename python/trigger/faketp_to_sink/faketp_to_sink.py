@@ -26,7 +26,7 @@ class FakeTPToSinkApp(App):
                  INPUT_FILES: [str],
                  SLOWDOWN_FACTOR: float):
 
-        clock_frequency_hz = 50_000_000 / SLOWDOWN_FACTOR
+        clock_frequency_hz = 62_500_000 / SLOWDOWN_FACTOR
         modules = []
 
         n_streams = len(INPUT_FILES)
