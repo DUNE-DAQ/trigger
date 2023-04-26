@@ -12,7 +12,7 @@ local types = {
     s.field("trigger_interval_ticks", self.ticks, 64000000,
       doc="Interval between triggers in 16 ns time ticks (default 1.024 s) "),
 
-    s.field("clock_frequency_hz", self.ticks, 50000000,
+    s.field("clock_frequency_hz", self.ticks, 62500000,
       doc="Assumed clock frequency in Hz (for current-timestamp estimation)"),
 
     s.field("timestamp_method", self.timestamp_estimation, "kTimeSync",
