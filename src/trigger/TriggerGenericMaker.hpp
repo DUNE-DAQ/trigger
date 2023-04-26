@@ -18,7 +18,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
-#include "detdataformats/trigger/Types.hpp"
+#include "trgdataformats/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"

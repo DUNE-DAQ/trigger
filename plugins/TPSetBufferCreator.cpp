@@ -136,7 +136,7 @@ std::unique_ptr<daqdataformats::Fragment>
 TPSetBufferCreator::convert_to_fragment(std::vector<TPSet>& tpsets, dfmessages::DataRequest input_data_request)
 {
 
-  using detdataformats::trigger::TriggerPrimitive;
+  using trgdataformats::TriggerPrimitive;
 
   std::vector<TriggerPrimitive> tps;
   

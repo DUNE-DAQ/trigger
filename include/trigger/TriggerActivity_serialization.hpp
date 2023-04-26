@@ -17,7 +17,7 @@ MSGPACK_ADD_ENUM(triggeralgs::TriggerActivity::Type)
 
 MSGPACK_ADD_ENUM(triggeralgs::TriggerActivity::Algorithm)
 
-DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(dunedaq::detdataformats::trigger,
+DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(dunedaq::trgdataformats,
                                  TriggerActivityData,
                                  time_start,
                                  time_end,
