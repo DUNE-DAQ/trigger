@@ -7,7 +7,7 @@
  */
 #include "CLI/CLI.hpp"
 
-#include "detdataformats/trigger/TriggerPrimitive.hpp"
+#include "trgdataformats/TriggerPrimitive.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include <daqdataformats/Fragment.hpp>
@@ -69,7 +69,7 @@ main(int argc, char** argv)
   
   int n_failures = 0;
 
-  using dunedaq::detdataformats::trigger::TriggerPrimitive;
+  using dunedaq::trgdataformats::TriggerPrimitive;
   for (auto const& [trigger_number, record] : trigger_records) {
     std::cout << "Trigger number " << trigger_number << " with TRH pointer " << record.header.get() << " and "
               << record.fragments.size() << " fragments" << std::endl;

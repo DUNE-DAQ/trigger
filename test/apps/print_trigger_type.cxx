@@ -7,7 +7,7 @@
  */
 #include "CLI/CLI.hpp"
 
-#include "detdataformats/trigger/TriggerPrimitive.hpp"
+#include "trgdataformats/TriggerPrimitive.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include <daqdataformats/Fragment.hpp>

@@ -11,13 +11,13 @@
 
 #include "serialization/Serialization.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
-#include "detdataformats/trigger/Types.hpp"
+#include "trgdataformats/Types.hpp"
 
-MSGPACK_ADD_ENUM(dunedaq::detdataformats::trigger::TriggerPrimitive::Type)
+MSGPACK_ADD_ENUM(dunedaq::trgdataformats::TriggerPrimitive::Type)
 
-MSGPACK_ADD_ENUM(dunedaq::detdataformats::trigger::TriggerPrimitive::Algorithm)
+MSGPACK_ADD_ENUM(dunedaq::trgdataformats::TriggerPrimitive::Algorithm)
 
-DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(dunedaq::detdataformats::trigger,
+DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(dunedaq::trgdataformats,
                                  TriggerPrimitive,
                                  time_start,
                                  time_peak,

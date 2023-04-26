@@ -14,7 +14,7 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
-#include "detdataformats/trigger/Types.hpp"
+#include "trgdataformats/Types.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -139,7 +139,7 @@ CustomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp,
   candidate.time_end = timestamp;
   candidate.time_candidate = timestamp;
   candidate.detid = { 0 };
-  candidate.type = static_cast<dunedaq::detdataformats::trigger::TriggerCandidateData::Type>(tc_type);
+  candidate.type = static_cast<dunedaq::trgdataformats::TriggerCandidateData::Type>(tc_type);
   candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kCustom;
 
   return candidate;

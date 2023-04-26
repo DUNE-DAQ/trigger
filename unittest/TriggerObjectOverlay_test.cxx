@@ -21,7 +21,7 @@
 
 using triggeralgs::TriggerActivity;
 
-using namespace dunedaq::detdataformats::trigger;
+using namespace dunedaq::trgdataformats;
 
 BOOST_TEST_DONT_PRINT_LOG_VALUE(triggeralgs::TriggerCandidate)
 BOOST_TEST_DONT_PRINT_LOG_VALUE(TriggerCandidateData)

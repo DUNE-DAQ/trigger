@@ -16,7 +16,7 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
-#include "detdataformats/trigger/Types.hpp"
+#include "trgdataformats/Types.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -649,14 +649,14 @@ void
 ModuleLevelTrigger::parse_readout_map(const nlohmann::json& data)
 {
   for (auto readout_type : data) {
-    m_readout_window_map[static_cast<detdataformats::trigger::TriggerCandidateData::Type>(
+    m_readout_window_map[static_cast<trgdataformats::TriggerCandidateData::Type>(
       readout_type["candidate_type"])] = { readout_type["time_before"], readout_type["time_after"] };
   }
   return;
 }
 
 void
-ModuleLevelTrigger::print_readout_map(std::map<detdataformats::trigger::TriggerCandidateData::Type,
+ModuleLevelTrigger::print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
                                                std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
 {
   TLOG_DEBUG(3) << "MLT TD Readout map:";

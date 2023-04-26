@@ -13,11 +13,11 @@
 #include "serialization/Serialization.hpp"
 #include "trigger/Set.hpp"
 #include "trigger/TriggerPrimitive_serialization.hpp"
-#include "detdataformats/trigger/TriggerPrimitive.hpp"
+#include "trgdataformats/TriggerPrimitive.hpp"
 
 namespace dunedaq::trigger {
 
-using TPSet = Set<detdataformats::trigger::TriggerPrimitive>;
+using TPSet = Set<trgdataformats::TriggerPrimitive>;
 
 } // namespace dunedaq::trigger
 

@@ -7,8 +7,8 @@
  */
 #include "CLI/CLI.hpp"
 
-#include "detdataformats/trigger/TriggerObjectOverlay.hpp"
-#include "detdataformats/trigger/TriggerPrimitive.hpp"
+#include "trgdataformats/TriggerObjectOverlay.hpp"
+#include "trgdataformats/TriggerPrimitive.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include <daqdataformats/Fragment.hpp>
@@ -19,10 +19,10 @@
 
 #include <iostream>
 
-using dunedaq::detdataformats::trigger::TriggerActivity;
-using dunedaq::detdataformats::trigger::TriggerActivityData;
-using dunedaq::detdataformats::trigger::TriggerCandidate;
-using dunedaq::detdataformats::trigger::TriggerPrimitive;
+using dunedaq::trgdataformats::TriggerActivity;
+using dunedaq::trgdataformats::TriggerActivityData;
+using dunedaq::trgdataformats::TriggerCandidate;
+using dunedaq::trgdataformats::TriggerPrimitive;
 
 void
 print_tp(const TriggerPrimitive& prim, size_t offset = 0)
@@ -83,7 +83,7 @@ print_tas(std::unique_ptr<dunedaq::daqdataformats::Fragment>&& frag)
 }
 
 void
-print_ta_data(const dunedaq::detdataformats::trigger::TriggerActivityData& ta_data)
+print_ta_data(const dunedaq::trgdataformats::TriggerActivityData& ta_data)
 {
   std::cout << "\t\t" << ta_data.time_start << "\t" << ta_data.time_end << "\t" << ta_data.channel_start << "\t"
             << ta_data.channel_end << std::endl;
