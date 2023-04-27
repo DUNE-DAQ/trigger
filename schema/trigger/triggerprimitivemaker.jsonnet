@@ -31,7 +31,7 @@ local types = {
                 doc="Offset for the TPSet boundaries: [ n*width+offset, (n+1)*width+offset ]"),
         s.field("tpset_time_width", self.rows, 1,
                 doc="Width int time of the generated TPSets"),
-        s.field("clock_frequency_hz", self.freq, 50000000,
+        s.field("clock_frequency_hz", self.freq, 62500000,
                 doc="Simulated clock frequency in Hz"),
         s.field("maximum_wait_time_us", self.microseconds, 1000,
                 doc="Maximum wait time until the running flag is checked in microseconds"),

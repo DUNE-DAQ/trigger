@@ -21,8 +21,8 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/SourceID.hpp"
-#include "detdataformats/trigger/TriggerCandidateData.hpp"
-#include "detdataformats/trigger/Types.hpp"
+#include "trgdataformats/TriggerCandidateData.hpp"
+#include "trgdataformats/Types.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
@@ -140,11 +140,11 @@ private:
   // Readout map config
   bool m_use_readout_map;
   nlohmann::json m_readout_window_map_data;
-  std::map<detdataformats::trigger::TriggerCandidateData::Type,
+  std::map<trgdataformats::TriggerCandidateData::Type,
            std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
     m_readout_window_map;
   void parse_readout_map(const nlohmann::json& data);
-  void print_readout_map(std::map<detdataformats::trigger::TriggerCandidateData::Type,
+  void print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
                                   std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map);
 
   // Create the next trigger decision

@@ -17,6 +17,7 @@ find_package(utilities REQUIRED)
 find_package(iomanager REQUIRED)
 find_package(daqdataformats REQUIRED)
 find_package(detdataformats REQUIRED)
+find_package(trgdataformats REQUIRED)
 find_package(detchannelmaps REQUIRED)
 find_package(hdf5libs REQUIRED)
 find_package(readoutlibs REQUIRED)
@@ -34,6 +35,7 @@ daq_add_library(TokenManager.cpp LivetimeCounter.cpp
   utilities::utilities
   iomanager::iomanager
   detdataformats::detdataformats
+  trgdataformats::trgdataformats
   Boost::iostreams # Boost::iostreams comes in via readoutlibs
   detchannelmaps::detchannelmaps)
 

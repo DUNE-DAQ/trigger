@@ -144,7 +144,7 @@ template<>
 uint64_t
 get_frame_iterator_timestamp(uint8_t* it)
 {
-  detdataformats::trigger::TriggerActivity* activity = reinterpret_cast<detdataformats::trigger::TriggerActivity*>(it);
+  trgdataformats::TriggerActivity* activity = reinterpret_cast<trgdataformats::TriggerActivity*>(it);
   return activity->data.time_start;
 }
 
