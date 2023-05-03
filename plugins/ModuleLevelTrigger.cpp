@@ -111,12 +111,14 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
 
   m_configured_flag.store(true);
 
+  m_tc_merging = params.merge_overlapping_tcs;
   m_buffer_timeout = params.buffer_timeout;
   m_send_timed_out_tds = params.td_out_of_timeout;
   m_td_readout_limit = params.td_readout_limit;
   m_ignored_tc_types = params.ignore_tc;
   m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
   m_use_readout_map = params.use_readout_map;
+  TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
@@ -308,9 +310,12 @@ ModuleLevelTrigger::send_trigger_decisions()
           TLOG_DEBUG(3) << "ignoring...";
           m_tc_ignored_count++;
 
-          // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend readout
-          std::lock_guard<std::mutex> lock(m_td_vector_mutex);
-          add_tc_ignored(*tc);
+          if (m_tc_merging) {
+            // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend
+            // readout
+            std::lock_guard<std::mutex> lock(m_td_vector_mutex);
+            add_tc_ignored(*tc);
+          }
           continue;
         }
       }
@@ -332,25 +337,30 @@ ModuleLevelTrigger::send_trigger_decisions()
                    << ", sent tds: " << m_sent_tds.size();
 
     for (std::vector<PendingTD>::iterator it = ready_tds.begin(); it != ready_tds.end();) {
-      if (check_overlap_td(*it)) {
-        m_earliest_tc_index = get_earliest_tc_index(*it);
-        auto const& earliest_tc = it->contributing_tcs[m_earliest_tc_index];
-        ers::error(TCOutOfTimeout(ERS_HERE,
-                                  get_name(),
-                                  static_cast<int>(earliest_tc.type),
-                                  earliest_tc.time_candidate,
-                                  it->readout_start,
-                                  it->readout_end));
-        if (!m_send_timed_out_tds) { // if this is not set, drop the td
-          ++m_td_dropped_count;
-          m_td_dropped_tc_count += it->contributing_tcs.size();
-          it = ready_tds.erase(it);
-          TLOG_DEBUG(3) << "overlapping previous TD, dropping!";
-        } else {
+      if (m_tc_merging) {
+        if (check_overlap_td(*it)) {
+          m_earliest_tc_index = get_earliest_tc_index(*it);
+          auto const& earliest_tc = it->contributing_tcs[m_earliest_tc_index];
+          ers::warning(TCOutOfTimeout(ERS_HERE,
+                                      get_name(),
+                                      static_cast<int>(earliest_tc.type),
+                                      earliest_tc.time_candidate,
+                                      it->readout_start,
+                                      it->readout_end));
+          if (!m_send_timed_out_tds) { // if this is not set, drop the td
+            ++m_td_dropped_count;
+            m_td_dropped_tc_count += it->contributing_tcs.size();
+            it = ready_tds.erase(it);
+            TLOG_DEBUG(3) << "overlapping previous TD, dropping!";
+          } else { // overlap, but set to sent overlapping TD
+            call_tc_decision(*it);
+            ++it;
+          }
+        } else { // no overlap, send normal TD
           call_tc_decision(*it);
           ++it;
         }
-      } else {
+      } else { // no merging, send normal TD
         call_tc_decision(*it);
         ++it;
       }
@@ -436,33 +446,36 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
   int64_t tc_wallclock_arrived =
     std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-  for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
-    if (check_overlap(tc, *it)) {
-      if (m_use_readout_map) {
-        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
-                      << tc.time_candidate + m_readout_window_map[tc.type].second
-                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
-                      << it->readout_end;
-        it->contributing_tcs.push_back(tc);
-        it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
-                              ? it->readout_start
-                              : (tc.time_candidate - m_readout_window_map[tc.type].first);
-        it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
-                            ? (tc.time_candidate + m_readout_window_map[tc.type].second)
-                            : it->readout_end;
-      } else {
-        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
-                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
-                      << it->readout_end;
-        it->contributing_tcs.push_back(tc);
-        it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
-        it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
+  if (m_tc_merging) {
+
+    for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
+      if (check_overlap(tc, *it)) {
+        if (m_use_readout_map) {
+          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
+                        << tc.time_candidate + m_readout_window_map[tc.type].second
+                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                        << it->readout_end;
+          it->contributing_tcs.push_back(tc);
+          it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
+                                ? it->readout_start
+                                : (tc.time_candidate - m_readout_window_map[tc.type].first);
+          it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
+                              ? (tc.time_candidate + m_readout_window_map[tc.type].second)
+                              : it->readout_end;
+        } else {
+          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
+                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                        << it->readout_end;
+          it->contributing_tcs.push_back(tc);
+          it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
+          it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
+        }
+        it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
+        added_to_existing = true;
+        break;
       }
-      it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
-      added_to_existing = true;
-      break;
+      ++it;
     }
-    ++it;
   }
 
   if (!added_to_existing) {
