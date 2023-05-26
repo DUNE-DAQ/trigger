@@ -21,12 +21,30 @@ find_package(detchannelmaps REQUIRED)
 find_package(hdf5libs REQUIRED)
 find_package(readoutlibs REQUIRED)
 find_package(CLI11 REQUIRED)
+##############################################################################
+# OKS stuff
+find_package(okssystem REQUIRED)
+find_package(genconfig REQUIRED)
+find_package(oksdbinterfaces REQUIRED)
+find_package(dunedaqdal REQUIRED)
+
+daq_generate_dal(trigger.schema.xml
+  NAMESPACE dunedaq::dal
+  INCLUDE ${CMAKE_CODEGEN_BINARY_DIR}/include/${PROJECT_NAME}
+  INCLUDE_DIRECTORIES ${dunedaqdal_DIR}
+  CPP ${CMAKE_CODEGEN_BINARY_DIR}/src
+  CPP_OUTPUT  dal_cpp_srcs
+  DUMP_OUTPUT cpp_dump_src)
 
 ##############################################################################
 # Main library
 
-daq_add_library(TokenManager.cpp LivetimeCounter.cpp
+daq_add_library(${dal_cpp_srcs} TokenManager.cpp LivetimeCounter.cpp
+  DAL
   LINK_LIBRARIES
+  dunedaqdal::dunedaqdal
+  oksdbinterfaces::oksdbinterfaces
+  okssystem::okssystem
   appfwk::appfwk
   logging::logging
   dfmessages::dfmessages
@@ -65,7 +83,7 @@ daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.
 ##############################################################################
 # Plugins
 
-daq_add_plugin(TimingTriggerCandidateMaker duneDAQModule SCHEMA LINK_LIBRARIES trigger)
+#daq_add_plugin(TimingTriggerCandidateMaker duneDAQModule SCHEMA LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerPrimitiveMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
