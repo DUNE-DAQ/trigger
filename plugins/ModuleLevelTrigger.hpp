@@ -137,6 +137,14 @@ private:
   int m_earliest_tc_index;
   int get_earliest_tc_index(const PendingTD& pending_td);
 
+  // Bitwords logic
+  bool m_bitword_check;
+  std::bitset<16> m_TD_bitword;
+  std::vector< std::bitset<16> > m_trigger_bitwords;
+  std::bitset<16> get_TD_bitword(const PendingTD& ready_td);
+  void print_trigger_bitwords( std::vector< std::bitset<16> > trigger_bitwords );
+  bool check_trigger_bitwords();
+
   // Readout map config
   bool m_use_readout_map;
   nlohmann::json m_readout_window_map_data;
