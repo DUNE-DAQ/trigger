@@ -89,7 +89,7 @@ CustomTriggerCandidateMaker::do_configure(const nlohmann::json& obj)
 }
 
 void
-CustomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
+CustomTriggerCandidateMaker::do_start(const nlohmann::json& /*obj*/)
 {
 
   m_running_flag.store(true);
