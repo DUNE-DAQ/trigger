@@ -138,6 +138,8 @@ private:
   int get_earliest_tc_index(const PendingTD& pending_td);
 
   // Bitwords logic
+  bool m_use_bitwords;
+  nlohmann::json m_trigger_bitwords_json;
   bool m_bitword_check;
   std::bitset<16> m_TD_bitword;
   std::vector< std::bitset<16> > m_trigger_bitwords;

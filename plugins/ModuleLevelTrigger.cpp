@@ -118,11 +118,13 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   m_ignored_tc_types = params.ignore_tc;
   m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
   m_use_readout_map = params.use_readout_map;
+  m_use_bitwords = params.use_bitwords;
   TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
   TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
+  TLOG_DEBUG(3) << "Use bitwords: " << m_use_bitwords;
   TLOG_DEBUG(3) << "Ignoring TC types: " << m_ignoring_tc_types;
   TLOG_DEBUG(3) << "TC types to ignore: ";
   for (std::vector<int>::iterator it = m_ignored_tc_types.begin(); it != m_ignored_tc_types.end();) {
@@ -134,6 +136,10 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
     m_readout_window_map_data = params.td_readout_map;
     parse_readout_map(m_readout_window_map_data);
     print_readout_map(m_readout_window_map);
+  }
+  
+  if (m_use_bitwords) {
+    TLOG_DEBUG(3) << "HIHIHIHIHIHIHIHI";
   }
 
   // Trigger bitwords
