@@ -11,7 +11,7 @@ local types = {
   tc_type : s.number("tc_type", "i4", doc="TC type"),
   tc_types : s.sequence("tc_types", self.tc_type, doc="List of TC types"),
   readout_time:    s.number(   "ROTime",        "i8", doc="A readout time in ticks"),
-  bitword:         s.string(   "Bitword", doc="123"),
+  bitword:         s.number(   "Bitword", "i4", doc="123"),
   bitword_list:    s.sequence( "BitwordList",   self.bitword, doc="123"),
   bitwords:        s.sequence( "Bitwords",      self.bitword_list, doc="List of bitwords to use when forming trigger decisions in MLT" ),
 

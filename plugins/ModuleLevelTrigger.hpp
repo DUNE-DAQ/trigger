@@ -146,6 +146,8 @@ private:
   std::bitset<16> get_TD_bitword(const PendingTD& ready_td);
   void print_trigger_bitwords( std::vector< std::bitset<16> > trigger_bitwords );
   bool check_trigger_bitwords();
+  void print_bitword_flags(nlohmann::json m_trigger_bitwords_json);
+  void set_trigger_bitwords();
 
   // Readout map config
   bool m_use_readout_map;
@@ -182,6 +184,8 @@ private:
   std::atomic<metric_counter_type> m_td_dropped_tc_count{ 0 };
   std::atomic<metric_counter_type> m_td_cleared_count{ 0 };
   std::atomic<metric_counter_type> m_td_cleared_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_td_not_triggered_count{ 0 };
+  std::atomic<metric_counter_type> m_td_not_triggered_tc_count{ 0 };
   std::atomic<metric_counter_type> m_td_total_count{ 0 };
   std::atomic<metric_counter_type> m_new_td_total_count{ 0 };
   std::atomic<metric_counter_type> m_td_queue_timeout_expired_err_count{ 0 };
