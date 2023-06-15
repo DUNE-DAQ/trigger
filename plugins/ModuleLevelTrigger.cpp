@@ -405,7 +405,7 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
                 pending_td.contributing_tcs[m_earliest_tc_index].type);
 
     using namespace std::chrono;
-    uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    //uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     try {
       auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_td_output_connection);
       td_sender->send(std::move(decision), std::chrono::milliseconds(1));
