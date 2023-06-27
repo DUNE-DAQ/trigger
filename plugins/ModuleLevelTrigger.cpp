@@ -16,7 +16,6 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
-#include "trgdataformats/Types.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -24,6 +23,7 @@
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 #include "timinglibs/TimestampEstimator.hpp"
+#include "trgdataformats/Types.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -125,14 +125,14 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
 
-  // Custom readout map 
+  // Custom readout map
   TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
   if (m_use_readout_map) {
     m_readout_window_map_data = params.td_readout_map;
     parse_readout_map(m_readout_window_map_data);
     print_readout_map(m_readout_window_map);
   }
- 
+
   // Ignoring TC types
   TLOG_DEBUG(3) << "Ignoring TC types: " << m_ignoring_tc_types;
   if (m_ignoring_tc_types) {
@@ -143,7 +143,7 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
       ++it;
     }
   }
- 
+
   // Trigger bitwords
   TLOG_DEBUG(3) << "Use bitwords: " << m_use_bitwords;
   if (m_use_bitwords) {
@@ -171,7 +171,7 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-trig-dec");
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
-  
+
   m_bitword_check = false;
 }
 
@@ -402,7 +402,7 @@ ModuleLevelTrigger::send_trigger_decisions()
   }
   if (m_use_bitwords) {
     TLOG() << "Not triggered (failed bitword check) on " << m_td_not_triggered_count.load() << " TDs consisting of "
-    << m_td_not_triggered_tc_count.load() << " TCs.";
+           << m_td_not_triggered_tc_count.load() << " TCs.";
   }
 
   m_lc_kLive_count = m_livetime_counter->get_time(LivetimeCounter::State::kLive);
@@ -426,21 +426,21 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
     m_bitword_check = check_trigger_bitwords();
   }
 
-  if ( (!m_use_bitwords) || (m_bitword_check) )
-  {
+  if ((!m_use_bitwords) || (m_bitword_check)) {
 
-    dfmessages::TriggerDecision decision = create_decision(pending_td); 
+    dfmessages::TriggerDecision decision = create_decision(pending_td);
 
     TLOG_DEBUG(3) << "Override?: " << override_flag;
     if ((!m_paused.load() && !m_dfo_is_busy.load()) || override_flag) {
 
       TLOG() << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
-             << decision.trigger_timestamp << " number of links " << decision.components.size() << " based on TC of type "
+             << decision.trigger_timestamp << " number of links " << decision.components.size()
+             << " based on TC of type "
              << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
                   pending_td.contributing_tcs[m_earliest_tc_index].type);
 
       using namespace std::chrono;
-      //uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+      // uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
       try {
         auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_td_output_connection);
         td_sender->send(std::move(decision), std::chrono::milliseconds(1));
@@ -472,7 +472,7 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
     }
     m_td_total_count++;
     m_new_td_total_count++;
-  } else {// trigger bitword check
+  } else { // trigger bitword check
     m_td_not_triggered_count++;
     m_td_not_triggered_tc_count += pending_td.contributing_tcs.size();
   }
@@ -700,32 +700,26 @@ ModuleLevelTrigger::check_trigger_type_ignore(int tc_type)
 std::bitset<16>
 ModuleLevelTrigger::get_TD_bitword(const PendingTD& ready_td)
 {
-  std::cout << "Getting TD bitword: " << std::endl;
   // get only unique types
   std::vector<int> tc_types;
-  for (auto tc : ready_td.contributing_tcs)
-  {
-    tc_types.push_back( static_cast<int>(tc.type) );
+  for (auto tc : ready_td.contributing_tcs) {
+    tc_types.push_back(static_cast<int>(tc.type));
   }
-  tc_types.erase( std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
+  tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
 
   // form TD bitword
   std::bitset<16> td_bitword = 0b0000000000000000;
-  for (auto tc_type : tc_types)
-  {
-    std::cout << tc_type << std::endl;
-    td_bitword.set( tc_type );
+  for (auto tc_type : tc_types) {
+    td_bitword.set(tc_type);
   }
-  std::cout << td_bitword << std::endl;
   return td_bitword;
 }
 
 void
-ModuleLevelTrigger::print_trigger_bitwords( std::vector< std::bitset<16> > trigger_bitwords )
+ModuleLevelTrigger::print_trigger_bitwords(std::vector<std::bitset<16>> trigger_bitwords)
 {
-  TLOG_DEBUG(3) << "Configured trigger words:"; 
-  for (auto bitword : trigger_bitwords)
-  {
+  TLOG_DEBUG(3) << "Configured trigger words:";
+  for (auto bitword : trigger_bitwords) {
     TLOG_DEBUG(3) << bitword;
   }
   return;
@@ -735,8 +729,7 @@ void
 ModuleLevelTrigger::print_bitword_flags(nlohmann::json m_trigger_bitwords_json)
 {
   TLOG_DEBUG(3) << "Configured trigger flags:";
-  for (auto bitflag : m_trigger_bitwords_json)
-  {
+  for (auto bitflag : m_trigger_bitwords_json) {
     TLOG_DEBUG(3) << bitflag;
   }
   return;
@@ -746,26 +739,23 @@ bool
 ModuleLevelTrigger::check_trigger_bitwords()
 {
   bool trigger_check = false;
-  for (auto bitword : m_trigger_bitwords)
-  {
-     std::cout << "TD word: " << m_TD_bitword << ", bitword: " << bitword << std::endl;
-     trigger_check = ((m_TD_bitword & bitword) == bitword);
-     std::cout << "&: " << (m_TD_bitword & bitword) << std::endl;
-     std::cout << "trigger?: " << trigger_check << std::endl;
-     std::cout << std::endl;
-     if (trigger_check == true) break;
+  for (auto bitword : m_trigger_bitwords) {
+    TLOG(15) << "TD word: " << m_TD_bitword << ", bitword: " << bitword;
+    trigger_check = ((m_TD_bitword & bitword) == bitword);
+    TLOG(15) << "&: " << (m_TD_bitword & bitword);
+    TLOG(15) << "trigger?: " << trigger_check;
+    if (trigger_check == true)
+      break;
   }
   return trigger_check;
 }
 
-void 
+void
 ModuleLevelTrigger::set_trigger_bitwords()
 {
-  for (auto flag : m_trigger_bitwords_json)
-  {
+  for (auto flag : m_trigger_bitwords_json) {
     std::bitset<16> temp_bitword = 0b0000000000000000;
-    for (auto bit : flag)
-    {
+    for (auto bit : flag) {
       temp_bitword.set(bit);
     }
     m_trigger_bitwords.push_back(temp_bitword);
@@ -777,8 +767,9 @@ void
 ModuleLevelTrigger::parse_readout_map(const nlohmann::json& data)
 {
   for (auto readout_type : data) {
-    m_readout_window_map[static_cast<trgdataformats::TriggerCandidateData::Type>(
-      readout_type["candidate_type"])] = { readout_type["time_before"], readout_type["time_after"] };
+    m_readout_window_map[static_cast<trgdataformats::TriggerCandidateData::Type>(readout_type["candidate_type"])] = {
+      readout_type["time_before"], readout_type["time_after"]
+    };
   }
   return;
 }
