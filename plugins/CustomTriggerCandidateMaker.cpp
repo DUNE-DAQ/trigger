@@ -15,15 +15,16 @@
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
 #include "trgdataformats/Types.hpp"
-#include "dfmessages/TimeSync.hpp"
+#include "utilities/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
-#include "timinglibs/TimestampEstimator.hpp"
-#include "timinglibs/TimestampEstimatorSystem.hpp"
+#include "utilities/TimestampEstimator.hpp"
+#include "utilities/TimestampEstimatorSystem.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
+#include "rcif/cmd/Nljs.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -45,6 +46,7 @@ namespace trigger {
 
 CustomTriggerCandidateMaker::CustomTriggerCandidateMaker(const std::string& name)
   : DAQModule(name)
+  , m_time_sync_source(nullptr)
   , m_trigger_candidate_sink(nullptr)
 {
   register_command("conf", &CustomTriggerCandidateMaker::do_configure);
@@ -56,6 +58,7 @@ CustomTriggerCandidateMaker::CustomTriggerCandidateMaker(const std::string& name
 void
 CustomTriggerCandidateMaker::init(const nlohmann::json& obj)
 {
+  m_time_sync_source = get_iom_receiver<utilities::TimeSync>(appfwk::connection_uid(obj, "time_sync_source"));
   m_trigger_candidate_sink =
     get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(obj, "trigger_candidate_sink"));
 }
@@ -89,19 +92,23 @@ CustomTriggerCandidateMaker::do_configure(const nlohmann::json& obj)
 }
 
 void
-CustomTriggerCandidateMaker::do_start(const nlohmann::json& /*obj*/)
+CustomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
 {
-
   m_running_flag.store(true);
+
+  auto start_params = obj.get<rcif::cmd::StartParams>();
 
   switch (m_conf.timestamp_method) {
     case customtriggercandidatemaker::timestamp_estimation::kTimeSync:
       TLOG_DEBUG(0) << "Creating TimestampEstimator";
-      m_timestamp_estimator.reset(new timinglibs::TimestampEstimator(m_conf.clock_frequency_hz));
+      m_timestamp_estimator.reset(new utilities::TimestampEstimator(start_params.run, m_conf.clock_frequency_hz));
+      m_time_sync_source->add_callback(std::bind(&utilities::TimestampEstimator::timesync_callback,
+                                                 reinterpret_cast<utilities::TimestampEstimator*>(m_timestamp_estimator.get()),
+                                                 std::placeholders::_1));
       break;
     case customtriggercandidatemaker::timestamp_estimation::kSystemClock:
       TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
-      m_timestamp_estimator.reset(new timinglibs::TimestampEstimatorSystem(m_conf.clock_frequency_hz));
+      m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_conf.clock_frequency_hz));
       break;
   }
 
@@ -116,6 +123,7 @@ CustomTriggerCandidateMaker::do_stop(const nlohmann::json& /*obj*/)
 
   m_send_trigger_candidates_thread.join();
 
+  m_time_sync_source->remove_callback();
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
 
   // Prints final counts of each used TC type
@@ -154,7 +162,7 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
   // Wait for there to be a valid timestamp estimate before we start
   TLOG_DEBUG(3) << "CTCM: waiting for valid timestamp ...";
   if ((m_timestamp_estimator->wait_for_valid_timestamp(m_running_flag)) ==
-      timinglibs::TimestampEstimatorBase::kInterrupted) {
+      utilities::TimestampEstimatorBase::kInterrupted) {
     return;
   }
 
@@ -172,7 +180,7 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
   while (m_running_flag.load()) {
     TLOG_DEBUG(3) << "CTCM: waiting for next timestamp ...";
     if ((m_timestamp_estimator->wait_for_timestamp(m_next_trigger_timestamp, m_running_flag)) ==
-        timinglibs::TimestampEstimatorBase::kInterrupted) {
+        utilities::TimestampEstimatorBase::kInterrupted) {
       break;
     }
 

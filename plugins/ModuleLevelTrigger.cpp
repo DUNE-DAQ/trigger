@@ -17,13 +17,11 @@
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
 #include "trgdataformats/Types.hpp"
-#include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
-#include "timinglibs/TimestampEstimator.hpp"
 
 #include <algorithm>
 #include <cassert>

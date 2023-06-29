@@ -23,13 +23,11 @@
 #include "daqdataformats/SourceID.hpp"
 #include "trgdataformats/TriggerCandidateData.hpp"
 #include "trgdataformats/Types.hpp"
-#include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/Receiver.hpp"
-#include "timinglibs/TimestampEstimator.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
 #include <map>

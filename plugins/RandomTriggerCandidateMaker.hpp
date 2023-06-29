@@ -13,14 +13,14 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/SourceID.hpp"
-#include "dfmessages/TimeSync.hpp"
+#include "utilities/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
-#include "timinglibs/TimestampEstimator.hpp"
+#include "utilities/TimestampEstimator.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
 #include <memory>
@@ -69,13 +69,13 @@ private:
   void send_trigger_candidates();
   std::thread m_send_trigger_candidates_thread;
 
-  std::unique_ptr<timinglibs::TimestampEstimatorBase> m_timestamp_estimator;
+  std::unique_ptr<utilities::TimestampEstimatorBase> m_timestamp_estimator;
 
   // Create the next trigger decision
   triggeralgs::TriggerCandidate create_candidate(dfmessages::timestamp_t timestamp);
 
   // Queue sources and sinks
-  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
+  std::shared_ptr<iomanager::ReceiverConcept<utilities::TimeSync>> m_time_sync_source;
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
   randomtriggercandidatemaker::ConfParams m_conf;
