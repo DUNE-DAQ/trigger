@@ -11,6 +11,9 @@ local types = {
   tc_type : s.number("tc_type", "i4", doc="TC type"),
   tc_types : s.sequence("tc_types", self.tc_type, doc="List of TC types"),
   readout_time:    s.number(   "ROTime",        "i8", doc="A readout time in ticks"),
+  bitword:         s.number(   "Bitword", "i4", doc="An integer representing the TC type, to be set in the trigger bitword."),
+  bitword_list:    s.sequence( "BitwordList",   self.bitword, doc="A sequence of bitword (bits) forming a bitword."),
+  bitwords:        s.sequence( "Bitwords",      self.bitword_list, doc="List of bitwords to use when forming trigger decisions in MLT" ),
 
   tc_readout: s.record("tc_readout", [
     s.field("candidate_type", self.tc_type,        default=0,     doc="The TC type"),
@@ -98,6 +101,8 @@ local types = {
       s.field("buffer_timeout", self.time_t, 100, doc="Buffering timeout [ms] for new TCs"),
       s.field("td_readout_limit", self.time_t, 1000, doc="Time limit [ms] for the length of TD readout window"),
       s.field("ignore_tc", self.tc_types, [], doc="List of TC types to be ignored"),
+      s.field("use_bitwords", self.flag, default=false, doc="Option to use bitwords (ie trigger types, coincidences) when forming trigger decisions"),
+      s.field("trigger_bitwords", self.bitwords, [], doc="Optional dictionary of bitwords to use when forming trigger decisions"),
       s.field("use_readout_map", self.flag, default=false, doc="Option to use defalt readout windows (tc.time_start and tc.time_end) or a custom readout map from daqconf"),
       s.field("td_readout_map", self.tc_readout_map, self.tc_readout_map, doc="A map holding readout pre/post depending on TC type"),
   ], doc="ModuleLevelTrigger configuration parameters"),
