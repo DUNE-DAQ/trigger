@@ -543,8 +543,10 @@ public: // NOLINT
             ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
             // out.back() is dropped
           }
-          out_vec.pop_back();
         }
+        // 11-Jul-2023, KAB et al: moved the pop_back() call outside the 'if (!drop)' block so that
+        // this code doesn't loop forever.
+        out_vec.pop_back();
       }
     }
   }
