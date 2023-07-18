@@ -177,7 +177,7 @@ public:
   // thread worker
   void worker()
   {
-    while (true) {
+    while (m_running.load()) {
       // Once we've received a stop command, keep reading the input
       // queue until there's nothing left on it
       if (!proc_one() && !m_running.load()) {

@@ -79,7 +79,7 @@ Tee<T>::do_work(std::atomic<bool>& running_flag)
 {
   size_t n_objects = 0;
   
-  while (true) {
+  while (running_flag.load()) {
     T object;
     try {
       object = m_input_queue->receive(std::chrono::milliseconds(100));
@@ -108,7 +108,6 @@ Tee<T>::do_work(std::atomic<bool>& running_flag)
       ers::warning(dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), "push to output queue 2", timeout_ms));
     }
   }
-
   TLOG() << get_name() << ": Exiting do_work() method after receiving " << n_objects << " objects";
 }
 
