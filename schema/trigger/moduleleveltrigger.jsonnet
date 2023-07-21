@@ -76,6 +76,12 @@ local types = {
     s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
     s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
   ]),
+  c10_readout: s.record("c10_readout", [
+    s.field("candidate_type", self.tc_type,      default=10,     doc="The TC type, 10=NChannelHits"),
+    s.field("time_before",    self.readout_time, default=1000, doc="Time to readout before TC time [ticks]"),
+    s.field("time_after",     self.readout_time, default=1001, doc="Time to readout after TC time [ticks]"),
+  ]),
+
 
   tc_readout_map: s.record("tc_readout_map", [
     s.field("c0", self.c0_readout, default=self.c0_readout, doc="TC readout for TC type 0"),
@@ -88,6 +94,7 @@ local types = {
     s.field("c7", self.c7_readout, default=self.c7_readout, doc="TC readout for TC type 7"),
     s.field("c8", self.c8_readout, default=self.c8_readout, doc="TC readout for TC type 8"),
     s.field("c9", self.c9_readout, default=self.c9_readout, doc="TC readout for TC type 9"),
+    s.field("c10", self.c10_readout, default=self.c10_readout, doc="TC readout for TC type 10"),
   ]),
 
   linkvec : s.sequence("link_vec", self.sourceid),
