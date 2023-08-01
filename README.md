@@ -29,7 +29,7 @@ The `trigger` package contains the modules that make up the DUNE FD DAQ trigger 
 
 Trigger's position relative to DAQ:
 <p align="center">
-  <img src="overview.png" />
+  <img src="docs/overview.png" />
 </p>
 <p> As can be seen, the trigger lies in the heart of DUNE DAQ, receiving multiple inputs, creating and forwarding trigger decisions, while also responding to data requests.</p>
 
@@ -38,7 +38,7 @@ Trigger's position relative to DAQ:
 The trigger is designed hierarchically. The minimal (extremely simplified) flow:
 
 <p align="center">
-  <img src="minimal.svg" />
+  <img src="docs/minimal.svg" />
 </p>
 
 <p>&nbsp; The channel-level information in the form of Trigger Primitives is merged locally (at the scale of one TDAQ unit, such as an APA or CRP) into a cluster representing some type of Trigger Activity. Multiple Trigger Activity outputs can then be merged into a single Trigger Candidate that may include information spanning multiple TDAQ units or multiple slices of time (say, many APAs or many seconds) for a single system. Finally, multiple Trigger Candidates can be merged across systems (e.g. TPC and PDS) in the MLT.</p>
@@ -66,7 +66,7 @@ and issuing a localised activity trigger at the granularity of single APA/CRPs (
 ## Flow
 A more realistic (still simplified) flow through the trigger application:
 <p align="center">
-  <img src="trigger.svg" />
+  <img src="docs/trigger.svg" />
 </p>
 
 <p>&nbsp; The diagram above shows the <b>DAQModules</b> and connections in an example trigger app. Rectangles are <b>DAQModules</b> in the app, while ellipses are externals inputs/outputs. Each <b>DAQModule</b> is labelled by its plugin type, and edges show the <i>type of data</i> that flows along the corresponding queue. There are two main sets of inputs: <i>trigger primitives</i> - packaged as <i>TPSets</i> - from readout, seen at the top of the image; and <i>HSI events</i> from the hardware signals interface, seen towards the bottom. Eventually, each of these inputs are processed into <i>Trigger Candidates</i> (<i>TCs</i>), which are fed to the <b>Module Level Trigger</b>, which issues trigger requests to the data flow orchestrator.</p>
