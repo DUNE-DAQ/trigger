@@ -1,6 +1,6 @@
 # Trigger
 
-*(Last updated July 2023)*
+*(Last updated July 2023, MR)*
 
 The `trigger` package contains the modules that make up the DUNE FD DAQ trigger system. Implementations of the physics algorithms that produce data selection objects (trigger activity and trigger candidates) live in the [`triggeralgs`](https://github.com/DUNE-DAQ/triggeralgs) package.
 <hr>
@@ -125,6 +125,7 @@ Trigger replay app [replay_tp_to_chain](python/trigger/replay_tp_to_chain): A to
   </tr>
 </table> 
 Few example files are available at `/nfs/rscratch/trigger/tp_files` at CERN:
+
 * *1000_electron_events.txt*: simulated electron events
 * *tp_dataset_run020472_2s.txt*: real TPs taken from March 2023 Vertical Drift ColdBox, 2 seconds
 * *tp_dataset_run020472_60s.txt*: real TPs taken from March 2023 Vertical Drift ColdBox, 60 seconds
