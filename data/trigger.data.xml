@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="ASCII"?>
+
+<!-- oks-data version 2.2 -->
+
+
+<!DOCTYPE oks-data [
+  <!ELEMENT oks-data (info, (include)?, (comments)?, (obj)+)>
+  <!ELEMENT info EMPTY>
+  <!ATTLIST info
+      name CDATA #IMPLIED
+      type CDATA #IMPLIED
+      num-of-items CDATA #REQUIRED
+      oks-format CDATA #FIXED "data"
+      oks-version CDATA #REQUIRED
+      created-by CDATA #IMPLIED
+      created-on CDATA #IMPLIED
+      creation-time CDATA #IMPLIED
+      last-modified-by CDATA #IMPLIED
+      last-modified-on CDATA #IMPLIED
+      last-modification-time CDATA #IMPLIED
+  >
+  <!ELEMENT include (file)*>
+  <!ELEMENT file EMPTY>
+  <!ATTLIST file
+      path CDATA #REQUIRED
+  >
+  <!ELEMENT comments (comment)*>
+  <!ELEMENT comment EMPTY>
+  <!ATTLIST comment
+      creation-time CDATA #REQUIRED
+      created-by CDATA #REQUIRED
+      created-on CDATA #REQUIRED
+      author CDATA #REQUIRED
+      text CDATA #REQUIRED
+  >
+  <!ELEMENT obj (attr | rel)*>
+  <!ATTLIST obj
+      class CDATA #REQUIRED
+      id CDATA #REQUIRED
+  >
+  <!ELEMENT attr (data)*>
+  <!ATTLIST attr
+      name CDATA #REQUIRED
+      type (bool|s8|u8|s16|u16|s32|u32|s64|u64|float|double|date|time|string|uid|enum|class|-) "-"
+      val CDATA ""
+  >
+  <!ELEMENT data EMPTY>
+  <!ATTLIST data
+      val CDATA #REQUIRED
+  >
+  <!ELEMENT rel (ref)*>
+  <!ATTLIST rel
+      name CDATA #REQUIRED
+      class CDATA ""
+      id CDATA ""
+  >
+  <!ELEMENT ref EMPTY>
+  <!ATTLIST ref
+      class CDATA #REQUIRED
+      id CDATA #REQUIRED
+  >
+]>
+
+<oks-data>
+
+<info name="" type="" num-of-items="12" oks-format="data" oks-version="862f2957270" created-by="atwatson" created-on="lxplus755.cern.ch" creation-time="20230514T115728" last-modified-by="atwatson" last-modified-on="lxplus722.cern.ch" last-modification-time="20230720T211700"/>
+
+<include>
+ <file path="schema/coredal/dunedaq.schema.xml"/>
+ <file path="schema/hsilibs/hsilibs.schema.xml"/>
+</include>
+
+<comments>
+ <comment creation-time="20230626T194320" created-by="atwatson" created-on="lxplus758.cern.ch" author="atwatson" text="Update connection information"/>
+ <comment creation-time="20230629T210608" created-by="atwatson" created-on="lxplus780.cern.ch" author="atwatson" text="Test version"/>
+ <comment creation-time="20230720T211521" created-by="atwatson" created-on="lxplus722.cern.ch" author="atwatson" text="First draft"/>
+ <comment creation-time="20230720T211700" created-by="atwatson" created-on="lxplus722.cern.ch" author="atwatson" text="first draft"/>
+</comments>
+
+
+<obj class="DaqApplication" id="trigger">
+ <attr name="application_name" type="string" val="trigger"/>
+ <rel name="runs_on" class="VirtualHost" id="hsi-host"/>
+ <rel name="contains">
+  <ref class="FakeTPCreatorHeartbeatModule" id="ftpchb"/>
+ </rel>
+</obj>
+
+<obj class="FakeHSIEventGeneratorModule" id="fhsig">
+ <attr name="plugin" type="string" val="FakeHSIEventGenerator"/>
+ <attr name="clock_frequency" type="u64" val="50000000"/>
+ <attr name="trigger_rate" type="double" val="1"/>
+ <attr name="hsi_device_id" type="u32" val="1"/>
+ <attr name="mean_signal_multiplicity" type="u32" val="1"/>
+ <attr name="enabled_signals" type="u32" val="1"/>
+ <attr name="hsievent_connection_name" type="string" val="hsievents"/>
+ <rel name="outputs">
+  <ref class="Queue" id="hsi_link_0"/>
+ </rel>
+ <rel name="used_resources">
+  <ref class="ProcessingResource" id="hsi-localhost"/>
+ </rel>
+</obj>
+
+<obj class="NetworkConnection" id="data_requests_for_HW_Signals_Interface_0x00000000">
+ <attr name="data_type" type="string" val="DataRequest"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <attr name="protocol" type="enum" val="tcp"/>
+ <attr name="uri" type="string" val="tcp://{hsi}:12348"/>
+</obj>
+
+<obj class="NetworkConnection" id="fragments_to_dataflow0">
+ <attr name="data_type" type="string" val="Fragment"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <attr name="protocol" type="enum" val="tcp"/>
+ <attr name="uri" type="string" val="tcp://{dataflow0}:12349"/>
+</obj>
+
+<obj class="NetworkConnection" id="hsievents">
+ <attr name="data_type" type="string" val="HSIEvent"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <attr name="protocol" type="enum" val="tcp"/>
+ <attr name="uri" type="string" val="tcp://{trigger}:12347"/>
+</obj>
+
+<obj class="NetworkConnection" id="timesync_hsi">
+ <attr name="data_type" type="string" val="TimeSync"/>
+ <attr name="connection_type" type="enum" val="kPubSub"/>
+ <attr name="protocol" type="enum" val="tcp"/>
+ <attr name="uri" type="string" val="tcp://{hsi}:12357"/>
+</obj>
+
+<obj class="NetworkConnection" id="timesync_rulocalhost_0_100">
+ <attr name="data_type" type="string" val="TimeSync"/>
+ <attr name="connection_type" type="enum" val="kPubSub"/>
+ <attr name="protocol" type="enum" val="tcp"/>
+ <attr name="uri" type="string" val="tcp://{rulocalhost0}:12358"/>
+</obj>
+
+<obj class="NetworkConnection" id="timesync_rulocalhost_0_101">
+ <attr name="data_type" type="string" val="TimeSync"/>
+ <attr name="connection_type" type="enum" val="kPubSub"/>
+ <attr name="protocol" type="enum" val="tcp"/>
+ <attr name="uri" type="string" val="tcp://{rulocalhost0}:12359"/>
+</obj>
+
+<obj class="ProcessingResource" id="hsi-localhost">
+ <attr name="cpu_cores" type="u16">
+  <data val="1"/>
+  <data val="0"/>
+ </attr>
+</obj>
+
+<obj class="Queue" id="hsi_link_0">
+ <attr name="data_type" type="string" val="HSIFrame"/>
+ <attr name="capacity" type="u32" val="100000"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="PhysicalHost" id="localhost">
+ <rel name="contains">
+  <ref class="ProcessingResource" id="numa0-localhost"/>
+  <ref class="ProcessingResource" id="numa1-localhost"/>
+ </rel>
+</obj>
+
+<obj class="VirtualHost" id="hsi-host">
+ <rel name="uses">
+  <ref class="ProcessingResource" id="hsi-localhost"/>
+ </rel>
+ <rel name="runs_on" class="PhysicalHost" id="localhost"/>
+</obj>
+
+</oks-data>
