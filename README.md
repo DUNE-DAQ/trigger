@@ -124,6 +124,7 @@ Trigger replay app [replay_tp_to_chain](python/trigger/replay_tp_to_chain): A to
     <th> type </th>
   </tr>
 </table> 
+
 Few example files are available at `/nfs/rscratch/trigger/tp_files` at CERN:
 
 * *1000_electron_events.txt*: simulated electron events
