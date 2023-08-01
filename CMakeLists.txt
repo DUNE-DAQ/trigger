@@ -24,10 +24,26 @@ find_package(readoutlibs REQUIRED)
 find_package(CLI11 REQUIRED)
 
 ##############################################################################
+# OKS stuff
+find_package(okssystem REQUIRED)
+find_package(genconfig REQUIRED)
+find_package(oksdbinterfaces REQUIRED)
+find_package(coredal REQUIRED)
+
+daq_oks_codegen(trigger.schema.xml
+  NAMESPACE dunedaq::coredal
+  DEP_PKGS coredal)
+
+##############################################################################
+
+##############################################################################
 # Main library 
 
 daq_add_library(TokenManager.cpp LivetimeCounter.cpp
   LINK_LIBRARIES
+  coredal::coredal
+  oksdbinterfaces::oksdbinterfaces
+  okssystem::okssystem  
   appfwk::appfwk
   logging::logging
   dfmessages::dfmessages
@@ -78,7 +94,8 @@ daq_add_plugin(CustomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger 
 daq_add_plugin(ModuleLevelTrigger duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
 daq_add_plugin(TPSetSink duneDAQModule LINK_LIBRARIES trigger TEST)
 daq_add_plugin(TASetSink duneDAQModule LINK_LIBRARIES trigger TEST)
-daq_add_plugin(FakeTPCreatorHeartbeatMaker duneDAQModule LINK_LIBRARIES trigger)
+#daq_add_plugin(FakeTPCreatorHeartbeatMaker duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(FakeTPCreatorHeartbeatMaker duneDAQModule LINK_LIBRARIES appfwk::appfwk trigger trigger_oks coremanager)
 daq_add_plugin(TPSetBufferCreator duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TPBuffer duneDAQModule LINK_LIBRARIES trigger readoutlibs::readoutlibs)
 daq_add_plugin(TABuffer duneDAQModule LINK_LIBRARIES trigger readoutlibs::readoutlibs)
