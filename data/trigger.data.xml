@@ -67,7 +67,7 @@
 
 <include>
  <file path="schema/coredal/dunedaq.schema.xml"/>
- <file path="schema/hsilibs/hsilibs.schema.xml"/>
+ <file path="schema/trigger/trigger.schema.xml"/>
 </include>
 
 <comments>
@@ -80,25 +80,21 @@
 
 <obj class="DaqApplication" id="trigger">
  <attr name="application_name" type="string" val="trigger"/>
- <rel name="runs_on" class="VirtualHost" id="hsi-host"/>
+ <rel name="runs_on" class="VirtualHost" id="trigger-host"/>
  <rel name="contains">
   <ref class="FakeTPCreatorHeartbeatModule" id="ftpchb"/>
  </rel>
 </obj>
 
-<obj class="FakeHSIEventGeneratorModule" id="fhsig">
- <attr name="plugin" type="string" val="FakeHSIEventGenerator"/>
- <attr name="clock_frequency" type="u64" val="50000000"/>
- <attr name="trigger_rate" type="double" val="1"/>
- <attr name="hsi_device_id" type="u32" val="1"/>
- <attr name="mean_signal_multiplicity" type="u32" val="1"/>
- <attr name="enabled_signals" type="u32" val="1"/>
- <attr name="hsievent_connection_name" type="string" val="hsievents"/>
+<obj class="FakeTPCreatorHeartbeatModule" id="ftpchb">
+ <attr name="plugin" type="string" val="FakeTPCreatorHeartbeatMaker"/>
+ <attr name="heartbeat_interval" type="u64" val="5000"/>
+ <attr name="triggerevent_connection_name" type="string" val="triggerevents"/>
  <rel name="outputs">
-  <ref class="Queue" id="hsi_link_0"/>
+  <ref class="Queue" id="trigger_link_0"/>
  </rel>
  <rel name="used_resources">
-  <ref class="ProcessingResource" id="hsi-localhost"/>
+  <ref class="ProcessingResource" id="trigger-localhost"/>
  </rel>
 </obj>
 
@@ -106,7 +102,7 @@
  <attr name="data_type" type="string" val="DataRequest"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
  <attr name="protocol" type="enum" val="tcp"/>
- <attr name="uri" type="string" val="tcp://{hsi}:12348"/>
+ <attr name="uri" type="string" val="tcp://{trigger}:12348"/>
 </obj>
 
 <obj class="NetworkConnection" id="fragments_to_dataflow0">
@@ -116,18 +112,18 @@
  <attr name="uri" type="string" val="tcp://{dataflow0}:12349"/>
 </obj>
 
-<obj class="NetworkConnection" id="hsievents">
- <attr name="data_type" type="string" val="HSIEvent"/>
+<obj class="NetworkConnection" id="triggerevents">
+ <attr name="data_type" type="string" val="TRIGGEREvent"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
  <attr name="protocol" type="enum" val="tcp"/>
  <attr name="uri" type="string" val="tcp://{trigger}:12347"/>
 </obj>
 
-<obj class="NetworkConnection" id="timesync_hsi">
+<obj class="NetworkConnection" id="timesync_trigger">
  <attr name="data_type" type="string" val="TimeSync"/>
  <attr name="connection_type" type="enum" val="kPubSub"/>
  <attr name="protocol" type="enum" val="tcp"/>
- <attr name="uri" type="string" val="tcp://{hsi}:12357"/>
+ <attr name="uri" type="string" val="tcp://{trigger}:12357"/>
 </obj>
 
 <obj class="NetworkConnection" id="timesync_rulocalhost_0_100">
@@ -144,15 +140,15 @@
  <attr name="uri" type="string" val="tcp://{rulocalhost0}:12359"/>
 </obj>
 
-<obj class="ProcessingResource" id="hsi-localhost">
+<obj class="ProcessingResource" id="trigger-localhost">
  <attr name="cpu_cores" type="u16">
   <data val="1"/>
   <data val="0"/>
  </attr>
 </obj>
 
-<obj class="Queue" id="hsi_link_0">
- <attr name="data_type" type="string" val="HSIFrame"/>
+<obj class="Queue" id="trigger_link_0">
+ <attr name="data_type" type="string" val="TRIGGERFrame"/>
  <attr name="capacity" type="u32" val="100000"/>
  <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
 </obj>
@@ -164,9 +160,9 @@
  </rel>
 </obj>
 
-<obj class="VirtualHost" id="hsi-host">
+<obj class="VirtualHost" id="trigger-host">
  <rel name="uses">
-  <ref class="ProcessingResource" id="hsi-localhost"/>
+  <ref class="ProcessingResource" id="trigger-localhost"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>

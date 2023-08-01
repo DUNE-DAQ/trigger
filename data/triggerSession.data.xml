@@ -67,7 +67,7 @@
 
 <include>
  <file path="schema/coredal/dunedaq.schema.xml"/>
- <file path="schema/trigeer/trigger.schema.xml"/>
+ <file path="schema/trigger/trigger.schema.xml"/>
  <file path="data/trigger.data.xml"/>
 </include>
 
