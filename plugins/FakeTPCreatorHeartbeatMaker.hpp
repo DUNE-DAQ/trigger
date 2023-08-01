@@ -38,6 +38,7 @@ public:
   FakeTPCreatorHeartbeatMaker& operator=(FakeTPCreatorHeartbeatMaker&&) = delete;
 
   void init(const nlohmann::json& iniobj) override;
+  void init(const dunedaq::coredal::DaqModule* conf) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:

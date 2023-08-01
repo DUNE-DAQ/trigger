@@ -42,6 +42,15 @@ FakeTPCreatorHeartbeatMaker::init(const nlohmann::json& iniobj)
 }
 
 void
+FakeTPCreatorHeartbeatMaker::init(const dunedaq::coredal::DaqModule* modconf)
+{
+  auto conf = modconf->cast<dal::FakeTPCreatorHeartbeatMakerModule>();
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+}
+  
+void
 FakeTPCreatorHeartbeatMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   faketpcreatorheartbeatmakerinfo::Info i;
