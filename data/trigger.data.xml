@@ -82,14 +82,13 @@
  <attr name="application_name" type="string" val="trigger"/>
  <rel name="runs_on" class="VirtualHost" id="trigger-host"/>
  <rel name="contains">
-  <ref class="FakeTPCreatorHeartbeatModule" id="ftpchb"/>
+  <ref class="FakeTPCreatorHeartbeatMakerModule" id="ftpchb"/>
  </rel>
 </obj>
 
-<obj class="FakeTPCreatorHeartbeatModule" id="ftpchb">
+<obj class="FakeTPCreatorHeartbeatMakerModule" id="ftpchb">
  <attr name="plugin" type="string" val="FakeTPCreatorHeartbeatMaker"/>
  <attr name="heartbeat_interval" type="u64" val="5000"/>
- <attr name="triggerevent_connection_name" type="string" val="triggerevents"/>
  <rel name="outputs">
   <ref class="Queue" id="trigger_link_0"/>
  </rel>
