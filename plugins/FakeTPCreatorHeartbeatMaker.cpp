@@ -29,7 +29,6 @@ FakeTPCreatorHeartbeatMaker::FakeTPCreatorHeartbeatMaker(const std::string& name
   register_command("stop", &FakeTPCreatorHeartbeatMaker::do_stop);
   register_command("scrap", &FakeTPCreatorHeartbeatMaker::do_scrap);
 }
-
 void
 FakeTPCreatorHeartbeatMaker::init(const nlohmann::json& iniobj)
 {
@@ -44,7 +43,7 @@ FakeTPCreatorHeartbeatMaker::init(const nlohmann::json& iniobj)
 void
 FakeTPCreatorHeartbeatMaker::init(const dunedaq::coredal::DaqModule* modconf)
 {
-  auto conf = modconf->cast<dal::FakeTPCreatorHeartbeatMakerModule>();
+  auto conf = modconf->cast<coredal::FakeTPCreatorHeartbeatMakerModule>();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";

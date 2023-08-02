@@ -14,6 +14,8 @@
 #include "trigger/faketpcreatorheartbeatmaker/Nljs.hpp"
 #include "trigger/faketpcreatorheartbeatmakerinfo/InfoNljs.hpp"
 
+#include "trigger/FakeTPCreatorHeartbeatMakerModule.hpp"
+
 #include "appfwk/DAQModule.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
@@ -54,7 +56,8 @@ private:
   void get_heartbeat(TPSet& tpset_heartbeat, daqdataformats::timestamp_t const& current_tpset_start_time);
 
   dunedaq::utilities::WorkerThread m_thread;
-
+  // Configuratio
+  const dunedaq::coredal::FakeTPCreatorHeartbeatMakerModule* modconf;
   using source_t = dunedaq::iomanager::ReceiverConcept<TPSet>;
   std::shared_ptr<source_t> m_input_queue;
   using sink_t = dunedaq::iomanager::SenderConcept<TPSet>;
