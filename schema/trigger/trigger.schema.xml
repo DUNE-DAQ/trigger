@@ -92,7 +92,7 @@
   <attribute name="apps" description="Apps to Trigger" type="string" is-multi-value="yes" init-value="s" is-not-null="yes"/>
  </class>
 
- <class name="FakeTPCreatorHeartbeatMaker">
+ <class name="FakeTPCreatorHeartbeatMakerModule">
    <superclass name="DaqModule"/>
    <attribute name="heartbeat_interval" description="Interval between subsequent heartbeats being issued." type="u64" init-value="5000" is-not-null="yes"/>
  </class>
