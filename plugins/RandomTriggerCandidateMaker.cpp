@@ -15,7 +15,7 @@
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
 #include "trgdataformats/Types.hpp"
-#include "utilities/TimeSync.hpp"
+#include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
@@ -50,7 +50,7 @@ RandomTriggerCandidateMaker::RandomTriggerCandidateMaker(const std::string& name
 void
 RandomTriggerCandidateMaker::init(const nlohmann::json& obj)
 {
-  m_time_sync_source = get_iom_receiver<utilities::TimeSync>(appfwk::connection_uid(obj, "time_sync_source"));
+  m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(appfwk::connection_uid(obj, "time_sync_source"));
   m_trigger_candidate_sink =
     get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(obj, "trigger_candiate_sink"));
 }
@@ -82,7 +82,7 @@ RandomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
     case randomtriggercandidatemaker::timestamp_estimation::kTimeSync:
       TLOG_DEBUG(0) << "Creating TimestampEstimator";
       m_timestamp_estimator.reset(new utilities::TimestampEstimator(m_run_number, m_conf.clock_frequency_hz));
-      m_time_sync_source->add_callback(std::bind(&utilities::TimestampEstimator::timesync_callback,
+      m_time_sync_source->add_callback(std::bind(&utilities::TimestampEstimator::timesync_callback<dfmessages::TimeSync>,
                                                  reinterpret_cast<utilities::TimestampEstimator*>(m_timestamp_estimator.get()),
                                                  std::placeholders::_1));
       break;

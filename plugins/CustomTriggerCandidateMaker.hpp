@@ -13,7 +13,7 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/SourceID.hpp"
-#include "utilities/TimeSync.hpp"
+#include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -74,7 +74,7 @@ private:
   triggeralgs::TriggerCandidate create_candidate(dfmessages::timestamp_t timestamp, int tc_type);
 
   // Queue sources and sinks
-  std::shared_ptr<iomanager::ReceiverConcept<utilities::TimeSync>> m_time_sync_source;
+  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
   // Config parameters
