@@ -37,11 +37,11 @@ The `trigger` package contains the modules that make up the DUNE FD DAQ trigger 
 
 * Handle multiple trigger sources, including TPC, PDS, calibration sources, beam information, and “external” information such as SNB notifications from adjacent DUNE modules or other experiments. Merging of readout windows for multiple coincident triggers, and explicit coincidence requirements (if desired) must be possible.
 
-* Provide triggers such as random or pulsed triggers, and pre-scales of low-threshold or high-rate triggers
+* Provide triggers such as random or pulsed triggers, and pre-scales of low-threshold or high-rate triggers.
 
 * Have a latency that is small compared to the resident time of data in the Readout buffers.
 
-* Allow offline measurements of trigger efficiency and reconstruction of the decision path that went into generating a Trigger Records.
+* Allow offline measurements of trigger efficiency and reconstruction of the decision path that went into generating a Trigger Record.
 
 * Provide the ability to measure any trigger-related dead time, and provide operational monitoring information about rates of different trigger types.
 
