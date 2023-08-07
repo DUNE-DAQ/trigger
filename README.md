@@ -68,7 +68,7 @@ The trigger is designed hierarchically. The minimal (extremely simplified) flow:
 ### Terminology:
 #### Main objects:
 * **Trigger Primitive (TP)**: The Simplest signal waveform representation (wire hit). These are generated using hit finding algorithms in readout.
-* **Trigger Activity (TA)**: Cluster of hit(s) (TP(s)) that have been deemed fit to be send up to the next level in the trigger hierarchy. Typically these will be tracks/showers or other outstanding physics activity within the box (sub-detector).
+* **Trigger Activity (TA)**: Cluster of hit(s) (TP(s)) that have been deemed fit to be sent up to the next level in the trigger hierarchy. Typically these will be tracks/showers or other outstanding physics activity within the box (sub-detector).
 * **Trigger Candidate (TC)**: Cluster of TAs across all sub-detectors.
 * **Trigger Decision (TD)**: A trigger request issued by Module Level Trigger (MLT) to the Data Flow Orchestrator (DFO) in order to request the raw data of the relevant detector channels over specified time windows from the readout subsystem that should be permanently stored for later analysis.
 * **Trigger Record (TR)**: An object in a stored file, containing the raw data, TPs, TAs, and TCs that have led to its construction.
