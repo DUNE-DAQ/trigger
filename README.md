@@ -191,7 +191,7 @@ python -m trigger.replay_tp_to_chain -s 10 --trigger-activity-plugin TriggerActi
 For trigger code development, please:
 
 * **Follow the styleguide** linked above.
-* **Never push directly to the `develop` branch**. Create a branch (name should contain an easily recognisable name and reflect the purpose of the feature/fix, e.g. `name/new_feature`.) and make a **pull request** to the appropriate branch. At least one reviewer is required (more for big changes). Genera rule of thumb: don't merge your own PR.
+* **Never push directly to the `develop` branch**. Create a branch (name should contain an easily recognisable name and reflect the purpose of the feature/fix, e.g. `name/new_feature`.) and make a **pull request** to the appropriate branch. At least one reviewer is required (more for big changes). General rule of thumb: don't merge your own PR.
 * **Always use integration tests.** A selection is available at [dfmodules integration tests](https://github.com/DUNE-DAQ/dfmodules/tree/develop/integtest). As a minimum, the `minimal_system_test`, `fake_data_producer` and `3ru_3df_multirun` tests should be run (the more the better of course). Some tests require more powerful machines (available at np04).
 * No `warnings` when building.
 * *clang formatting*: there is an inbuilt script available (from dbt) to apply Clang-Format code style: `dbt-clang-format.sh`. Run without arguments for usage information.
