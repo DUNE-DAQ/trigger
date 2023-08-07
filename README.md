@@ -2,7 +2,7 @@
 
 *(Last updated July 2023, MiR + AS)*
 
-The `trigger` package contains the modules that make up the DUNE FD DAQ trigger system. Implementations of the physics algorithms that produce data selection objects (trigger activity and trigger candidates) live in the [`triggeralgs`](https://github.com/DUNE-DAQ/triggeralgs) package. Also, the scripts that generate the trigger application configuration lives in [`daqconf`](https://github.com/DUNE-DAQ/daqconf).
+The `trigger` package contains the modules that make up the DUNE FD DAQ trigger system. Implementations of the physics algorithms that produce data selection objects (trigger activity and trigger candidates) live in the [`triggeralgs`](https://github.com/DUNE-DAQ/triggeralgs) package. Also, the scripts that generate the trigger application configuration live in [`daqconf`](https://github.com/DUNE-DAQ/daqconf).
 <hr>
 
 <p>&nbsp; The main goal of the trigger is to extract information from data to form Trigger Decisions. Additionally, in conjunction with the Data Filter, the aim is to reduce the total data volume from the four planned DUNE modules to be in line with the DUNE requirements for trigger acceptance and efficiency for various physics signals.</p>
