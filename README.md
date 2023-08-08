@@ -33,11 +33,11 @@ The `trigger` package contains the modules that make up the DUNE FD DAQ trigger 
 
 ### More details (of trigger functionality): <a name="more-details"></a>
 
-* Identify clusters of Trigger Primitives indicating potentially interesting physics activity in a module.
+* Identify clusters of electronic signals indicating potentially interesting physics activity in a module and store those in Trigger Primitive data objects.
 
 * Handle multiple trigger sources, including TPC, PDS, calibration sources, beam information, and “external” information such as SNB notifications from adjacent DUNE modules or other experiments. Merging of readout windows for multiple coincident triggers, and explicit coincidence requirements (if desired) must be possible.
 
-* Provide triggers such as random or pulsed triggers, and pre-scales of low-threshold or high-rate triggers.
+* Provide triggers such as random or pulsed triggers, and support pre-scaling of all triggers (most likely to be used with low-threshold or high-rate triggers).
 
 * Have a latency that is small compared to the resident time of data in the Readout buffers.
 
@@ -45,9 +45,9 @@ The `trigger` package contains the modules that make up the DUNE FD DAQ trigger 
 
 * Provide the ability to measure any trigger-related dead time, and provide operational monitoring information about rates of different trigger types.
 
-* To not rely on external inputs (but these are supported (eg calibration)).
+* Not rely on external inputs (but these are supported (eg calibration)).
 
-<p>All in all, the trigger is not just about selecting data, but rather selecting data “live”, i.e. taking decisions continuously, within an agreed latency and with limited computing resources compared to what can be done offline.</p>
+<p>All in all, the trigger is not just about selecting data, but rather selecting data in real time, i.e. taking decisions continuously, within an agreed latency and with limited computing resources compared to what can be done offline.</p>
 
 Trigger's position relative to DAQ:
 <p align="center">
@@ -67,7 +67,7 @@ The trigger is designed hierarchically. The minimal (extremely simplified) flow:
 
 ### Terminology:
 #### Main objects:
-* **Trigger Primitive (TP)**: The Simplest signal waveform representation (wire hit). These are generated using hit finding algorithms in readout.
+* **Trigger Primitive (TP)**: The Simplest signal waveform representation (wire hit). These are generated using hit finding algorithms in the readout subsystem.
 * **Trigger Activity (TA)**: Cluster of hit(s) (TP(s)) that have been deemed fit to be sent up to the next level in the trigger hierarchy. Typically these will be tracks/showers or other outstanding physics activity within the box (sub-detector).
 * **Trigger Candidate (TC)**: Cluster of TAs across all sub-detectors.
 * **Trigger Decision (TD)**: A trigger request issued by Module Level Trigger (MLT) to the Data Flow Orchestrator (DFO) in order to request the raw data of the relevant detector channels over specified time windows from the readout subsystem that should be permanently stored for later analysis.
@@ -183,7 +183,7 @@ python -m trigger.replay_tp_to_chain -s 10 --trigger-activity-plugin TriggerActi
 
 ## Development
 * [Development workflow](https://dune-daq-sw.readthedocs.io/en/latest/packages/daq-release/development_workflow_gitflow/)
-* [Setting up DUNE DAQ development area](https://github.com/DUNE-DAQ/daqconf/wiki/Instructions-for-setting-up-a-development-software-area)
+* [Setting up DUNE DAQ development area](https://github.com/DUNE-DAQ/daqconf/wiki/Instructions-for-setting-up-an-FD-development-software-area)
 * [Writing trigger algorithm](https://dune-daq-sw.readthedocs.io/en/latest/packages/trigger/trigger-alg-howto/)
 * [DAQ buildtools](https://dune-daq-sw.readthedocs.io/en/latest/packages/daq-buildtools/)
 * [Coding styleguide](https://dune-daq-sw.readthedocs.io/en/latest/packages/styleguide/)
@@ -192,7 +192,7 @@ For trigger code development, please:
 
 * **Follow the styleguide** linked above.
 * **Never push directly to the `develop` branch**. Create a branch (name should contain an easily recognisable name and reflect the purpose of the feature/fix, e.g. `name/new_feature`.) and make a **pull request** to the appropriate branch. At least one reviewer is required (more for big changes). General rule of thumb: don't merge your own PR.
-* **Always use integration tests.** A selection is available at [dfmodules integration tests](https://github.com/DUNE-DAQ/dfmodules/tree/develop/integtest). As a minimum, the `minimal_system_test`, `fake_data_producer` and `3ru_3df_multirun` tests should be run (the more the better of course). Some tests require more powerful machines (available at np04).
+* **Always use integration tests.** A selection is available at [daq-systemtest integration tests](https://github.com/DUNE-DAQ/daq-systemtest/tree/develop/integtest). As a minimum, the `minimal_system_test`, `fake_data_producer` and `3ru_3df_multirun` tests should be run (the more the better of course). Some tests require more powerful machines (available at np04).
 * No `warnings` when building.
 * *clang formatting*: there is an inbuilt script available (from dbt) to apply Clang-Format code style: `dbt-clang-format.sh`. Run without arguments for usage information.
 
