@@ -21,13 +21,13 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/SourceID.hpp"
-#include "trgdataformats/TriggerCandidateData.hpp"
-#include "trgdataformats/Types.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/Receiver.hpp"
+#include "trgdataformats/TriggerCandidateData.hpp"
+#include "trgdataformats/Types.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
 #include <map>
@@ -135,11 +135,22 @@ private:
   int m_earliest_tc_index;
   int get_earliest_tc_index(const PendingTD& pending_td);
 
+  // Bitwords logic
+  bool m_use_bitwords;
+  nlohmann::json m_trigger_bitwords_json;
+  bool m_bitword_check;
+  std::bitset<16> m_TD_bitword;
+  std::vector<std::bitset<16>> m_trigger_bitwords;
+  std::bitset<16> get_TD_bitword(const PendingTD& ready_td);
+  void print_trigger_bitwords(std::vector<std::bitset<16>> trigger_bitwords);
+  bool check_trigger_bitwords();
+  void print_bitword_flags(nlohmann::json m_trigger_bitwords_json);
+  void set_trigger_bitwords();
+
   // Readout map config
   bool m_use_readout_map;
   nlohmann::json m_readout_window_map_data;
-  std::map<trgdataformats::TriggerCandidateData::Type,
-           std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
+  std::map<trgdataformats::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
     m_readout_window_map;
   void parse_readout_map(const nlohmann::json& data);
   void print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
@@ -170,6 +181,8 @@ private:
   std::atomic<metric_counter_type> m_td_dropped_tc_count{ 0 };
   std::atomic<metric_counter_type> m_td_cleared_count{ 0 };
   std::atomic<metric_counter_type> m_td_cleared_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_td_not_triggered_count{ 0 };
+  std::atomic<metric_counter_type> m_td_not_triggered_tc_count{ 0 };
   std::atomic<metric_counter_type> m_td_total_count{ 0 };
   std::atomic<metric_counter_type> m_new_td_total_count{ 0 };
   std::atomic<metric_counter_type> m_td_queue_timeout_expired_err_count{ 0 };
