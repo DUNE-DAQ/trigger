@@ -20,7 +20,7 @@
 #include "dfmessages/Types.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
-#include "timinglibs/TimestampEstimator.hpp"
+#include "utilities/TimestampEstimator.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
 #include <memory>
@@ -69,7 +69,7 @@ private:
   void send_trigger_candidates();
   std::thread m_send_trigger_candidates_thread;
 
-  std::unique_ptr<timinglibs::TimestampEstimatorBase> m_timestamp_estimator;
+  std::unique_ptr<utilities::TimestampEstimatorBase> m_timestamp_estimator;
 
   // Create the next trigger decision
   triggeralgs::TriggerCandidate create_candidate(dfmessages::timestamp_t timestamp);
