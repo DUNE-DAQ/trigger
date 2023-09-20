@@ -102,8 +102,14 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
 
   m_links.clear();
   for (auto const& link : params.links) {
-    m_links.push_back(
-      dfmessages::SourceID{ daqdataformats::SourceID::string_to_subsystem(link.subsystem), link.element });
+    std::unordered_set<int> temp_regions;
+    for (auto region : link.regions) {
+      temp_regions.insert(region);
+    }
+    std::pair<dfmessages::SourceID, std::unordered_set<int>> temp_pair(
+      dfmessages::SourceID{ daqdataformats::SourceID::string_to_subsystem(link.subsystem), link.element },
+      temp_regions);
+    m_links.push_back(temp_pair);
   }
   // m_trigger_decision_connection = params.dfo_connection;
   // m_inhibit_connection = params.dfo_busy_connection;
@@ -268,13 +274,18 @@ ModuleLevelTrigger::create_decision(const ModuleLevelTrigger::PendingTD& pending
                 << ", request window begin: " << pending_td.readout_start
                 << ", request window end: " << pending_td.readout_end;
 
+  std::unordered_set<int> td_regions = get_associated_regions(pending_td.contributing_tcs);
   for (auto link : m_links) {
-    dfmessages::ComponentRequest request;
-    request.component = link;
-    request.window_begin = pending_td.readout_start;
-    request.window_end = pending_td.readout_end;
 
-    decision.components.push_back(request);
+    if (link_in_region(td_regions, link.second)) {
+      dfmessages::ComponentRequest request;
+
+      request.component = link.first;
+      request.window_begin = pending_td.readout_start;
+      request.window_end = pending_td.readout_end;
+
+      decision.components.push_back(request);
+    }
   }
 
   return decision;
@@ -312,12 +323,12 @@ ModuleLevelTrigger::send_trigger_decisions()
     std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_input->try_receive(std::chrono::milliseconds(10));
     if (tc.has_value()) {
       if (m_use_readout_map) {
-        TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
+        TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
                       << ", start/end " << tc->time_start << "/" << tc->time_end << ", readout start/end "
                       << tc->time_candidate - m_readout_window_map[tc->type].first << "/"
                       << tc->time_candidate + m_readout_window_map[tc->type].second;
       } else {
-        TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
+        TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
                       << ", start/end " << tc->time_start << "/" << tc->time_end;
       }
       ++m_tc_received_count;
@@ -642,6 +653,32 @@ ModuleLevelTrigger::check_td_readout_length(const PendingTD& pending_td)
                   << ", sending immediate TD!";
   }
   return td_too_long;
+}
+
+std::unordered_set<int>
+ModuleLevelTrigger::get_associated_regions(std::vector<triggeralgs::TriggerCandidate> input_TCs)
+{
+  std::unordered_set<int> regions;
+  for (auto tc : input_TCs) {
+    for (auto region : tc.regions) {
+      regions.insert(region);
+    }
+  }
+  return regions;
+}
+
+bool
+ModuleLevelTrigger::link_in_region(std::unordered_set<int> td_regions, std::unordered_set<int> link_regions)
+{
+  bool link_in_region = false;
+  for (auto td_region : td_regions) {
+    for (auto link_region : link_regions) {
+      if (td_region == link_region) {
+        link_in_region = true;
+      }
+    }
+  }
+  return link_in_region;
 }
 
 void

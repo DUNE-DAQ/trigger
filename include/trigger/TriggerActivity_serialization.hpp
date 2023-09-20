@@ -48,6 +48,7 @@ DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(triggeralgs,
                                  type,
                                  algorithm,
                                  version,
-                                 inputs)
+                                 inputs,
+                                 region)
 
 #endif // TRIGGER_INCLUDE_TRIGGER_TRIGGERACTIVITY_SERIALIZATION_HPP_

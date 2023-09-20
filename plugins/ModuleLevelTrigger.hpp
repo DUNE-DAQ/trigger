@@ -34,6 +34,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace dunedaq {
@@ -81,7 +82,7 @@ private:
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerInhibit>> m_inhibit_input;
   std::string m_td_output_connection;
 
-  std::vector<dfmessages::SourceID> m_links;
+  std::vector<std::pair<dfmessages::SourceID, std::unordered_set<int>>> m_links;
 
   int m_repeat_trigger_count{ 1 };
 
@@ -159,6 +160,8 @@ private:
   // Create the next trigger decision
   dfmessages::TriggerDecision create_decision(const PendingTD& pending_td);
   dfmessages::trigger_type_t m_trigger_type_shifted;
+  std::unordered_set<int> get_associated_regions(std::vector<triggeralgs::TriggerCandidate> input_TCs);
+  bool link_in_region(std::unordered_set<int> td_regions, std::unordered_set<int> link_regions);
 
   // Optional list of TC types to ignore
   std::vector<int> m_ignored_tc_types;

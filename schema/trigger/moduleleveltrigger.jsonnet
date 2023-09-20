@@ -14,6 +14,8 @@ local types = {
   bitword:         s.number(   "Bitword", "i4", doc="An integer representing the TC type, to be set in the trigger bitword."),
   bitword_list:    s.sequence( "BitwordList",   self.bitword, doc="A sequence of bitword (bits) forming a bitword."),
   bitwords:        s.sequence( "Bitwords",      self.bitword_list, doc="List of bitwords to use when forming trigger decisions in MLT" ),
+  region:          s.number(   "Region", "u4",  doc="Represents the associated readout region"),
+  regions:         s.sequence( "Regions",       self.region, doc="List of regions (allows multi-region association of elements)"),
 
   tc_readout: s.record("tc_readout", [
     s.field("candidate_type", self.tc_type,        default=0,     doc="The TC type"),
@@ -23,7 +25,8 @@ local types = {
 
   sourceid : s.record("SourceID", [
       s.field("element", self.element_id, doc="" ),
-      s.field("subsystem", self.subsystem, doc="" )],
+      s.field("subsystem", self.subsystem, doc="" ),
+      s.field("regions", self.regions, doc="" )],
       doc="SourceID"),
 
   c0_readout: s.record("c0_readout", [
