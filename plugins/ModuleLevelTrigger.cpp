@@ -123,11 +123,13 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   m_td_readout_limit = params.td_readout_limit;
   m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
   m_use_readout_map = params.use_readout_map;
+  m_use_roi_readout = params.use_roi_readout;
   m_use_bitwords = params.use_bitwords;
   TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
+  TLOG_DEBUG(3) << "MLT ROI?: " << m_use_roi_readout;
 
   // Custom readout map
   TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
@@ -277,13 +279,19 @@ ModuleLevelTrigger::create_decision(const ModuleLevelTrigger::PendingTD& pending
   std::unordered_set<int> td_regions = get_associated_regions(pending_td.contributing_tcs);
   for (auto link : m_links) {
 
-    if (link_in_region(td_regions, link.second)) {
+    if (m_use_roi_readout){
+      if (link_in_region(td_regions, link.second)) {
+        dfmessages::ComponentRequest request;   
+        request.component = link.first;
+        request.window_begin = pending_td.readout_start;
+        request.window_end = pending_td.readout_end;
+        decision.components.push_back(request);
+      }
+    } else {
       dfmessages::ComponentRequest request;
-
       request.component = link.first;
       request.window_begin = pending_td.readout_start;
       request.window_end = pending_td.readout_end;
-
       decision.components.push_back(request);
     }
   }
@@ -326,10 +334,10 @@ ModuleLevelTrigger::send_trigger_decisions()
         TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
                       << ", start/end " << tc->time_start << "/" << tc->time_end << ", readout start/end "
                       << tc->time_candidate - m_readout_window_map[tc->type].first << "/"
-                      << tc->time_candidate + m_readout_window_map[tc->type].second;
+                      << tc->time_candidate + m_readout_window_map[tc->type].second << ", regions " << tc->regions.size();
       } else {
         TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
-                      << ", start/end " << tc->time_start << "/" << tc->time_end;
+                      << ", start/end " << tc->time_start << "/" << tc->time_end << ", regions: " << tc->regions.size();
       }
       ++m_tc_received_count;
 

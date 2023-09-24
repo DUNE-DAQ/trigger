@@ -108,6 +108,7 @@ local types = {
       s.field("trigger_bitwords", self.bitwords, [], doc="Optional dictionary of bitwords to use when forming trigger decisions"),
       s.field("use_readout_map", self.flag, default=false, doc="Option to use defalt readout windows (tc.time_start and tc.time_end) or a custom readout map from daqconf"),
       s.field("td_readout_map", self.tc_readout_map, self.tc_readout_map, doc="A map holding readout pre/post depending on TC type"),
+      s.field("use_roi_readout", self.flag, default=false, doc="Option to use ROI readout in MLT: only readout APA(s) associated with the Trigger Decision"),
   ], doc="ModuleLevelTrigger configuration parameters"),
   
 };

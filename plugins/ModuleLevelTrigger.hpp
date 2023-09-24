@@ -149,6 +149,7 @@ private:
   void set_trigger_bitwords();
 
   // Readout map config
+  bool m_use_roi_readout;
   bool m_use_readout_map;
   nlohmann::json m_readout_window_map_data;
   std::map<trgdataformats::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
