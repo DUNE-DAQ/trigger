@@ -78,7 +78,7 @@ private:
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
-  randomtriggercandidatemaker::ConfParams m_conf;
+  randomtriggercandidatemaker::Conf m_conf;
 
   int get_interval(std::mt19937& gen);
 
