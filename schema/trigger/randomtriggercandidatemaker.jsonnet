@@ -8,7 +8,7 @@ local types = {
   timestamp_estimation: s.enum("timestamp_estimation", ["kTimeSync", "kSystemClock"]),
   distribution_type: s.enum("distribution_type", ["kUniform", "kPoisson"]),
   
-  conf : s.record("ConfParams", [
+  conf : s.record("Conf", [
     s.field("trigger_interval_ticks", self.ticks, 64000000,
       doc="Interval between triggers in 16 ns time ticks (default 1.024 s) "),
 
