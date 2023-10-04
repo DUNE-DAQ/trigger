@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(trigger VERSION 1.5.5)
+project(trigger VERSION 1.5.8)
 
 find_package(daq-cmake REQUIRED)
 
@@ -12,18 +12,18 @@ find_package(logging REQUIRED)
 find_package(appfwk REQUIRED)
 find_package(triggeralgs REQUIRED)
 find_package(dfmessages REQUIRED)
-find_package(timinglibs REQUIRED)
 find_package(utilities REQUIRED)
 find_package(iomanager REQUIRED)
 find_package(daqdataformats REQUIRED)
 find_package(detdataformats REQUIRED)
+find_package(trgdataformats REQUIRED)
 find_package(detchannelmaps REQUIRED)
 find_package(hdf5libs REQUIRED)
 find_package(readoutlibs REQUIRED)
 find_package(CLI11 REQUIRED)
 
 ##############################################################################
-# Main library
+# Main library 
 
 daq_add_library(TokenManager.cpp LivetimeCounter.cpp
   LINK_LIBRARIES
@@ -34,6 +34,7 @@ daq_add_library(TokenManager.cpp LivetimeCounter.cpp
   utilities::utilities
   iomanager::iomanager
   detdataformats::detdataformats
+  trgdataformats::trgdataformats
   Boost::iostreams # Boost::iostreams comes in via readoutlibs
   detchannelmaps::detchannelmaps)
 
@@ -47,6 +48,7 @@ daq_codegen(
   faketpcreatorheartbeatmaker.jsonnet
   moduleleveltrigger.jsonnet
   randomtriggercandidatemaker.jsonnet
+  customtriggercandidatemaker.jsonnet
   timingtriggercandidatemaker.jsonnet
   triggerprimitivemaker.jsonnet
   triggeractivitymaker.jsonnet
@@ -70,8 +72,9 @@ daq_add_plugin(TriggerPrimitiveMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDecisionMaker duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(RandomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
-daq_add_plugin(ModuleLevelTrigger duneDAQModule LINK_LIBRARIES trigger timinglibs::timinglibs)
+daq_add_plugin(RandomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(CustomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(ModuleLevelTrigger duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TPSetSink duneDAQModule LINK_LIBRARIES trigger TEST)
 daq_add_plugin(TASetSink duneDAQModule LINK_LIBRARIES trigger TEST)
 daq_add_plugin(FakeTPCreatorHeartbeatMaker duneDAQModule LINK_LIBRARIES trigger)
@@ -94,8 +97,8 @@ daq_add_plugin(TriggerActivityMakerADCSimpleWindowPlugin duneTAMaker LINK_LIBRAR
 daq_add_plugin(TriggerCandidateMakerADCSimpleWindowPlugin duneTCMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMakerHorizontalMuonPlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMakerHorizontalMuonPlugin duneTCMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerActivityMakerLowEnergyEventPlugin duneTAMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerLowEnergyEventPlugin duneTCMaker LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerActivityMakerPlaneCoincidencePlugin duneTAMaker LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerCandidateMakerPlaneCoincidencePlugin duneTCMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMakerPrescalePlugin duneTAMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMakerPrescalePlugin duneTCMaker LINK_LIBRARIES trigger)
 

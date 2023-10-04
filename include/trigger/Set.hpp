@@ -11,7 +11,7 @@
 
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/Types.hpp"
-#include "detdataformats/trigger/Types.hpp"
+#include "trgdataformats/Types.hpp"
 
 #include <cstdint>
 #include <vector>

@@ -15,6 +15,10 @@ from dunedaq.env import get_moo_model_path
 import moo.io
 moo.io.default_load_path = get_moo_model_path()
 
+import moo.otypes
+moo.otypes.load_types('detchannelmaps/hardwaremapservice.jsonnet')
+import dunedaq.detchannelmaps.hardwaremapservice as hwms
+
 import click
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -53,6 +57,17 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         NUMBER_OF_LOOPS = number_of_loops
     )
 
+    # Create a hw map file based on the input files we were given on
+    # the command line. Then we can get the SourceIDBroker to make the
+    # necessary TPInfo objects for get_trigger_app()
+    hw_map_file = open("hardware_map.txt", "x")
+    for idx,f in enumerate(input_file):
+        hw_map_file.write(f"0 0 0 {idx} 3 localhost {idx} 0 0\n")
+    hw_map_file.close() # Save the file so the next line sees the changes
+    hw_map_service = HardwareMapService(hw_map_file.name)
+    serialized_hw_map = hw_map_service.get_hardware_map_json()
+    hw_map = hwms.HardwareMap(serialized_hw_map)  # This is the object we need to pass to get_dataflow_app() now.
+
     the_system.apps["dataflow0"] = get_dataflow_app(
         HOSTIDX = 0,
         # OUTPUT_PATH = ".",
@@ -63,6 +78,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         # MAX_EXPECTED_TR_SEQUENCES = max_expected_tr_sequences,
         # TOKEN_COUNT = trigemu_token_count,
         # TRB_TIMEOUT = trigger_record_building_timeout,
+        HARDWARE_MAP=hw_map, 
         HOST="localhost",
         # HAS_DQM=enable_dqm,
         # DEBUG=debug
@@ -94,16 +110,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
 
     # Attempt to fix replay app with source ID broker
     sourceid_broker = SourceIDBroker()
-
-    # Create a hw map file based on the input files we were given on
-    # the command line. Then we can get the SourceIDBroker to make the
-    # necessary TPInfo objects for get_trigger_app()
-    hw_map_file = NamedTemporaryFile("w")
-    for idx,f in enumerate(input_file):
-        hw_map_file.write(f"0 0 0 {idx} 3 localhost {idx} 0 0\n")
-    hw_map_file.flush() # Flush the file so the next line sees the changes
-    hw_map_service = HardwareMapService(hw_map_file.name)
-
+    
     # Get the list of RU processes - required to create instances of TXInfo later
     dro_infos = hw_map_service.get_all_dro_info()
 
@@ -119,7 +126,7 @@ def cli(slowdown_factor, input_file, trigger_activity_plugin, trigger_activity_c
         # SOFTWARE_TPG_ENABLED = True,
         # FIRMWARE_TPG_ENABLED = False,
         DATA_RATE_SLOWDOWN_FACTOR = slowdown_factor,
-        CLOCK_SPEED_HZ = 50_000_000,
+        CLOCK_SPEED_HZ = 62_500_000,
         TP_CONFIG = tp_infos,
         # RU_CONFIG = ru_configs,
         ACTIVITY_PLUGIN = trigger_activity_plugin,

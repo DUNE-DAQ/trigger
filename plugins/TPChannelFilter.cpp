@@ -18,10 +18,10 @@ namespace dunedaq {
 namespace trigger {
 TPChannelFilter::TPChannelFilter(const std::string& name)
   : DAQModule(name)
-  , m_thread(std::bind(&TPChannelFilter::do_work, this, std::placeholders::_1))
+  , m_thread(std::bind(&TPChannelFilter::do_work, this))
   , m_input_queue(nullptr)
   , m_output_queue(nullptr)
-  , m_queue_timeout(100)
+  , m_queue_timeout(1000)
 {
 
   register_command("conf", &TPChannelFilter::do_conf);
@@ -41,27 +41,29 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
   }
 }
 
-  void 
-  TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-  {
-    tpchannelfilterinfo::Info i;
+void 
+TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+{
+  tpchannelfilterinfo::Info i;
 
-    i.received_count = m_received_count.load();
-    i.sent_count = m_sent_count.load();
+  i.received_count = m_received_count.load();
+  i.sent_count = m_sent_count.load();
 
-    ci.add(i);
-  }
+  ci.add(i);
+}
 
 void
 TPChannelFilter::do_conf(const nlohmann::json& conf_arg)
 {
   m_conf = conf_arg.get<dunedaq::trigger::tpchannelfilter::Conf>();
   m_channel_map = dunedaq::detchannelmaps::make_map(m_conf.channel_map_name);
+  TLOG() << "Configured the TPChannelFilter!";
 }
 
 void
 TPChannelFilter::do_start(const nlohmann::json&)
 {
+  m_running_flag.store(true);
   m_received_count.store(0);
   m_sent_count.store(0);
   m_thread.start_working_thread("channelfilter");
@@ -71,6 +73,7 @@ TPChannelFilter::do_start(const nlohmann::json&)
 void
 TPChannelFilter::do_stop(const nlohmann::json&)
 {
+  m_running_flag.store(false); 
   m_thread.stop_working_thread();
   TLOG_DEBUG(2) << get_name() + " successfully stopped.";
 }
@@ -85,7 +88,7 @@ TPChannelFilter::channel_should_be_removed(int channel) const
   // The plane numbering convention is found in detchannelmaps/plugins/VDColdboxChannelMap.cpp and is:
   // U (induction) = 0, Y (induction) = 1, Z (induction) = 2, unconnected channel = 9999
   uint plane = m_channel_map->get_plane_from_offline_channel(channel);
-  TLOG_DEBUG(2) << "Checking received TP with channel " << channel << " and plane " << plane;
+  TLOG_DEBUG(5) << "Checking received TP with channel " << channel << " and plane " << plane;
   // Check for collection
   if (plane == 0 || plane == 1) {
     return !m_conf.keep_induction;
@@ -104,15 +107,17 @@ TPChannelFilter::channel_should_be_removed(int channel) const
 }
 
 void
-TPChannelFilter::do_work(std::atomic<bool>& running_flag)
+TPChannelFilter::do_work()
 {
-  while (true) {
+  while (m_running_flag.load()) {
+
     std::optional<TPSet> tpset = m_input_queue->try_receive(m_queue_timeout);;
+    using namespace std::chrono;
 
     if (!tpset.has_value()) {
       // The condition to exit the loop is that we've been stopped and
       // there's nothing left on the input queue
-      if (!running_flag.load()) {
+      if (!m_running_flag.load()) {
         break;
       } else {
         continue;
@@ -123,7 +128,6 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
     ++m_received_count;
 
     // Actually do the removal for payload TPSets. Leave heartbeat TPSets unmolested
-
     if (tpset->type == TPSet::kPayload) {
       size_t n_before = tpset->objects.size();
       auto it = std::remove_if(tpset->objects.begin(), tpset->objects.end(), [this](triggeralgs::TriggerPrimitive p) {
@@ -147,7 +151,7 @@ TPChannelFilter::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-  } // while(true)
+  } // while
   TLOG_DEBUG(2) << "Exiting do_work() method";
 }
 

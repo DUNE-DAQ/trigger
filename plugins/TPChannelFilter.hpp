@@ -47,7 +47,7 @@ private:
   void do_start(const nlohmann::json& obj);
   void do_stop(const nlohmann::json& obj);
   void do_scrap(const nlohmann::json& obj);
-  void do_work(std::atomic<bool>&);
+  void do_work();
 
   bool channel_should_be_removed(int channel) const;
   dunedaq::utilities::WorkerThread m_thread;
@@ -55,7 +55,6 @@ private:
   using metric_counter_type = decltype(tpchannelfilterinfo::Info::received_count);
   std::atomic<metric_counter_type> m_received_count;
   std::atomic<metric_counter_type> m_sent_count;
-
 
   using source_t = dunedaq::iomanager::ReceiverConcept<TPSet>;
   std::shared_ptr<source_t> m_input_queue;
@@ -66,6 +65,9 @@ private:
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
 
   dunedaq::trigger::tpchannelfilter::Conf m_conf;
+
+  // Are we in the RUNNING state?
+  std::atomic<bool> m_running_flag{ false };
 };
 } // namespace trigger
 } // namespace dunedaq

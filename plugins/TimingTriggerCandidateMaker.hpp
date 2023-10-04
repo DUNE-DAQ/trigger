@@ -61,7 +61,7 @@ private:
 
   using sink_t = dunedaq::iomanager::SenderConcept<triggeralgs::TriggerCandidate>;
   std::shared_ptr<sink_t> m_output_queue;
-  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::HSIEvent>> m_hsievent_receiver;
+  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::HSIEvent>> m_hsievent_input;
 
   std::chrono::milliseconds m_queue_timeout;
 

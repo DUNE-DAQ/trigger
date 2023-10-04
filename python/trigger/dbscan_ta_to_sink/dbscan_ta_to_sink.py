@@ -52,7 +52,7 @@ def get_dbscan_ta_to_sink_app(
         DO_TASET_CHECKS: bool = True
 ):
     # Derived parameters
-    CLOCK_FREQUENCY_HZ = 50_000_000 / SLOWDOWN_FACTOR
+    CLOCK_FREQUENCY_HZ = 62_500_000 / SLOWDOWN_FACTOR
     TPSET_WIDTH = 10_000
     
     modules = []

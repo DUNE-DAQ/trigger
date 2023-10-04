@@ -11,7 +11,6 @@
 
 #include "LivetimeCounter.hpp"
 
-#include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/Receiver.hpp"

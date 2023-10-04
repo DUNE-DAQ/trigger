@@ -9,6 +9,8 @@
 #ifndef TRIGGER_PLUGINS_ZIPPER_HPP_
 #define TRIGGER_PLUGINS_ZIPPER_HPP_
 
+#include "logging/Logging.hpp"
+
 #include <chrono>
 #include <queue>
 #include <vector>
@@ -44,7 +46,7 @@ struct Node
   using timepoint_t = TimePoint;
 
   payload_t payload;
-  ordering_t ordering;
+  ordering_t ordering; // This is essentially the start time of the TSET, and will be bit shifted by 1, in Phil's hack.
   identity_t identity;
   timepoint_t debut;
 
@@ -118,6 +120,7 @@ public:
   void set_tolerance(size_t t)             { completeness_tolerance = t; }
   void set_tolerate_incompleteness(bool b) { tolerate_incompleteness = b; }
 
+  ordering_t get_origin() {return origin;}
   /**
      Set the maximum latency
    */
@@ -266,6 +269,12 @@ public:
     if (target_cardinality < cardinality) { // absent streams
       if (latency == duration_t::zero()) { // unbound latency
         return false;
+      }
+      else if (now != timepoint_t::min()) {
+        auto delta = now - this->top().debut;
+        if (delta < latency) {
+          return false;
+        }
       }
     }
 

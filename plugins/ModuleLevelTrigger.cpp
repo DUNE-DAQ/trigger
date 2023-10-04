@@ -16,14 +16,12 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
-#include "detdataformats/trigger/Types.hpp"
-#include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
-#include "timinglibs/TimestampEstimator.hpp"
+#include "trgdataformats/Types.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -54,8 +52,14 @@ ModuleLevelTrigger::ModuleLevelTrigger(const std::string& name)
 void
 ModuleLevelTrigger::init(const nlohmann::json& iniobj)
 {
-  m_candidate_source =
-    get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(iniobj, "trigger_candidate_source"));
+
+  auto ci = appfwk::connection_index(iniobj, { "trigger_candidate_input", "dfo_inhibit_input", "td_output" });
+
+  m_candidate_input = get_iom_receiver<triggeralgs::TriggerCandidate>(ci["trigger_candidate_input"]);
+
+  m_inhibit_input = get_iom_receiver<dfmessages::TriggerInhibit>(ci["dfo_inhibit_input"]);
+
+  m_td_output_connection = ci["td_output"];
 }
 
 void
@@ -77,6 +81,8 @@ ModuleLevelTrigger::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   i.td_dropped_tc_count = m_td_dropped_tc_count.load();
   i.td_cleared_count = m_td_cleared_count.load();
   i.td_cleared_tc_count = m_td_cleared_tc_count.load();
+  i.td_not_triggered_count = m_td_not_triggered_count.load();
+  i.td_not_triggered_tc_count = m_td_not_triggered_tc_count.load();
   i.td_total_count = m_td_total_count.load();
   i.new_td_total_count = m_new_td_total_count.exchange(0);
 
@@ -99,25 +105,50 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
     m_links.push_back(
       dfmessages::SourceID{ daqdataformats::SourceID::string_to_subsystem(link.subsystem), link.element });
   }
-  m_trigger_decision_connection = params.dfo_connection;
-  m_inhibit_connection = params.dfo_busy_connection;
+  // m_trigger_decision_connection = params.dfo_connection;
+  // m_inhibit_connection = params.dfo_busy_connection;
   m_hsi_passthrough = params.hsi_trigger_type_passthrough;
 
   m_configured_flag.store(true);
 
+  m_tc_merging = params.merge_overlapping_tcs;
   m_buffer_timeout = params.buffer_timeout;
   m_send_timed_out_tds = params.td_out_of_timeout;
   m_td_readout_limit = params.td_readout_limit;
-  m_ignored_tc_types = params.ignore_tc;
   m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
+  m_use_readout_map = params.use_readout_map;
+  m_use_bitwords = params.use_bitwords;
+  TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
+
+  // Custom readout map
+  TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
+  if (m_use_readout_map) {
+    m_readout_window_map_data = params.td_readout_map;
+    parse_readout_map(m_readout_window_map_data);
+    print_readout_map(m_readout_window_map);
+  }
+
+  // Ignoring TC types
   TLOG_DEBUG(3) << "Ignoring TC types: " << m_ignoring_tc_types;
-  TLOG_DEBUG(3) << "TC types to ignore: ";
-  for (std::vector<int>::iterator it = m_ignored_tc_types.begin(); it != m_ignored_tc_types.end();) {
-    TLOG_DEBUG(3) << *it;
-    ++it;
+  if (m_ignoring_tc_types) {
+    m_ignored_tc_types = params.ignore_tc;
+    TLOG_DEBUG(3) << "TC types to ignore: ";
+    for (std::vector<int>::iterator it = m_ignored_tc_types.begin(); it != m_ignored_tc_types.end();) {
+      TLOG_DEBUG(3) << *it;
+      ++it;
+    }
+  }
+
+  // Trigger bitwords
+  TLOG_DEBUG(3) << "Use bitwords: " << m_use_bitwords;
+  if (m_use_bitwords) {
+    m_trigger_bitwords_json = params.trigger_bitwords;
+    print_bitword_flags(m_trigger_bitwords_json);
+    set_trigger_bitwords();
+    print_trigger_bitwords(m_trigger_bitwords);
   }
 }
 
@@ -132,13 +163,14 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 
   m_livetime_counter.reset(new LivetimeCounter(LivetimeCounter::State::kPaused));
 
-  m_inhibit_receiver = get_iom_receiver<dfmessages::TriggerInhibit>(m_inhibit_connection);
-  m_inhibit_receiver->add_callback(std::bind(&ModuleLevelTrigger::dfo_busy_callback, this, std::placeholders::_1));
+  m_inhibit_input->add_callback(std::bind(&ModuleLevelTrigger::dfo_busy_callback, this, std::placeholders::_1));
 
   m_send_trigger_decisions_thread = std::thread(&ModuleLevelTrigger::send_trigger_decisions, this);
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-trig-dec");
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
+
+  m_bitword_check = false;
 }
 
 void
@@ -160,7 +192,7 @@ ModuleLevelTrigger::do_stop(const nlohmann::json& /*stopobj*/)
   TLOG(3) << "LivetimeCounter - total deadtime+paused: " << m_lc_deadtime << std::endl;
   m_livetime_counter.reset(); // Calls LivetimeCounter dtor?
 
-  m_inhibit_receiver->remove_callback();
+  m_inhibit_input->remove_callback();
   ers::info(TriggerEndOfRun(ERS_HERE, m_run_number));
 }
 
@@ -174,6 +206,10 @@ ModuleLevelTrigger::do_pause(const nlohmann::json& /*pauseobj*/)
   m_livetime_counter->set_state(LivetimeCounter::State::kPaused);
   TLOG() << "******* Triggers PAUSED! in run " << m_run_number << " *********";
   ers::info(TriggerPaused(ERS_HERE));
+  TLOG_DEBUG(3) << "TS End: "
+                << std::chrono::duration_cast<std::chrono::microseconds>(
+                     std::chrono::system_clock::now().time_since_epoch())
+                     .count();
 }
 
 void
@@ -183,6 +219,10 @@ ModuleLevelTrigger::do_resume(const nlohmann::json& /*resumeobj*/)
   TLOG() << "******* Triggers RESUMED! in run " << m_run_number << " *********";
   m_livetime_counter->set_state(LivetimeCounter::State::kLive);
   m_paused.store(false);
+  TLOG_DEBUG(3) << "TS Start: "
+                << std::chrono::duration_cast<std::chrono::microseconds>(
+                     std::chrono::system_clock::now().time_since_epoch())
+                     .count();
 }
 
 void
@@ -222,8 +262,10 @@ ModuleLevelTrigger::create_decision(const ModuleLevelTrigger::PendingTD& pending
   TLOG_DEBUG(3) << "HSI passthrough: " << m_hsi_passthrough
                 << ", TC detid: " << pending_td.contributing_tcs[m_earliest_tc_index].detid
                 << ", TC type: " << static_cast<int>(pending_td.contributing_tcs[m_earliest_tc_index].type)
+                << ", TC cont number: " << pending_td.contributing_tcs.size()
                 << ", DECISION trigger type: " << decision.trigger_type
-                << " request window begin: " << pending_td.readout_start
+                << ", DECISION timestamp: " << decision.trigger_timestamp
+                << ", request window begin: " << pending_td.readout_start
                 << ", request window end: " << pending_td.readout_end;
 
   for (auto link : m_links) {
@@ -258,6 +300,8 @@ ModuleLevelTrigger::send_trigger_decisions()
   m_td_dropped_tc_count.store(0);
   m_td_cleared_count.store(0);
   m_td_cleared_tc_count.store(0);
+  m_td_not_triggered_count.store(0);
+  m_td_not_triggered_tc_count.store(0);
   m_td_total_count.store(0);
   m_lc_kLive.store(0);
   m_lc_kPaused.store(0);
@@ -265,10 +309,17 @@ ModuleLevelTrigger::send_trigger_decisions()
 
   // New buffering logic here
   while (m_running_flag) {
-    std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_source->try_receive(std::chrono::milliseconds(10));
+    std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_input->try_receive(std::chrono::milliseconds(10));
     if (tc.has_value()) {
-      TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
-                    << ", start/end " << tc->time_start << "/" << tc->time_end;
+      if (m_use_readout_map) {
+        TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
+                      << ", start/end " << tc->time_start << "/" << tc->time_end << ", readout start/end "
+                      << tc->time_candidate - m_readout_window_map[tc->type].first << "/"
+                      << tc->time_candidate + m_readout_window_map[tc->type].second;
+      } else {
+        TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
+                      << ", start/end " << tc->time_start << "/" << tc->time_end;
+      }
       ++m_tc_received_count;
 
       // Option to ignore TC types (if given by config)
@@ -277,13 +328,20 @@ ModuleLevelTrigger::send_trigger_decisions()
         if (check_trigger_type_ignore(static_cast<int>(tc->type)) == true) {
           TLOG_DEBUG(3) << "ignoring...";
           m_tc_ignored_count++;
+
+          if (m_tc_merging) {
+            // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend
+            // readout
+            std::lock_guard<std::mutex> lock(m_td_vector_mutex);
+            add_tc_ignored(*tc);
+          }
           continue;
         }
       }
 
       std::lock_guard<std::mutex> lock(m_td_vector_mutex);
       add_tc(*tc);
-      TLOG_DEBUG(3) << "pending tds size: " << m_pending_tds.size();
+      TLOG_DEBUG(10) << "pending tds size: " << m_pending_tds.size();
     } else {
       // The condition to exit the loop is that we've been stopped and
       // there's nothing left on the input queue
@@ -294,35 +352,40 @@ ModuleLevelTrigger::send_trigger_decisions()
 
     std::lock_guard<std::mutex> lock(m_td_vector_mutex);
     auto ready_tds = get_ready_tds(m_pending_tds);
-    TLOG_DEBUG(3) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size()
-                  << ", sent tds: " << m_sent_tds.size();
+    TLOG_DEBUG(10) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size()
+                   << ", sent tds: " << m_sent_tds.size();
 
     for (std::vector<PendingTD>::iterator it = ready_tds.begin(); it != ready_tds.end();) {
-      if (check_overlap_td(*it)) {
-        m_earliest_tc_index = get_earliest_tc_index(*it);
-        auto const& earliest_tc = it->contributing_tcs[m_earliest_tc_index];
-        ers::error(TCOutOfTimeout(ERS_HERE,
-                                  get_name(),
-                                  static_cast<int>(earliest_tc.type),
-                                  earliest_tc.time_candidate,
-                                  it->readout_start,
-                                  it->readout_end));
-        if (!m_send_timed_out_tds) { // if this is not set, drop the td
-          ++m_td_dropped_count;
-          m_td_dropped_tc_count += it->contributing_tcs.size();
-          it = ready_tds.erase(it);
-          TLOG_DEBUG(3) << "overlapping previous TD, dropping!";
-        } else {
+      if (m_tc_merging) {
+        if (check_overlap_td(*it)) {
+          m_earliest_tc_index = get_earliest_tc_index(*it);
+          auto const& earliest_tc = it->contributing_tcs[m_earliest_tc_index];
+          ers::warning(TCOutOfTimeout(ERS_HERE,
+                                      get_name(),
+                                      static_cast<int>(earliest_tc.type),
+                                      earliest_tc.time_candidate,
+                                      it->readout_start,
+                                      it->readout_end));
+          if (!m_send_timed_out_tds) { // if this is not set, drop the td
+            ++m_td_dropped_count;
+            m_td_dropped_tc_count += it->contributing_tcs.size();
+            it = ready_tds.erase(it);
+            TLOG_DEBUG(3) << "overlapping previous TD, dropping!";
+          } else { // overlap, but set to sent overlapping TD
+            call_tc_decision(*it);
+            ++it;
+          }
+        } else { // no overlap, send normal TD
           call_tc_decision(*it);
           ++it;
         }
-      } else {
+      } else { // no merging, send normal TD
         call_tc_decision(*it);
         ++it;
       }
     }
 
-    TLOG_DEBUG(3) << "updated sent tds: " << m_sent_tds.size();
+    TLOG_DEBUG(10) << "updated sent tds: " << m_sent_tds.size();
   }
 
   TLOG() << "Run " << m_run_number << ": "
@@ -332,8 +395,12 @@ ModuleLevelTrigger::send_trigger_decisions()
          << m_td_inhibited_tc_count.load() << " TCs) were inhibited. " << m_td_dropped_count.load() << " TDs ("
          << m_td_dropped_tc_count.load() << " TCs) were dropped. " << m_td_cleared_count.load() << " TDs ("
          << m_td_cleared_tc_count.load() << " TCs) were cleared.";
-  if (m_ignoring_tc_types == true) {
+  if (m_ignoring_tc_types) {
     TLOG() << "Ignored " << m_tc_ignored_count.load() << " TCs.";
+  }
+  if (m_use_bitwords) {
+    TLOG() << "Not triggered (failed bitword check) on " << m_td_not_triggered_count.load() << " TDs consisting of "
+           << m_td_not_triggered_tc_count.load() << " TCs.";
   }
 
   m_lc_kLive_count = m_livetime_counter->get_time(LivetimeCounter::State::kLive);
@@ -350,48 +417,63 @@ ModuleLevelTrigger::send_trigger_decisions()
 void
 ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pending_td, bool override_flag)
 {
-  TLOG_DEBUG(3) << "Override?: " << override_flag;
-  if ((!m_paused.load() && !m_dfo_is_busy.load()) || override_flag) {
+
+  if (m_use_bitwords) {
+    // Check trigger bitwords
+    m_TD_bitword = get_TD_bitword(pending_td);
+    m_bitword_check = check_trigger_bitwords();
+  }
+
+  if ((!m_use_bitwords) || (m_bitword_check)) {
 
     dfmessages::TriggerDecision decision = create_decision(pending_td);
 
-    TLOG_DEBUG(1)
-      << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
-      << decision.trigger_timestamp << " number of links " << decision.components.size() << " based on TC of type "
-      << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
-           pending_td.contributing_tcs[m_earliest_tc_index].type);
+    TLOG_DEBUG(3) << "Override?: " << override_flag;
+    if ((!m_paused.load() && !m_dfo_is_busy.load()) || override_flag) {
 
-    try {
-      auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_trigger_decision_connection);
-      td_sender->send(std::move(decision), std::chrono::milliseconds(1));
-      m_td_sent_count++;
-      m_new_td_sent_count++;
-      m_td_sent_tc_count += pending_td.contributing_tcs.size();
-      m_last_trigger_number++;
-      add_td(pending_td);
-    } catch (const ers::Issue& e) {
-      ers::error(e);
-      TLOG_DEBUG(1) << "The network is misbehaving: it accepted TD but the send failed for "
+      TLOG() << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
+             << decision.trigger_timestamp << " number of links " << decision.components.size()
+             << " based on TC of type "
+             << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
+                  pending_td.contributing_tcs[m_earliest_tc_index].type);
+
+      using namespace std::chrono;
+      // uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+      try {
+        auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_td_output_connection);
+        td_sender->send(std::move(decision), std::chrono::milliseconds(1));
+        m_td_sent_count++;
+        m_new_td_sent_count++;
+        m_td_sent_tc_count += pending_td.contributing_tcs.size();
+        m_last_trigger_number++;
+        add_td(pending_td);
+      } catch (const ers::Issue& e) {
+        ers::error(e);
+        TLOG_DEBUG(1) << "The network is misbehaving: it accepted TD but the send failed for "
+                      << pending_td.contributing_tcs[m_earliest_tc_index].time_candidate;
+        m_td_queue_timeout_expired_err_count++;
+        m_td_queue_timeout_expired_err_tc_count += pending_td.contributing_tcs.size();
+      }
+
+    } else if (m_paused.load()) {
+      ++m_td_paused_count;
+      m_td_paused_tc_count += pending_td.contributing_tcs.size();
+      TLOG_DEBUG(1) << "Triggers are paused. Not sending a TriggerDecision for pending TD with start/end times "
+                    << pending_td.readout_start << "/" << pending_td.readout_end;
+    } else {
+      ers::warning(TriggerInhibited(ERS_HERE, m_run_number));
+      TLOG_DEBUG(1) << "The DFO is busy. Not sending a TriggerDecision for candidate timestamp "
                     << pending_td.contributing_tcs[m_earliest_tc_index].time_candidate;
-      m_td_queue_timeout_expired_err_count++;
-      m_td_queue_timeout_expired_err_tc_count += pending_td.contributing_tcs.size();
+      m_td_inhibited_count++;
+      m_new_td_inhibited_count++;
+      m_td_inhibited_tc_count += pending_td.contributing_tcs.size();
     }
-
-  } else if (m_paused.load()) {
-    ++m_td_paused_count;
-    m_td_paused_tc_count += pending_td.contributing_tcs.size();
-    TLOG_DEBUG(1) << "Triggers are paused. Not sending a TriggerDecision for pending TD with start/end times "
-                  << pending_td.readout_start << "/" << pending_td.readout_end;
-  } else {
-    ers::warning(TriggerInhibited(ERS_HERE, m_run_number));
-    TLOG_DEBUG(1) << "The DFO is busy. Not sending a TriggerDecision for candidate timestamp "
-                  << pending_td.contributing_tcs[m_earliest_tc_index].time_candidate;
-    m_td_inhibited_count++;
-    m_new_td_inhibited_count++;
-    m_td_inhibited_tc_count += pending_td.contributing_tcs.size();
+    m_td_total_count++;
+    m_new_td_total_count++;
+  } else { // trigger bitword check
+    m_td_not_triggered_count++;
+    m_td_not_triggered_tc_count += pending_td.contributing_tcs.size();
   }
-  m_td_total_count++;
-  m_new_td_total_count++;
 }
 
 void
@@ -401,27 +483,73 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
   int64_t tc_wallclock_arrived =
     std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-  for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
-    if (check_overlap(tc, *it)) {
-      TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
-                    << " overlaps with pending TD with start/end times " << it->readout_start << "/" << it->readout_end;
-      it->contributing_tcs.push_back(tc);
-      it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
-      it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
-      it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
-      added_to_existing = true;
-      break;
+  if (m_tc_merging) {
+
+    for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
+      if (check_overlap(tc, *it)) {
+        if (m_use_readout_map) {
+          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
+                        << tc.time_candidate + m_readout_window_map[tc.type].second
+                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                        << it->readout_end;
+          it->contributing_tcs.push_back(tc);
+          it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
+                                ? it->readout_start
+                                : (tc.time_candidate - m_readout_window_map[tc.type].first);
+          it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
+                              ? (tc.time_candidate + m_readout_window_map[tc.type].second)
+                              : it->readout_end;
+        } else {
+          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
+                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                        << it->readout_end;
+          it->contributing_tcs.push_back(tc);
+          it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
+          it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
+        }
+        it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
+        added_to_existing = true;
+        break;
+      }
+      ++it;
     }
-    ++it;
   }
 
   if (!added_to_existing) {
     PendingTD td_candidate;
     td_candidate.contributing_tcs.push_back(tc);
-    td_candidate.readout_start = tc.time_start;
-    td_candidate.readout_end = tc.time_end;
+    if (m_use_readout_map) {
+      td_candidate.readout_start = tc.time_candidate - m_readout_window_map[tc.type].first;
+      td_candidate.readout_end = tc.time_candidate + m_readout_window_map[tc.type].second;
+    } else {
+      td_candidate.readout_start = tc.time_start;
+      td_candidate.readout_end = tc.time_end;
+    }
     td_candidate.walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
     m_pending_tds.push_back(td_candidate);
+  }
+  return;
+}
+
+void
+ModuleLevelTrigger::add_tc_ignored(const triggeralgs::TriggerCandidate& tc)
+{
+  for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
+    if (check_overlap(tc, *it)) {
+      if (m_use_readout_map) {
+        TLOG_DEBUG(3) << "!Ignored! TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first
+                      << "/" << tc.time_candidate + m_readout_window_map[tc.type].second
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
+      } else {
+        TLOG_DEBUG(3) << "!Ignored! TC with start/end times " << tc.time_start << "/" << tc.time_end
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
+      }
+      it->contributing_tcs.push_back(tc);
+      break;
+    }
+    ++it;
   }
   return;
 }
@@ -429,7 +557,12 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
 bool
 ModuleLevelTrigger::check_overlap(const triggeralgs::TriggerCandidate& tc, const PendingTD& pending_td)
 {
-  return !((tc.time_end < pending_td.readout_start) || (tc.time_start > pending_td.readout_end));
+  if (m_use_readout_map) {
+    return !(((tc.time_candidate + m_readout_window_map[tc.type].second) < pending_td.readout_start) ||
+             ((tc.time_candidate - m_readout_window_map[tc.type].first > pending_td.readout_end)));
+  } else {
+    return !((tc.time_end < pending_td.readout_start) || (tc.time_start > pending_td.readout_end));
+  }
 }
 
 bool
@@ -560,6 +693,94 @@ ModuleLevelTrigger::check_trigger_type_ignore(int tc_type)
     ++it;
   }
   return ignore;
+}
+
+std::bitset<16>
+ModuleLevelTrigger::get_TD_bitword(const PendingTD& ready_td)
+{
+  // get only unique types
+  std::vector<int> tc_types;
+  for (auto tc : ready_td.contributing_tcs) {
+    tc_types.push_back(static_cast<int>(tc.type));
+  }
+  tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
+
+  // form TD bitword
+  std::bitset<16> td_bitword = 0b0000000000000000;
+  for (auto tc_type : tc_types) {
+    td_bitword.set(tc_type);
+  }
+  return td_bitword;
+}
+
+void
+ModuleLevelTrigger::print_trigger_bitwords(std::vector<std::bitset<16>> trigger_bitwords)
+{
+  TLOG_DEBUG(3) << "Configured trigger words:";
+  for (auto bitword : trigger_bitwords) {
+    TLOG_DEBUG(3) << bitword;
+  }
+  return;
+}
+
+void
+ModuleLevelTrigger::print_bitword_flags(nlohmann::json m_trigger_bitwords_json)
+{
+  TLOG_DEBUG(3) << "Configured trigger flags:";
+  for (auto bitflag : m_trigger_bitwords_json) {
+    TLOG_DEBUG(3) << bitflag;
+  }
+  return;
+}
+
+bool
+ModuleLevelTrigger::check_trigger_bitwords()
+{
+  bool trigger_check = false;
+  for (auto bitword : m_trigger_bitwords) {
+    TLOG(15) << "TD word: " << m_TD_bitword << ", bitword: " << bitword;
+    trigger_check = ((m_TD_bitword & bitword) == bitword);
+    TLOG(15) << "&: " << (m_TD_bitword & bitword);
+    TLOG(15) << "trigger?: " << trigger_check;
+    if (trigger_check == true)
+      break;
+  }
+  return trigger_check;
+}
+
+void
+ModuleLevelTrigger::set_trigger_bitwords()
+{
+  for (auto flag : m_trigger_bitwords_json) {
+    std::bitset<16> temp_bitword = 0b0000000000000000;
+    for (auto bit : flag) {
+      temp_bitword.set(bit);
+    }
+    m_trigger_bitwords.push_back(temp_bitword);
+  }
+  return;
+}
+
+void
+ModuleLevelTrigger::parse_readout_map(const nlohmann::json& data)
+{
+  for (auto readout_type : data) {
+    m_readout_window_map[static_cast<trgdataformats::TriggerCandidateData::Type>(readout_type["candidate_type"])] = {
+      readout_type["time_before"], readout_type["time_after"]
+    };
+  }
+  return;
+}
+
+void
+ModuleLevelTrigger::print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
+                                               std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
+{
+  TLOG_DEBUG(3) << "MLT TD Readout map:";
+  for (auto const& [key, val] : map) {
+    TLOG_DEBUG(3) << "Type: " << static_cast<int>(key) << ", before: " << val.first << ", after: " << val.second;
+  }
+  return;
 }
 
 } // namespace trigger

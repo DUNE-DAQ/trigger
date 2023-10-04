@@ -181,7 +181,7 @@ public:
   // thread worker
   void worker()
   {
-    while (true) {
+    while (m_running.load()) {
       // Once we've received a stop command, keep reading the input
       // queue until there's nothing left on it
       if (!proc_one() && !m_running.load()) {
@@ -234,6 +234,7 @@ public:
     // payload TSETs in the example above, we would be flushing items
     // up to the end_time, 200, but the heartbeat only says we've seen
     // up to timestamp 100
+
     ordering_type sort_value = tset.start_time << 1;
     if (tset.type != TSET::Type::kHeartbeat)
       sort_value |= 0x1;

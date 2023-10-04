@@ -18,7 +18,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
-#include "detdataformats/trigger/Types.hpp"
+#include "trgdataformats/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
@@ -86,6 +86,8 @@ public:
 
     i.received_count = m_received_count.load();
     i.sent_count = m_sent_count.load();
+    if (m_maker) { i.data_vs_system_ms = m_maker->m_data_vs_system_time; }
+    else i.data_vs_system_ms = 0;    
 
     ci.add(i);
   }
@@ -149,7 +151,10 @@ private:
     m_thread.start_working_thread(get_name());
   }
 
-  void do_stop(const nlohmann::json& /*obj*/) { m_thread.stop_working_thread(); }
+  void do_stop(const nlohmann::json& /*obj*/)
+  {
+    m_thread.stop_working_thread();
+  }
 
   void do_configure(const nlohmann::json& obj)
   {
@@ -164,15 +169,17 @@ private:
     worker.reconfigure();
   }
 
-  void do_work(std::atomic<bool>& running_flag)
+  void do_work(std::atomic<bool>& m_running_flag)
   {
     // Loop until a stop is received
-    while (running_flag.load()) {
+    while (m_running_flag.load()) {
       // While there are items in the input queue, continue draining even if
       // the running_flag is false, but stop _immediately_ when input is empty
       IN in;
       while (receive(in)) {
-        worker.process(in);
+        if (m_running_flag.load()) {
+	  worker.process(in); 
+	}
       }
     }
     // P. Rodrigues 2022-06-01. The argument here is whether to drop
@@ -547,8 +554,8 @@ public: // NOLINT
             ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
             // out.back() is dropped
           }
-          out_vec.pop_back();
         }
+	out_vec.pop_back();
       }
     }
   }
