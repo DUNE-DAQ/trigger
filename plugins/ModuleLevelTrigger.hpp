@@ -81,7 +81,42 @@ private:
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerInhibit>> m_inhibit_input;
   std::string m_td_output_connection;
 
-  std::vector<dfmessages::SourceID> m_links;
+  // TD requests
+  std::vector<dfmessages::SourceID> m_mandatory_links;
+  std::map<int, std::vector<dfmessages::SourceID>> m_group_links;
+  nlohmann::json m_group_links_data;
+  int m_total_group_links;
+  void parse_group_links(const nlohmann::json& data);
+  void print_group_links();
+  dfmessages::ComponentRequest create_request_for_link(dfmessages::SourceID link,
+                                                       triggeralgs::timestamp_t start,
+                                                       triggeralgs::timestamp_t end);
+  std::vector<dfmessages::ComponentRequest> create_all_decision_requests(std::vector<dfmessages::SourceID> links,
+                                                                         triggeralgs::timestamp_t start,
+                                                                         triggeralgs::timestamp_t end);
+  void add_requests_to_decision(dfmessages::TriggerDecision& decision,
+                                std::vector<dfmessages::ComponentRequest> requests);
+
+  // ROI
+  bool m_use_roi_readout;
+  struct roi_group
+  {
+    int n_links;
+    float prob;
+    triggeralgs::timestamp_t time_window;
+    std::string mode;
+  };
+  std::map<int, roi_group> m_roi_conf;
+  nlohmann::json m_roi_conf_data;
+  void parse_roi_conf(const nlohmann::json& data);
+  void print_roi_conf(std::map<int, roi_group> roi_conf);
+  std::vector<int> m_roi_conf_ids;
+  std::vector<float> m_roi_conf_probs;
+  std::vector<float> m_roi_conf_probs_c;
+  float get_random_num_float(float limit);
+  int get_random_num_int();
+  int pick_roi_group_conf();
+  void roi_readout_make_requests(dfmessages::TriggerDecision& decision);
 
   int m_repeat_trigger_count{ 1 };
 

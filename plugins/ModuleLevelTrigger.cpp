@@ -100,11 +100,18 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
 {
   auto params = confobj.get<moduleleveltrigger::ConfParams>();
 
-  m_links.clear();
-  for (auto const& link : params.links) {
-    m_links.push_back(
+  m_mandatory_links.clear();
+  for (auto const& link : params.mandatory_links) {
+    m_mandatory_links.push_back(
       dfmessages::SourceID{ daqdataformats::SourceID::string_to_subsystem(link.subsystem), link.element });
   }
+  m_group_links.clear();
+  m_group_links_data = params.groups_links;
+  parse_group_links(m_group_links_data);
+  print_group_links();
+  m_total_group_links = m_group_links.size();
+  TLOG_DEBUG(3) << "Total group links: " << m_total_group_links;
+
   // m_trigger_decision_connection = params.dfo_connection;
   // m_inhibit_connection = params.dfo_busy_connection;
   m_hsi_passthrough = params.hsi_trigger_type_passthrough;
@@ -117,11 +124,20 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   m_td_readout_limit = params.td_readout_limit;
   m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
   m_use_readout_map = params.use_readout_map;
+  m_use_roi_readout = params.use_roi_readout;
   m_use_bitwords = params.use_bitwords;
   TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
+  TLOG_DEBUG(3) << "Use ROI readout?: " << m_use_roi_readout;
+
+  // ROI map
+  if (m_use_roi_readout) {
+    m_roi_conf_data = params.roi_conf;
+    parse_roi_conf(m_roi_conf_data);
+    print_roi_conf(m_roi_conf);
+  }
 
   // Custom readout map
   TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
@@ -228,7 +244,8 @@ ModuleLevelTrigger::do_resume(const nlohmann::json& /*resumeobj*/)
 void
 ModuleLevelTrigger::do_scrap(const nlohmann::json& /*scrapobj*/)
 {
-  m_links.clear();
+  m_mandatory_links.clear();
+  m_group_links.clear();
   m_configured_flag.store(false);
 }
 
@@ -268,13 +285,18 @@ ModuleLevelTrigger::create_decision(const ModuleLevelTrigger::PendingTD& pending
                 << ", request window begin: " << pending_td.readout_start
                 << ", request window end: " << pending_td.readout_end;
 
-  for (auto link : m_links) {
-    dfmessages::ComponentRequest request;
-    request.component = link;
-    request.window_begin = pending_td.readout_start;
-    request.window_end = pending_td.readout_end;
+  std::vector<dfmessages::ComponentRequest> requests =
+    create_all_decision_requests(m_mandatory_links, pending_td.readout_start, pending_td.readout_end);
+  add_requests_to_decision(decision, requests);
 
-    decision.components.push_back(request);
+  if (!m_use_roi_readout) {
+    for (const auto& [key, value] : m_group_links) {
+      std::vector<dfmessages::ComponentRequest> group_requests =
+        create_all_decision_requests(value, pending_td.readout_start, pending_td.readout_end);
+      add_requests_to_decision(decision, group_requests);
+    }
+  } else { // using ROI readout
+    roi_readout_make_requests(decision);
   }
 
   return decision;
@@ -779,6 +801,170 @@ ModuleLevelTrigger::print_readout_map(std::map<trgdataformats::TriggerCandidateD
   TLOG_DEBUG(3) << "MLT TD Readout map:";
   for (auto const& [key, val] : map) {
     TLOG_DEBUG(3) << "Type: " << static_cast<int>(key) << ", before: " << val.first << ", after: " << val.second;
+  }
+  return;
+}
+
+void
+ModuleLevelTrigger::parse_group_links(const nlohmann::json& data)
+{
+  for (auto group : data) {
+    const nlohmann::json& temp_links_data = group["links"];
+    std::vector<dfmessages::SourceID> temp_links;
+    for (auto link : temp_links_data) {
+      temp_links.push_back(
+        dfmessages::SourceID{ daqdataformats::SourceID::string_to_subsystem(link["subsystem"]), link["element"] });
+    }
+    m_group_links.insert({ group["group"], temp_links });
+  }
+  return;
+}
+
+void
+ModuleLevelTrigger::print_group_links()
+{
+  TLOG_DEBUG(3) << "MLT Group Links:";
+  for (auto const& [key, val] : m_group_links) {
+    TLOG_DEBUG(3) << "Group: " << key;
+    for (auto const& link : val) {
+      TLOG_DEBUG(3) << link;
+    }
+  }
+  TLOG_DEBUG(3) << " ";
+  return;
+}
+
+dfmessages::ComponentRequest
+ModuleLevelTrigger::create_request_for_link(dfmessages::SourceID link,
+                                            triggeralgs::timestamp_t start,
+                                            triggeralgs::timestamp_t end)
+{
+  dfmessages::ComponentRequest request;
+  request.component = link;
+  request.window_begin = start;
+  request.window_end = end;
+
+  return request;
+}
+
+std::vector<dfmessages::ComponentRequest>
+ModuleLevelTrigger::create_all_decision_requests(std::vector<dfmessages::SourceID> links,
+                                                 triggeralgs::timestamp_t start,
+                                                 triggeralgs::timestamp_t end)
+{
+  std::vector<dfmessages::ComponentRequest> requests;
+  for (auto link : links) {
+    requests.push_back(create_request_for_link(link, start, end));
+  }
+  return requests;
+}
+
+void
+ModuleLevelTrigger::add_requests_to_decision(dfmessages::TriggerDecision& decision,
+                                             std::vector<dfmessages::ComponentRequest> requests)
+{
+  for (auto request : requests) {
+    decision.components.push_back(request);
+  }
+}
+
+void
+ModuleLevelTrigger::parse_roi_conf(const nlohmann::json& data)
+{
+  int counter = 0;
+  float run_sum = 0;
+  for (auto group : data) {
+    roi_group temp_roi_group;
+    temp_roi_group.n_links = group["number_of_link_groups"];
+    temp_roi_group.prob = group["probability"];
+    temp_roi_group.time_window = group["time_window"];
+    temp_roi_group.mode = group["groups_selection_mode"];
+    m_roi_conf.insert({ counter, temp_roi_group });
+    m_roi_conf_ids.push_back(counter);
+    m_roi_conf_probs.push_back(group["probability"]);
+    run_sum += static_cast<float>(group["probability"]);
+    m_roi_conf_probs_c.push_back(run_sum);
+    counter++;
+  }
+  return;
+}
+
+void
+ModuleLevelTrigger::print_roi_conf(std::map<int, roi_group> roi_conf)
+{
+  TLOG_DEBUG(3) << "ROI CONF";
+  for (const auto& [key, value] : roi_conf) {
+    TLOG_DEBUG(3) << "ID: " << key;
+    TLOG_DEBUG(3) << "n links: " << value.n_links;
+    TLOG_DEBUG(3) << "prob: " << value.prob;
+    TLOG_DEBUG(3) << "time: " << value.time_window;
+    TLOG_DEBUG(3) << "mode: " << value.mode;
+  }
+  TLOG_DEBUG(3) << " ";
+  return;
+}
+
+float
+ModuleLevelTrigger::get_random_num_float(float limit)
+{
+  float rnd = (double)rand() / RAND_MAX;
+  return rnd * (limit);
+}
+
+int
+ModuleLevelTrigger::pick_roi_group_conf()
+{
+  float rnd_num = get_random_num_float(m_roi_conf_probs_c.back());
+  for (int i = 0; i < static_cast<int>(m_roi_conf_probs_c.size()); i++) {
+    if (rnd_num < m_roi_conf_probs_c[i]) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+int
+ModuleLevelTrigger::get_random_num_int()
+{
+  int range = m_total_group_links;
+  int rnd = rand() % range;
+  return rnd;
+}
+
+void
+ModuleLevelTrigger::roi_readout_make_requests(dfmessages::TriggerDecision& decision)
+{
+  // Get configuration at random (weighted)
+  int group_pick = pick_roi_group_conf();
+  if (group_pick != -1) {
+    roi_group this_group = m_roi_conf[m_roi_conf_ids[group_pick]];
+    std::vector<dfmessages::SourceID> links;
+
+    // If mode is random, pick groups to request at random
+    if (this_group.mode == "kRandom") {
+      TLOG_DEBUG(3) << "RAND";
+      std::set<int> groups;
+      while (static_cast<int>(groups.size()) < this_group.n_links) {
+        groups.insert(get_random_num_int());
+      }
+      for (auto r_id : groups) {
+        links.insert(links.end(), m_group_links[r_id].begin(), m_group_links[r_id].end());
+      }
+      // Otherwise, read sequntially by IDs, starting at 0
+    } else {
+      TLOG_DEBUG(3) << "SEQ";
+      int r_id = 0;
+      while (r_id < this_group.n_links) {
+        links.insert(links.end(), m_group_links[r_id].begin(), m_group_links[r_id].end());
+        r_id++;
+      }
+    }
+
+    // Once the components are prepared, create requests and append them to decision
+    std::vector<dfmessages::ComponentRequest> requests =
+      create_all_decision_requests(links, this_group.time_window, this_group.time_window);
+    add_requests_to_decision(decision, requests);
+    links.clear();
   }
   return;
 }
