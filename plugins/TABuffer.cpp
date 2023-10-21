@@ -45,8 +45,9 @@ TABuffer::init(const nlohmann::json& init_data)
 }
 
 void
-TABuffer::get_info(opmonlib::InfoCollector& /* ci */, int /*level*/)
+TABuffer::get_info(opmonlib::InfoCollector& ci, int level)
 {
+  m_request_handler_impl->get_info(ci, level);
 }
 
 void
