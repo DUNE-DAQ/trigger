@@ -24,7 +24,7 @@ namespace dunedaq::trigger {
 
 class TriggerActivityMaker
   : public TriggerGenericMaker<Set<triggeralgs::TriggerPrimitive>,
-                               Set<triggeralgs::TriggerActivity>,
+                               triggeralgs::TriggerActivity,
                                triggeralgs::TriggerActivityMaker>
 {
 public:

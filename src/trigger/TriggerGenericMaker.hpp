@@ -18,11 +18,11 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
-#include "trgdataformats/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
+#include "trgdataformats/Types.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include <algorithm>
@@ -47,24 +47,25 @@ class TriggerGenericMaker : public dunedaq::appfwk::DAQModule
   friend class TriggerGenericWorker<IN, OUT, MAKER>;
 
 public:
-  explicit TriggerGenericMaker(const std::string& name)
-    : DAQModule(name)
-    , m_thread(std::bind(&TriggerGenericMaker::do_work, this, std::placeholders::_1))
-    , m_received_count(0)
-    , m_sent_count(0)
-    , m_input_queue(nullptr)
-    , m_output_queue(nullptr)
-    , m_queue_timeout(100)
-    , m_algorithm_name("[uninitialized]")
-    , m_sourceid(dunedaq::daqdataformats::SourceID::s_invalid_id)
-    , m_buffer_time(0)
-    , m_window_time(625000)
-    , worker(*this) // should be last; may use other members
-  {
-    register_command("start", &TriggerGenericMaker::do_start);
-    register_command("stop", &TriggerGenericMaker::do_stop);
-    register_command("conf", &TriggerGenericMaker::do_configure);
-  }
+  explicit TriggerGenericMaker(const std::string& name);
+  // explicit TriggerGenericMaker(const std::string& name)
+  //   : DAQModule(name)
+  //   , m_thread(std::bind(&TriggerGenericMaker::do_work, this, std::placeholders::_1))
+  //   , m_received_count(0)
+  //   , m_sent_count(0)
+  //   , m_input_queue(nullptr)
+  //   , m_output_queue(nullptr)
+  //   , m_queue_timeout(100)
+  //   , m_algorithm_name("[uninitialized]")
+  //   , m_sourceid(dunedaq::daqdataformats::SourceID::s_invalid_id)
+  //   , m_buffer_time(0)
+  //   , m_window_time(625000)
+  //   , worker(*this) // should be last; may use other members
+  // {
+  //   register_command("start", &TriggerGenericMaker::do_start);
+  //   register_command("stop", &TriggerGenericMaker::do_stop);
+  //   register_command("conf", &TriggerGenericMaker::do_configure);
+  // }
 
   virtual ~TriggerGenericMaker() {}
 
@@ -73,24 +74,28 @@ public:
   TriggerGenericMaker(TriggerGenericMaker&&) = delete;
   TriggerGenericMaker& operator=(TriggerGenericMaker&&) = delete;
 
-  void init(const nlohmann::json& obj) override
-  {
-    m_input_queue = get_iom_receiver<IN>(appfwk::connection_uid(obj, "input"));
-    m_output_queue = get_iom_sender<OUT>(appfwk::connection_uid(obj, "output"));
-  }
+  void init(const nlohmann::json& obj) override;
+  // void init(const nlohmann::json& obj) override
+  // {
+  //   m_input_queue = get_iom_receiver<IN>(appfwk::connection_uid(obj, "input"));
+  //   m_output_queue = get_iom_sender<OUT>(appfwk::connection_uid(obj, "output"));
+  // }
 
-  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
-  {
-    triggergenericmakerinfo::Info i;
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override;
+  // void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
+  // {
+  //   triggergenericmakerinfo::Info i;
 
-    i.received_count = m_received_count.load();
-    i.sent_count = m_sent_count.load();
-    if (m_maker) { i.data_vs_system_ms = m_maker->m_data_vs_system_time; }
-    else i.data_vs_system_ms = 0;    
+  //   i.received_count = m_received_count.load();
+  //   i.sent_count = m_sent_count.load();
+  //   if (m_maker) {
+  //     i.data_vs_system_ms = m_maker->m_data_vs_system_time;
+  //   } else
+  //     i.data_vs_system_ms = 0;
 
-    ci.add(i);
-  }
-  
+  //   ci.add(i);
+  // }
+
 protected:
   void set_algorithm_name(const std::string& name) { m_algorithm_name = name; }
 
@@ -131,26 +136,24 @@ private:
 
   std::shared_ptr<MAKER> m_maker;
   nlohmann::json m_maker_conf;
-  
+
   TriggerGenericWorker<IN, OUT, MAKER> worker;
 
   // This should return a shared_ptr to the MAKER created from conf command arguments.
   // Should also call set_algorithm_name and set_geoid/set_windowing (if desired)
   virtual std::shared_ptr<MAKER> make_maker(const nlohmann::json& obj) = 0;
 
-  void do_start(const nlohmann::json& /*obj*/)
-  {
-    m_received_count = 0;
-    m_sent_count = 0;
-    m_maker = make_maker(m_maker_conf);
-    worker.reconfigure();
-    m_thread.start_working_thread(get_name());
-  }
+  void do_start(const nlohmann::json& /*obj*/);
+  // void do_start(const nlohmann::json& /*obj*/)
+  // {
+  //   m_received_count = 0;
+  //   m_sent_count = 0;
+  //   m_maker = make_maker(m_maker_conf);
+  //   worker.reconfigure();
+  //   m_thread.start_working_thread(get_name());
+  // }
 
-  void do_stop(const nlohmann::json& /*obj*/)
-  {
-    m_thread.stop_working_thread();
-  }
+  void do_stop(const nlohmann::json& /*obj*/) { m_thread.stop_working_thread(); }
 
   void do_configure(const nlohmann::json& obj)
   {
@@ -160,7 +163,7 @@ private:
     // persist between runs and hold onto its state from the previous
     // run
     m_maker_conf = obj;
-   
+
     // worker should be notified that configuration potentially changed
     worker.reconfigure();
   }
@@ -174,8 +177,8 @@ private:
       IN in;
       while (receive(in)) {
         if (m_running_flag.load()) {
-	  worker.process(in); 
-	}
+          worker.process(in);
+        }
       }
     }
     // P. Rodrigues 2022-06-01. The argument here is whether to drop
@@ -187,8 +190,7 @@ private:
     // outputs are stale and will cause tardy warnings from the zipper
     // downstream
     worker.drain(true);
-    TLOG() << get_name() << ": Exiting do_work() method, received " << m_received_count << " inputs and successfully sent "
-           << m_sent_count << " outputs. ";
+    TLOG() << get_name() << ": Exiting do_work() method, received " << m_received_count << " inputs and successfully sent " << m_sent_count << " outputs. ";
     worker.reset();
   }
 
@@ -232,7 +234,8 @@ class TriggerGenericWorker
 public:
   explicit TriggerGenericWorker(TriggerGenericMaker<IN, OUT, MAKER>& parent)
     : m_parent(parent)
-  {}
+  {
+  }
 
   TriggerGenericMaker<IN, OUT, MAKER>& m_parent;
 
@@ -273,7 +276,8 @@ public: // NOLINT
     : m_parent(parent)
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
     , m_out_buffer(parent.get_name(), parent.m_algorithm_name, parent.m_buffer_time)
-  {}
+  {
+  }
 
   TriggerGenericMaker<Set<A>, Set<B>, MAKER>& m_parent;
 
@@ -347,8 +351,7 @@ public: // NOLINT
         heartbeat.type = Set<B>::Type::kHeartbeat;
         heartbeat.start_time = in.start_time;
         heartbeat.end_time = in.end_time;
-        heartbeat.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+        heartbeat.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
         TLOG_DEBUG(4) << "Buffering heartbeat with start time " << heartbeat.start_time;
         m_out_buffer.buffer_heartbeat(heartbeat);
@@ -374,15 +377,14 @@ public: // NOLINT
       m_out_buffer.buffer(elems);
     }
 
-    size_t n_output_windows=0;
+    size_t n_output_windows = 0;
     // emit completed windows
     while (m_out_buffer.ready()) {
       ++n_output_windows;
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
-      out.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+      out.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
         TLOG_DEBUG(4) << "Sending heartbeat with start time " << out.start_time;
@@ -393,8 +395,7 @@ public: // NOLINT
       }
       // Only form and send Set<B> if it has a nonzero number of objects
       else if (out.type == Set<B>::Type::kPayload && out.objects.size() != 0) {
-        TLOG_DEBUG(4) << "Output set window ready with start time " << out.start_time << " end time " << out.end_time
-                      << " and " << out.objects.size() << " members";
+        TLOG_DEBUG(4) << "Output set window ready with start time " << out.start_time << " end time " << out.end_time << " and " << out.objects.size() << " members";
         if (!m_parent.send(std::move(out))) {
           ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
           // out is dropped
@@ -423,11 +424,10 @@ public: // NOLINT
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
-      out.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+      out.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
-        if(!drop) {
+        if (!drop) {
           if (!m_parent.send(std::move(out))) {
             ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
             // out is dropped
@@ -436,8 +436,7 @@ public: // NOLINT
       }
       // Only form and send Set<B> if it has a nonzero number of objects
       else if (out.type == Set<B>::Type::kPayload && out.objects.size() != 0) {
-        TLOG_DEBUG(1) << "Output set window ready with start time " << out.start_time << " end time " << out.end_time
-                      << " and " << out.objects.size() << " members";
+        TLOG_DEBUG(1) << "Output set window ready with start time " << out.start_time << " end time " << out.end_time << " and " << out.objects.size() << " members";
         if (!drop) {
           if (!m_parent.send(std::move(out))) {
             ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
@@ -458,7 +457,8 @@ public: // NOLINT
   explicit TriggerGenericWorker(TriggerGenericMaker<Set<A>, OUT, MAKER>& parent)
     : m_parent(parent)
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
-  {}
+  {
+  }
 
   TriggerGenericMaker<Set<A>, OUT, MAKER>& m_parent;
 
@@ -549,12 +549,14 @@ public: // NOLINT
             // out.back() is dropped
           }
         }
-	out_vec.pop_back();
+        out_vec.pop_back();
       }
     }
   }
 };
 
 } // namespace dunedaq::trigger
+
+#include "details/TriggerGenericMaker.hxx"
 
 #endif // TRIGGER_SRC_TRIGGER_TRIGGERGENERICMAKER_HPP_

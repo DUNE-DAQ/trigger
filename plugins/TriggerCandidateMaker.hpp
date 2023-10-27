@@ -22,7 +22,7 @@
 namespace dunedaq::trigger {
 
 class TriggerCandidateMaker
-  : public TriggerGenericMaker<Set<triggeralgs::TriggerActivity>,
+  : public TriggerGenericMaker<triggeralgs::TriggerActivity,
                                triggeralgs::TriggerCandidate,
                                triggeralgs::TriggerCandidateMaker>
 {
