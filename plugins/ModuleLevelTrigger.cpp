@@ -334,12 +334,12 @@ ModuleLevelTrigger::send_trigger_decisions()
     std::optional<triggeralgs::TriggerCandidate> tc = m_candidate_input->try_receive(std::chrono::milliseconds(10));
     if (tc.has_value()) {
       if (m_use_readout_map) {
-        TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
+        TLOG() << "[MLT] Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
                       << ", start/end " << tc->time_start << "/" << tc->time_end << ", readout start/end "
                       << tc->time_candidate - m_readout_window_map[tc->type].first << "/"
                       << tc->time_candidate + m_readout_window_map[tc->type].second;
       } else {
-        TLOG_DEBUG(1) << "Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
+        TLOG(1) << "[MLT] Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
                       << ", start/end " << tc->time_start << "/" << tc->time_end;
       }
       ++m_tc_received_count;

@@ -32,7 +32,8 @@ void
 TABuffer::init(const nlohmann::json& init_data)
 {
   try {
-    m_input_queue_tas = get_iom_receiver<TASet>(appfwk::connection_uid(init_data, "taset_source"));
+    // m_input_queue_tas = get_iom_receiver<TASet>(appfwk::connection_uid(init_data, "taset_source"));
+    m_input_queue_tas = get_iom_receiver<triggeralgs::TriggerActivity>(appfwk::connection_uid(init_data, "taset_source"));
     m_input_queue_dr =
       get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
   } catch (const ers::Issue& excpt) {
@@ -96,16 +97,20 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
 
     bool popped_anything=false;
-    std::optional<TASet> taset = m_input_queue_tas->try_receive(std::chrono::milliseconds(0));
-    if (taset.has_value()) {
+    // std::optional<TASet> taset = m_input_queue_tas->try_receive(std::chrono::milliseconds(0));
+    std::optional<triggeralgs::TriggerActivity> ta = m_input_queue_tas->try_receive(std::chrono::milliseconds(0));
+    if (ta.has_value()) {
       popped_anything = true;
-      for (auto const& ta: taset->objects) {
-        //uint64_t ta_rec_sys_time  = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-        //TLOG() << "Got TA at the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy(); 
-        m_latency_buffer_impl->write(TAWrapper(ta));
-        ++n_tas_received;
-        //TLOG() << "Written TA to the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy();
-      }
+      m_latency_buffer_impl->write(TAWrapper(*ta));
+      ++n_tas_received;
+
+      // for (auto const& ta: taset->objects) {
+      //   //uint64_t ta_rec_sys_time  = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+      //   //TLOG() << "Got TA at the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy(); 
+      //   m_latency_buffer_impl->write(TAWrapper(ta));
+      //   ++n_tas_received;
+      //   //TLOG() << "Written TA to the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy();
+      // }
     }
     
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
