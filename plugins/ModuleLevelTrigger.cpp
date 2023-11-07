@@ -962,7 +962,8 @@ ModuleLevelTrigger::roi_readout_make_requests(dfmessages::TriggerDecision& decis
 
     // Once the components are prepared, create requests and append them to decision
     std::vector<dfmessages::ComponentRequest> requests =
-      create_all_decision_requests(links, this_group.time_window, this_group.time_window);
+      create_all_decision_requests(links, decision.trigger_timestamp - this_group.time_window,
+                                   decision.trigger_timestamp + this_group.time_window);
     add_requests_to_decision(decision, requests);
     links.clear();
   }
