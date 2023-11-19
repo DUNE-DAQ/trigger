@@ -181,12 +181,11 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 
   m_inhibit_input->add_callback(std::bind(&ModuleLevelTrigger::dfo_busy_callback, this, std::placeholders::_1));
 
+  m_bitword_check = false;  // this needs to be before the send thread is started, or it needs to be removed; why is it a class datat member anyway?
   m_send_trigger_decisions_thread = std::thread(&ModuleLevelTrigger::send_trigger_decisions, this);
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-trig-dec");
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
-
-  m_bitword_check = false;
 }
 
 void
@@ -218,7 +217,10 @@ ModuleLevelTrigger::do_pause(const nlohmann::json& /*pauseobj*/)
   // Drop all TDs in vetors at run stage change
   clear_td_vectors();
 
-  m_paused.store(true);
+  {
+    std::lock_guard<std::mutex> lock(m_pause_resume_mutex);
+    m_paused.store(true);
+  }
   m_livetime_counter->set_state(LivetimeCounter::State::kPaused);
   TLOG() << "******* Triggers PAUSED! in run " << m_run_number << " *********";
   ers::info(TriggerPaused(ERS_HERE));
@@ -234,7 +236,10 @@ ModuleLevelTrigger::do_resume(const nlohmann::json& /*resumeobj*/)
   ers::info(TriggerActive(ERS_HERE));
   TLOG() << "******* Triggers RESUMED! in run " << m_run_number << " *********";
   m_livetime_counter->set_state(LivetimeCounter::State::kLive);
-  m_paused.store(false);
+  {
+    std::lock_guard<std::mutex> lock(m_pause_resume_mutex);
+    m_paused.store(false);
+  }
   TLOG_DEBUG(3) << "TS Start: "
                 << std::chrono::duration_cast<std::chrono::microseconds>(
                      std::chrono::system_clock::now().time_since_epoch())
@@ -447,6 +452,7 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
   }
 
   if ((!m_use_bitwords) || (m_bitword_check)) {
+    std::lock_guard<std::mutex> lock(m_pause_resume_mutex);
 
     dfmessages::TriggerDecision decision = create_decision(pending_td);
 

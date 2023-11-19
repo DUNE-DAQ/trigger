@@ -153,6 +153,7 @@ private:
   std::vector<PendingTD> m_pending_tds;
   std::vector<PendingTD> m_sent_tds;
   std::mutex m_td_vector_mutex;
+  std::mutex m_pause_resume_mutex;
 
   void add_tc(const triggeralgs::TriggerCandidate& tc);
   void add_td(const PendingTD& pending_td);
