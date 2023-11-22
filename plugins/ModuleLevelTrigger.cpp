@@ -181,7 +181,7 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 
   m_inhibit_input->add_callback(std::bind(&ModuleLevelTrigger::dfo_busy_callback, this, std::placeholders::_1));
 
-  m_bitword_check = false;  // this needs to be before the send thread is started, or it needs to be removed; why is it a class datat member anyway?
+  m_bitword_check = false;  // this needs to be before the send thread is started, or it needs to be removed; why is it a class data member anyway?
   m_send_trigger_decisions_thread = std::thread(&ModuleLevelTrigger::send_trigger_decisions, this);
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-trig-dec");
 
