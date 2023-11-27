@@ -29,173 +29,173 @@ using namespace triggeralgs;
 
 namespace dunedaq::trigger {
 
-  TriggerPrimitiveMaker::TriggerPrimitiveMaker(const std::string& name)
-    : dunedaq::appfwk::DAQModule(name)
-    , m_queue_timeout(100)
-  {
-    // clang-format off
-    register_command("conf",  &TriggerPrimitiveMaker::do_configure);
-    register_command("start", &TriggerPrimitiveMaker::do_start);
-    register_command("stop_trigger_sources",  &TriggerPrimitiveMaker::do_stop);
-    register_command("scrap", &TriggerPrimitiveMaker::do_scrap);
-    // clang-format on
+TriggerPrimitiveMaker::TriggerPrimitiveMaker(const std::string& name)
+  : dunedaq::appfwk::DAQModule(name)
+  , m_queue_timeout(100)
+{
+  // clang-format off
+  register_command("conf",  &TriggerPrimitiveMaker::do_configure);
+  register_command("start", &TriggerPrimitiveMaker::do_start);
+  register_command("stop_trigger_sources",  &TriggerPrimitiveMaker::do_stop);
+  register_command("scrap", &TriggerPrimitiveMaker::do_scrap);
+  // clang-format on
+}
+
+void
+TriggerPrimitiveMaker::init(const nlohmann::json& obj)
+{
+  m_init_obj = obj;
+}
+
+void
+TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
+{
+  m_conf = obj.get<triggerprimitivemaker::ConfParams>();
+
+  // For each of the streams that are specified in the config, we read
+  // the input file, and create an outgoing sink. We also keep track
+  // of the total timestamp range of all the streams, so we can keep
+  // the timestamps of the multiple streams in sync when replaying,
+  // even when they don't all start or end at the same time
+
+  m_earliest_first_tpset_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
+  m_latest_last_tpset_timestamp = 0;
+
+  for (auto& stream : m_conf.tp_streams) {
+    TPStream this_stream;
+    this_stream.tpset_sink = get_iom_sender<TPSet>(appfwk::connection_uid(m_init_obj, stream.output_sink_name));
+
+    this_stream.tpsets = read_tpsets(stream.filename, stream.element_id);
+
+    m_earliest_first_tpset_timestamp =
+      std::min(m_earliest_first_tpset_timestamp, this_stream.tpsets.front().start_time);
+
+    m_latest_last_tpset_timestamp = std::max(m_latest_last_tpset_timestamp, this_stream.tpsets.back().start_time);
+
+    m_tp_streams.push_back(std::move(this_stream));
   }
+}
 
-  void
-  TriggerPrimitiveMaker::init(const nlohmann::json& obj)
-  {
-    m_init_obj = obj;
+void
+TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
+{
+  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+
+  rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
+  m_run_number = start_params.run;
+
+  m_running_flag.store(true);
+
+  // We need the wall-clock time at which we'll send out the TPSet
+  // with the earliest timestamp, so we can keep all of the output
+  // streams in sync. We pick "now" plus a bit, to allow time for all
+  // of the threads to start up
+  auto earliest_timestamp_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(10);
+
+  for (auto& stream : m_tp_streams) {
+    m_threads.push_back(std::make_unique<std::thread>(&TriggerPrimitiveMaker::do_work,
+                                                      this,
+                                                      std::ref(m_running_flag),
+                                                      std::ref(stream.tpsets),
+                                                      std::ref(stream.tpset_sink),
+                                                      earliest_timestamp_time));
   }
+  for (size_t i=0; i < m_threads.size(); ++i) {
+    std::string name("replay");
+    name += std::to_string(i);
+    pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
+  }
+  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+}
 
-  void
-  TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
-  {
-    m_conf = obj.get<triggerprimitivemaker::ConfParams>();
-
-    // For each of the streams that are specified in the config, we read
-    // the input file, and create an outgoing sink. We also keep track
-    // of the total timestamp range of all the streams, so we can keep
-    // the timestamps of the multiple streams in sync when replaying,
-    // even when they don't all start or end at the same time
-
-    m_earliest_first_tpset_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
-    m_latest_last_tpset_timestamp = 0;
-
-    for (auto& stream : m_conf.tp_streams) {
-      TPStream this_stream;
-      this_stream.tpset_sink = get_iom_sender<TPSet>(appfwk::connection_uid(m_init_obj, stream.output_sink_name));
-
-      this_stream.tpsets = read_tpsets(stream.filename, stream.element_id);
-
-      m_earliest_first_tpset_timestamp =
-        std::min(m_earliest_first_tpset_timestamp, this_stream.tpsets.front().start_time);
-
-      m_latest_last_tpset_timestamp = std::max(m_latest_last_tpset_timestamp, this_stream.tpsets.back().start_time);
-
-      m_tp_streams.push_back(std::move(this_stream));
+void
+TriggerPrimitiveMaker::do_stop(const nlohmann::json& /*args*/)
+{
+  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  m_running_flag.store(false);
+  for (auto& thr : m_threads) {
+    if (thr != nullptr && thr->joinable()) {
+      thr->join();
     }
   }
+  m_threads.clear();
+  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+}
 
-  void
-  TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
-  {
-    TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+void
+TriggerPrimitiveMaker::do_scrap(const nlohmann::json& /*args*/)
+{
+  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+  m_tp_streams.clear();
+  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
+}
 
-    rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
-    m_run_number = start_params.run;
-
-    m_running_flag.store(true);
-
-    // We need the wall-clock time at which we'll send out the TPSet
-    // with the earliest timestamp, so we can keep all of the output
-    // streams in sync. We pick "now" plus a bit, to allow time for all
-    // of the threads to start up
-    auto earliest_timestamp_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(10);
-
-    for (auto& stream : m_tp_streams) {
-      m_threads.push_back(std::make_unique<std::thread>(&TriggerPrimitiveMaker::do_work,
-                                                        this,
-                                                        std::ref(m_running_flag),
-                                                        std::ref(stream.tpsets),
-                                                        std::ref(stream.tpset_sink),
-                                                        earliest_timestamp_time));
-    }
-    for (size_t i=0; i < m_threads.size(); ++i) {
-      std::string name("replay");
-      name += std::to_string(i);
-      pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
-    }
-    TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+std::vector<TPSet>
+TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
+{
+  std::ifstream file(filename);
+  if (!file || file.bad()) {
+    throw BadTPInputFile(ERS_HERE, get_name(), filename);
   }
 
-  void
-  TriggerPrimitiveMaker::do_stop(const nlohmann::json& /*args*/)
-  {
-    TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
-    m_running_flag.store(false);
-    for (auto& thr : m_threads) {
-      if (thr != nullptr && thr->joinable()) {
-        thr->join();
-      }
-    }
-    m_threads.clear();
-    TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
-  }
+  TriggerPrimitive tp;
+  TPSet tpset;
+  std::vector<TPSet> tpsets;
 
-  void
-  TriggerPrimitiveMaker::do_scrap(const nlohmann::json& /*args*/)
-  {
-    TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
-    m_tp_streams.clear();
-    TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
-  }
+  uint64_t prev_tpset_number = 0; // NOLINT(build/unsigned)
+  uint32_t seqno = 0;             // NOLINT(build/unsigned)
+  uint64_t old_time_start = 0;    // NOLINT(build/unsigned)
 
-  std::vector<TPSet>
-  TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
-  {
-    std::ifstream file(filename);
-    if (!file || file.bad()) {
-      throw BadTPInputFile(ERS_HERE, get_name(), filename);
-    }
+  // Read in the file and place the TPs in TPSets. TPSets have time
+  // boundaries ( n*tpset_time_width + tpset_time_offset ), and TPs are placed
+  // in TPSets based on the TP start time
+  //
+  // This loop assumes the input file is sorted by TP start time
+  while (file >> tp.time_start >> tp.time_over_threshold >> tp.time_peak >> tp.channel >> tp.adc_integral >>
+         tp.adc_peak >> tp.detid >> tp.type) {
+    if (tp.time_start >= old_time_start) {
+      // NOLINTNEXTLINE(build/unsigned)
+      uint64_t current_tpset_number = (tp.time_start + m_conf.tpset_time_offset) / m_conf.tpset_time_width;
+      old_time_start = tp.time_start;
 
-    TriggerPrimitive tp;
-    TPSet tpset;
-    std::vector<TPSet> tpsets;
+      // If we crossed a time boundary, push the current TPSet and reset it
+      if (current_tpset_number > prev_tpset_number) {
+        tpset.start_time = prev_tpset_number * m_conf.tpset_time_width + m_conf.tpset_time_offset;
+        tpset.end_time = tpset.start_time + m_conf.tpset_time_width;
+        tpset.seqno = seqno;
+        ++seqno;
 
-    uint64_t prev_tpset_number = 0; // NOLINT(build/unsigned)
-    uint32_t seqno = 0;             // NOLINT(build/unsigned)
-    uint64_t old_time_start = 0;    // NOLINT(build/unsigned)
+        // 12-Jul-2021, KAB: setting origin fields from configuration
+        tpset.origin.id = element;
 
-    // Read in the file and place the TPs in TPSets. TPSets have time
-    // boundaries ( n*tpset_time_width + tpset_time_offset ), and TPs are placed
-    // in TPSets based on the TP start time
-    //
-    // This loop assumes the input file is sorted by TP start time
-    while (file >> tp.time_start >> tp.time_over_threshold >> tp.time_peak >> tp.channel >> tp.adc_integral >>
-          tp.adc_peak >> tp.detid >> tp.type) {
-      if (tp.time_start >= old_time_start) {
-        // NOLINTNEXTLINE(build/unsigned)
-        uint64_t current_tpset_number = (tp.time_start + m_conf.tpset_time_offset) / m_conf.tpset_time_width;
-        old_time_start = tp.time_start;
+        tpset.type = TPSet::Type::kPayload;
 
-        // If we crossed a time boundary, push the current TPSet and reset it
-        if (current_tpset_number > prev_tpset_number) {
-          tpset.start_time = prev_tpset_number * m_conf.tpset_time_width + m_conf.tpset_time_offset;
-          tpset.end_time = tpset.start_time + m_conf.tpset_time_width;
-          tpset.seqno = seqno;
-          ++seqno;
-
-          // 12-Jul-2021, KAB: setting origin fields from configuration
-          tpset.origin.id = element;
-
-          tpset.type = TPSet::Type::kPayload;
-
-          if (!tpset.objects.empty()) {
-            // We don't send empty TPSets, so there's no point creating them
-            tpsets.push_back(tpset);
-          }
-          prev_tpset_number = current_tpset_number;
-
-          tpset.objects.clear();
+        if (!tpset.objects.empty()) {
+          // We don't send empty TPSets, so there's no point creating them
+          tpsets.push_back(tpset);
         }
-        tpset.objects.push_back(tp);
-      } else {
-        ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
-      }
-    }
-    if (!tpset.objects.empty()) {
-      // We don't send empty TPSets, so there's no point creating them
-      tpsets.push_back(tpset);
-    }
-    TLOG_DEBUG(0) << "Read " << seqno << " TPs into " << tpsets.size() << " TPSets, from file " << filename;
-    return tpsets;
-  }
+        prev_tpset_number = current_tpset_number;
 
-  void
-  TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
-                                std::vector<TPSet>& tpsets,
-                                std::shared_ptr<iomanager::SenderConcept<TPSet>>& tpset_sink,
-                                std::chrono::steady_clock::time_point earliest_timestamp_time)
+        tpset.objects.clear();
+      }
+      tpset.objects.push_back(tp);
+    } else {
+      ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
+    }
+  }
+  if (!tpset.objects.empty()) {
+    // We don't send empty TPSets, so there's no point creating them
+    tpsets.push_back(tpset);
+  }
+  TLOG_DEBUG(0) << "Read " << seqno << " TPs into " << tpsets.size() << " TPSets, from file " << filename;
+  return tpsets;
+}
+
+void
+TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
+                               std::vector<TPSet>& tpsets,
+                               std::shared_ptr<iomanager::SenderConcept<TPSet>>& tpset_sink,
+                               std::chrono::steady_clock::time_point earliest_timestamp_time)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   uint64_t current_iteration = 0; // NOLINT(build/unsigned)
