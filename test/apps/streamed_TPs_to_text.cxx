@@ -56,7 +56,7 @@ main(int argc, char** argv)
           << " " << prim->adc_peak
           << " " << prim->detid
           << " " << prim->type 
-          << " " << prim->algorithm
+          << " " << (int) prim->algorithm
           << " " << prim->version
           << " " << prim->flag
           << std::endl;
