@@ -187,8 +187,8 @@ private:
     // outputs are stale and will cause tardy warnings from the zipper
     // downstream
     worker.drain(true);
-    TLOG() << get_name() << ": Exiting do_work() method, received " << m_received_count << " inputs and successfully sent "
-           << m_sent_count << " outputs. ";
+    TLOG() << get_name() << ": Exiting do_work() method, received " << m_received_count << " inputs ("
+           << worker.get_low_level_input_count() << " sub-inputs) and successfully sent " << m_sent_count << " outputs. ";
     worker.reset();
   }
 
@@ -231,17 +231,20 @@ class TriggerGenericWorker
 {
 public:
   explicit TriggerGenericWorker(TriggerGenericMaker<IN, OUT, MAKER>& parent)
-    : m_parent(parent)
+    : m_parent(parent), m_low_level_input_count(0)
   {}
 
   TriggerGenericMaker<IN, OUT, MAKER>& m_parent;
 
   void reconfigure() {}
 
-  void reset() {}
+  void reset() {
+    m_low_level_input_count = 0;
+  }
 
   void process(IN& in)
   {
+    ++m_low_level_input_count;
     std::vector<OUT> out_vec; // one input -> many outputs
     try {
       m_parent.m_maker->operator()(in, out_vec);
@@ -261,6 +264,9 @@ public:
   }
 
   void drain(bool) {}
+
+  size_t get_low_level_input_count() {return m_low_level_input_count;}
+  size_t m_low_level_input_count;
 };
 
 // Partial specialization for IN = Set<A>, OUT = Set<B> and assumes the MAKER has:
@@ -273,6 +279,7 @@ public: // NOLINT
     : m_parent(parent)
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
     , m_out_buffer(parent.get_name(), parent.m_algorithm_name, parent.m_buffer_time)
+    , m_low_level_input_count(0)
   {}
 
   TriggerGenericMaker<Set<A>, Set<B>, MAKER>& m_parent;
@@ -292,6 +299,7 @@ public: // NOLINT
   {
     m_prev_start_time = 0;
     m_out_buffer.reset();
+    m_low_level_input_count = 0;
   }
 
   void process_slice(const std::vector<A>& time_slice, std::vector<B>& out_vec)
@@ -323,6 +331,7 @@ public: // NOLINT
         if (!m_in_buffer.buffer(in, time_slice, start_time, end_time)) {
           return; // no complete time slice yet (`in` was part of buffered slice)
         }
+        m_low_level_input_count += time_slice.size();
         process_slice(time_slice, elems);
       } break;
       case Set<A>::Type::kHeartbeat: {
@@ -340,6 +349,7 @@ public: // NOLINT
             // This should never happen, but we check here so we at least get some output if it did
             ers::fatal(OutOfOrderSets(ERS_HERE, m_parent.get_name(), end_time, in.start_time));
           }
+          m_low_level_input_count += time_slice.size();
           process_slice(time_slice, elems);
         }
 
@@ -412,6 +422,7 @@ public: // NOLINT
     daqdataformats::timestamp_t start_time, end_time;
     if (m_in_buffer.flush(time_slice, start_time, end_time)) {
       std::vector<B> elems;
+      m_low_level_input_count += time_slice.size();
       process_slice(time_slice, elems);
       if (elems.size() > 0) {
         m_out_buffer.buffer(elems);
@@ -447,6 +458,9 @@ public: // NOLINT
       }
     }
   }
+
+  size_t get_low_level_input_count() {return m_low_level_input_count;}
+  size_t m_low_level_input_count;
 };
 
 // Partial specialization for IN = Set<A> and assumes the the MAKER has:
@@ -458,6 +472,7 @@ public: // NOLINT
   explicit TriggerGenericWorker(TriggerGenericMaker<Set<A>, OUT, MAKER>& parent)
     : m_parent(parent)
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
+    , m_low_level_input_count(0)
   {}
 
   TriggerGenericMaker<Set<A>, OUT, MAKER>& m_parent;
@@ -466,7 +481,9 @@ public: // NOLINT
 
   void reconfigure() {}
 
-  void reset() {}
+  void reset() {
+    m_low_level_input_count = 0;
+  }
 
   void process_slice(const std::vector<A>& time_slice, std::vector<OUT>& out_vec)
   {
@@ -493,6 +510,7 @@ public: // NOLINT
         if (!m_in_buffer.buffer(in, time_slice, start_time, end_time)) {
           return; // no complete time slice yet (`in` was part of buffered slice)
         }
+        m_low_level_input_count += time_slice.size();
         process_slice(time_slice, out_vec);
       } break;
       case Set<A>::Type::kHeartbeat:
@@ -510,6 +528,7 @@ public: // NOLINT
               // This should never happen, but we check here so we at least get some output if it did
               ers::fatal(OutOfOrderSets(ERS_HERE, m_parent.get_name(), end_time, in.start_time));
             }
+            m_low_level_input_count += time_slice.size();
             process_slice(time_slice, out_vec);
           }
           m_parent.m_maker->flush(in.end_time, out_vec);
@@ -541,6 +560,7 @@ public: // NOLINT
     daqdataformats::timestamp_t start_time, end_time;
     if (m_in_buffer.flush(time_slice, start_time, end_time)) {
       std::vector<OUT> out_vec;
+      m_low_level_input_count += time_slice.size();
       process_slice(time_slice, out_vec);
       while (out_vec.size()) {
         if (!drop) {
@@ -553,6 +573,9 @@ public: // NOLINT
       }
     }
   }
+
+  size_t get_low_level_input_count() {return m_low_level_input_count;}
+  size_t m_low_level_input_count;
 };
 
 } // namespace dunedaq::trigger
