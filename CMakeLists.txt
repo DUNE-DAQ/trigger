@@ -130,6 +130,7 @@ daq_add_unit_test(TxSet_test                     LINK_LIBRARIES trigger)
 daq_add_unit_test(BufferManager_test             LINK_LIBRARIES trigger)
 daq_add_unit_test(TriggerZipper_test             LINK_LIBRARIES trigger)
 daq_add_unit_test(TriggerObjectOverlay_test      LINK_LIBRARIES trigger)
+daq_add_unit_test(AlgorithmPlugins_test          LINK_LIBRARIES trigger)
 
 ##############################################################################
 
