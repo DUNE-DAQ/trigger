@@ -18,6 +18,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
+#include "dfmessages/Types.hpp"
 #include "trgdataformats/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
@@ -52,6 +53,7 @@ public:
     , m_thread(std::bind(&TriggerGenericMaker::do_work, this, std::placeholders::_1))
     , m_received_count(0)
     , m_sent_count(0)
+    , m_run_number(0)
     , m_input_queue(nullptr)
     , m_output_queue(nullptr)
     , m_queue_timeout(100)
@@ -113,6 +115,7 @@ private:
   using metric_counter_type = decltype(triggergenericmakerinfo::Info::received_count);
   std::atomic<metric_counter_type> m_received_count;
   std::atomic<metric_counter_type> m_sent_count;
+  dfmessages::run_number_t m_run_number;
 
   using source_t = dunedaq::iomanager::ReceiverConcept<IN>;
   std::shared_ptr<source_t> m_input_queue;
@@ -138,13 +141,14 @@ private:
   // Should also call set_algorithm_name and set_geoid/set_windowing (if desired)
   virtual std::shared_ptr<MAKER> make_maker(const nlohmann::json& obj) = 0;
 
-  void do_start(const nlohmann::json& /*obj*/)
+  void do_start(const nlohmann::json& startobj)
   {
     m_received_count = 0;
     m_sent_count = 0;
     m_maker = make_maker(m_maker_conf);
     worker.reconfigure();
     m_thread.start_working_thread(get_name());
+    m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
   }
 
   void do_stop(const nlohmann::json& /*obj*/)
@@ -187,8 +191,9 @@ private:
     // outputs are stale and will cause tardy warnings from the zipper
     // downstream
     worker.drain(true);
-    TLOG() << get_name() << ": Exiting do_work() method, received " << m_received_count << " inputs ("
-           << worker.get_low_level_input_count() << " sub-inputs) and successfully sent " << m_sent_count << " outputs. ";
+    TLOG() << get_name() << ": Exiting do_work() method for run " << m_run_number << ", received " << m_received_count
+           << " inputs (" << worker.get_low_level_input_count() << " sub-inputs) and successfully sent " << m_sent_count
+           << " outputs. ";
     worker.reset();
   }
 
