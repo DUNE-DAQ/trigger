@@ -14,6 +14,7 @@
 #include "triggeralgs/TriggerActivityMaker.hpp"
 #include "triggeralgs/TriggerCandidateMaker.hpp"
 #include "triggeralgs/TriggerDecisionMaker.hpp"
+#include "triggeralgs/TriggerActivityFactory.hpp"
 
 #include "cetlib/BasicPluginFactory.h"
 
@@ -44,10 +45,7 @@ namespace dunedaq::trigger {
 inline std::shared_ptr<triggeralgs::TriggerActivityMaker>
 make_ta_maker(std::string const& plugin_name)
 {
-  static cet::BasicPluginFactory bpf("duneTAMaker", "make");
-
-  // TODO Philip Rodrigues <philiprodrigues@github.com> Apr-04-2021: Rethrow any cetlib exception as an ERS issue
-  return bpf.makePlugin<std::shared_ptr<triggeralgs::TriggerActivityMaker>>(plugin_name);
+  return triggeralgs::TriggerActivityFactory::makeTAMaker(plugin_name);
 }
 
 } // namespace dunedaq::trigger
