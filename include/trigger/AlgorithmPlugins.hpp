@@ -22,10 +22,10 @@
 
 namespace dunedaq::trigger {
 /**
- * @brief Load a TriggerActivityMaker plugin and return a shared_ptr to the contained
+ * @brief Load a TriggerActivityMaker plugin and return a unique_ptr to the contained
  * class
  * @param plugin_name Name of the plugin
- * @return shared_ptr to created TriggerActivityMaker instance
+ * @return unique_ptr to created TriggerActivityMaker instance
  */
 inline std::unique_ptr<triggeralgs::TriggerActivityMaker>
 make_ta_maker(std::string const& plugin_name)
@@ -37,10 +37,10 @@ make_ta_maker(std::string const& plugin_name)
 
 namespace dunedaq::trigger {
 /**
- * @brief Load a TriggerCandidateMaker plugin and return a shared_ptr to the contained
+ * @brief Load a TriggerCandidateMaker plugin and return a unique_ptr to the contained
  * class
  * @param plugin_name Name of the plugin
- * @return shared_ptr to created TriggerCandidateMaker instance
+ * @return unique_ptr to created TriggerCandidateMaker instance
  */
 inline std::unique_ptr<triggeralgs::TriggerCandidateMaker>
 make_tc_maker(std::string const& plugin_name)
@@ -66,10 +66,10 @@ make_tc_maker(std::string const& plugin_name)
 
 namespace dunedaq::trigger {
 /**
- * @brief Load a TriggerDecisionMaker plugin and return a shared_ptr to the contained
+ * @brief Load a TriggerDecisionMaker plugin and return a unique_ptr to the contained
  * class
  * @param plugin_name Name of the plugin
- * @return shared_ptr to created TriggerDecisionMaker instance
+ * @return unique_ptr to created TriggerDecisionMaker instance
  */
 inline std::unique_ptr<triggeralgs::TriggerDecisionMaker>
 make_td_maker(std::string const& plugin_name)

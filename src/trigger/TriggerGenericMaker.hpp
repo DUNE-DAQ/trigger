@@ -134,7 +134,7 @@ private:
   
   TriggerGenericWorker<IN, OUT, MAKER> worker;
 
-  // This should return a shared_ptr to the MAKER created from conf command arguments.
+  // This should return a unique_ptr to the MAKER created from conf command arguments.
   // Should also call set_algorithm_name and set_geoid/set_windowing (if desired)
   virtual std::unique_ptr<MAKER> make_maker(const nlohmann::json& obj) = 0;
 
