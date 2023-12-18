@@ -11,29 +11,14 @@
 #ifndef TRIGGER_INCLUDE_TRIGGER_ALGORITHMPLUGINS_HPP_
 #define TRIGGER_INCLUDE_TRIGGER_ALGORITHMPLUGINS_HPP_
 
-#include "triggeralgs/TriggerActivityMaker.hpp"
-#include "triggeralgs/TriggerCandidateMaker.hpp"
 #include "triggeralgs/TriggerDecisionMaker.hpp"
 #include "triggeralgs/TriggerActivityFactory.hpp"
+#include "triggeralgs/TriggerCandidateFactory.hpp"
 
 #include "cetlib/BasicPluginFactory.h"
 
 #include <memory>
 #include <string>
-
-/**
- * @brief Declare the function that will be called by the plugin loader
- * @param klass Class to be defined as a DUNE TAMaker module
- */
-// NOLINTNEXTLINE(build/define_used)
-#define DEFINE_DUNE_TA_MAKER(klass)                                                                                    \
-  extern "C"                                                                                                           \
-  {                                                                                                                    \
-    std::shared_ptr<triggeralgs::TriggerActivityMaker> make()                                                          \
-    {                                                                                                                  \
-      return std::shared_ptr<triggeralgs::TriggerActivityMaker>(new klass());                                            \
-    }                                                                                                                  \
-  }
 
 namespace dunedaq::trigger {
 /**
@@ -45,24 +30,10 @@ namespace dunedaq::trigger {
 inline std::shared_ptr<triggeralgs::TriggerActivityMaker>
 make_ta_maker(std::string const& plugin_name)
 {
-  return triggeralgs::TriggerActivityFactory::makeTAMaker(plugin_name);
+  return triggeralgs::TriggerActivityFactory::buildMaker(plugin_name);
 }
 
 } // namespace dunedaq::trigger
-
-/**
- * @brief Declare the function that will be called by the plugin loader
- * @param klass Class to be defined as a DUNE TCMaker module
- */
-// NOLINTNEXTLINE(build/define_used)
-#define DEFINE_DUNE_TC_MAKER(klass)                                                                                    \
-  extern "C"                                                                                                           \
-  {                                                                                                                    \
-    std::shared_ptr<triggeralgs::TriggerCandidateMaker> make()                                                         \
-    {                                                                                                                  \
-      return std::shared_ptr<triggeralgs::TriggerCandidateMaker>(new klass());                                           \
-    }                                                                                                                  \
-  }
 
 namespace dunedaq::trigger {
 /**
@@ -74,10 +45,7 @@ namespace dunedaq::trigger {
 inline std::shared_ptr<triggeralgs::TriggerCandidateMaker>
 make_tc_maker(std::string const& plugin_name)
 {
-  static cet::BasicPluginFactory bpf("duneTCMaker", "make");
-
-  // TODO Philip Rodrigues <philiprodrigues@github.com> Apr-04-2021: Rethrow any cetlib exception as an ERS issue
-  return bpf.makePlugin<std::shared_ptr<triggeralgs::TriggerCandidateMaker>>(plugin_name);
+  return triggeralgs::TriggerCandidateFactory::buildMaker(plugin_name);
 }
 
 } // namespace dunedaq::trigger
