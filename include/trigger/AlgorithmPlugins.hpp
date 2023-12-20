@@ -30,7 +30,8 @@ namespace dunedaq::trigger {
 inline std::unique_ptr<triggeralgs::TriggerActivityMaker>
 make_ta_maker(std::string const& plugin_name)
 {
-  return triggeralgs::TriggerActivityFactory::build_maker(plugin_name);
+  auto ta_factory = triggeralgs::TriggerActivityFactory::get_instance();
+  return ta_factory->build_maker(plugin_name);
 }
 
 } // namespace dunedaq::trigger
@@ -45,7 +46,8 @@ namespace dunedaq::trigger {
 inline std::unique_ptr<triggeralgs::TriggerCandidateMaker>
 make_tc_maker(std::string const& plugin_name)
 {
-  return triggeralgs::TriggerCandidateFactory::build_maker(plugin_name);
+  auto tc_factory = triggeralgs::TriggerCandidateFactory::get_instance();
+  return tc_factory->build_maker(plugin_name);
 }
 
 } // namespace dunedaq::trigger
