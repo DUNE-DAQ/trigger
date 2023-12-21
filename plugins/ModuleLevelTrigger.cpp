@@ -222,7 +222,7 @@ ModuleLevelTrigger::do_pause(const nlohmann::json& /*pauseobj*/)
   m_livetime_counter->set_state(LivetimeCounter::State::kPaused);
   TLOG() << "******* Triggers PAUSED! in run " << m_run_number << " *********";
   ers::info(TriggerPaused(ERS_HERE));
-  TLOG_DEBUG(3) << "TS End: "
+  TLOG_DEBUG(5) << "TS End: "
                 << std::chrono::duration_cast<std::chrono::microseconds>(
                      std::chrono::system_clock::now().time_since_epoch())
                      .count();
@@ -235,7 +235,7 @@ ModuleLevelTrigger::do_resume(const nlohmann::json& /*resumeobj*/)
   TLOG() << "******* Triggers RESUMED! in run " << m_run_number << " *********";
   m_livetime_counter->set_state(LivetimeCounter::State::kLive);
   m_paused.store(false);
-  TLOG_DEBUG(3) << "TS Start: "
+  TLOG_DEBUG(5) << "TS Start: "
                 << std::chrono::duration_cast<std::chrono::microseconds>(
                      std::chrono::system_clock::now().time_since_epoch())
                      .count();
@@ -253,10 +253,10 @@ dfmessages::TriggerDecision
 ModuleLevelTrigger::create_decision(const ModuleLevelTrigger::PendingTD& pending_td)
 {
   m_earliest_tc_index = get_earliest_tc_index(pending_td);
-  TLOG_DEBUG(3) << "earliest TC index: " << m_earliest_tc_index;
+  TLOG_DEBUG(5) << "earliest TC index: " << m_earliest_tc_index;
 
   if (pending_td.contributing_tcs.size() > 1) {
-    TLOG_DEBUG(3) << "!!! TD created from " << pending_td.contributing_tcs.size() << " TCs !!!";
+    TLOG_DEBUG(5) << "!!! TD created from " << pending_td.contributing_tcs.size() << " TCs !!!";
   }
 
   dfmessages::TriggerDecision decision;
@@ -392,7 +392,7 @@ ModuleLevelTrigger::send_trigger_decisions()
             ++m_td_dropped_count;
             m_td_dropped_tc_count += it->contributing_tcs.size();
             it = ready_tds.erase(it);
-            TLOG_DEBUG(3) << "overlapping previous TD, dropping!";
+            TLOG_DEBUG(5) << "overlapping previous TD, dropping!";
           } else { // overlap, but set to sent overlapping TD
             call_tc_decision(*it);
             ++it;
@@ -450,11 +450,12 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
 
     dfmessages::TriggerDecision decision = create_decision(pending_td);
 
-    TLOG_DEBUG(3) << "Override?: " << override_flag;
+    TLOG_DEBUG(10) << "Override?: " << override_flag;
     if ((!m_paused.load() && !m_dfo_is_busy.load()) || override_flag) {
 
-      TLOG() << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
-             << decision.trigger_timestamp << " number of links " << decision.components.size()
+      TLOG_DEBUG(3) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
+             << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
+ 	     << " number of links " << decision.components.size()
              << " based on TC of type "
              << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
                   pending_td.contributing_tcs[m_earliest_tc_index].type);
@@ -844,6 +845,9 @@ ModuleLevelTrigger::create_request_for_link(dfmessages::SourceID link,
   request.window_begin = start;
   request.window_end = end;
 
+  TLOG_DEBUG(10) << "setting request start: " << request.window_begin;
+  TLOG_DEBUG(10) << "setting request end: " << request.window_end;
+
   return request;
 }
 
@@ -942,7 +946,7 @@ ModuleLevelTrigger::roi_readout_make_requests(dfmessages::TriggerDecision& decis
 
     // If mode is random, pick groups to request at random
     if (this_group.mode == "kRandom") {
-      TLOG_DEBUG(3) << "RAND";
+      TLOG_DEBUG(10) << "RAND";
       std::set<int> groups;
       while (static_cast<int>(groups.size()) < this_group.n_links) {
         groups.insert(get_random_num_int());
@@ -952,13 +956,16 @@ ModuleLevelTrigger::roi_readout_make_requests(dfmessages::TriggerDecision& decis
       }
       // Otherwise, read sequntially by IDs, starting at 0
     } else {
-      TLOG_DEBUG(3) << "SEQ";
+      TLOG_DEBUG(10) << "SEQ";
       int r_id = 0;
       while (r_id < this_group.n_links) {
         links.insert(links.end(), m_group_links[r_id].begin(), m_group_links[r_id].end());
         r_id++;
       }
     }
+
+    TLOG_DEBUG(10) << "TD timestamp: " << decision.trigger_timestamp;
+    TLOG_DEBUG(10) << "group window: " << this_group.time_window;
 
     // Once the components are prepared, create requests and append them to decision
     std::vector<dfmessages::ComponentRequest> requests =
