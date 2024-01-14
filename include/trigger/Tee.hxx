@@ -34,6 +34,35 @@ Tee<T>::Tee(const std::string& name)
 
 template<class T>
 void
+Tee<T>::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+{
+  auto mtrg = mcfg->module<dal::Tee<T>>(get_name());
+
+  try {
+    for(auto con: mtrg->get_inputs()){
+      if(con->get_data_type() == datatype_to_string<T>()){
+        m_input_queue = get_iom_receiver<T>(con->UID());
+        break;
+      }
+    }
+
+    bool filled = false;
+    for(auto con: mtrg->get_outputs()){
+      if(con->get_data_type() == datatype_to_string<T>() && !filled){
+        m_output_queue1 = get_iom_sender<T>(con->UID());
+      }
+      else if(con->get_data_type() == datatype_to_string<T>()){
+        m_output_queue2 = get_iom_sender<T>(con->UID());
+        break
+      }
+    }
+  } catch (const ers::Issue& excpt) {
+    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
+  }
+}
+
+template<class T>
+void
 Tee<T>::init(const nlohmann::json& iniobj)
 {
   try {

@@ -45,14 +45,40 @@ RandomTriggerCandidateMaker::RandomTriggerCandidateMaker(const std::string& name
   register_command("start", &RandomTriggerCandidateMaker::do_start);
   register_command("stop", &RandomTriggerCandidateMaker::do_stop);
   register_command("scrap", &RandomTriggerCandidateMaker::do_scrap);
+
+}
+
+void
+RandomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+{
+  auto mtrg = mcfg->module<dal::RandomTriggerCandidateMaker>(get_name());
+
+  std::string connection_queue;
+  for(auto con: mtrg->get_outputs()){
+    if(con->get_data_type() == datatype_to_string<triggeralgs::TriggerCandidate>()){
+      connection_queue = con->UID();
+      break;
+    }
+  }
+
+  // Get the time sync source
+  m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(".*");
+
+  // Get the connection queue
+  m_trigger_candidate_sink = 
+    get_iom_sender<triggeralgs::TriggerCandidate>(connection_queue);
+
+  m_conf = mtrg->get_configuration();
 }
 
 void
 RandomTriggerCandidateMaker::init(const nlohmann::json& obj)
 {
+
   m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(".*");
   m_trigger_candidate_sink =
     get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(obj, "trigger_candidate_sink"));
+
 }
 
 void
@@ -78,17 +104,17 @@ RandomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
 
   m_running_flag.store(true);
 
-  switch (m_conf.timestamp_method) {
+  switch (m_conf.get_timestamp_method()) {
     case randomtriggercandidatemaker::timestamp_estimation::kTimeSync:
       TLOG_DEBUG(0) << "Creating TimestampEstimator";
-      m_timestamp_estimator.reset(new utilities::TimestampEstimator(m_run_number, m_conf.clock_frequency_hz));
+      m_timestamp_estimator.reset(new utilities::TimestampEstimator(m_run_number, m_conf.get_clock_frequency_hz()));
       m_time_sync_source->add_callback(std::bind(&utilities::TimestampEstimator::timesync_callback<dfmessages::TimeSync>,
                                                  reinterpret_cast<utilities::TimestampEstimator*>(m_timestamp_estimator.get()),
                                                  std::placeholders::_1));
       break;
     case randomtriggercandidatemaker::timestamp_estimation::kSystemClock:
       TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
-      m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_conf.clock_frequency_hz));
+      m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_conf.get_clock_frequency_hz()));
       break;
   }
 
@@ -130,14 +156,14 @@ RandomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp)
 int
 RandomTriggerCandidateMaker::get_interval(std::mt19937& gen)
 {
-  switch (m_conf.time_distribution) {
+  switch (m_conf.get_time_distribution()) {
     default: // Treat an unknown distribution as kUniform, but warn
       TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
       // fall through
     case randomtriggercandidatemaker::distribution_type::kUniform:
-      return m_conf.trigger_interval_ticks;
+      return m_conf.get_trigger_interval_ticks();
     case randomtriggercandidatemaker::distribution_type::kPoisson:
-      std::exponential_distribution<double> d(1.0 / m_conf.trigger_interval_ticks);
+      std::exponential_distribution<double> d(1.0 / m_conf.get_trigger_interval_ticks());
       return static_cast<int>(0.5 + d(gen));
   }
 }

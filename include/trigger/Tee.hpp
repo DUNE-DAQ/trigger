@@ -28,6 +28,7 @@ public:
   Tee& operator=(Tee&&) = delete;
 
   void init(const nlohmann::json& iniobj) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
 
 private:
   void do_conf(const nlohmann::json& config);

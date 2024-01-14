@@ -50,8 +50,99 @@ ModuleLevelTrigger::ModuleLevelTrigger(const std::string& name)
 }
 
 void
+ModuleLevelTrigger::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+{
+  auto mtrg = mcfg->module<dal::ModuleLevelTrigger>(get_name());
+
+  // Get the inputs
+  std::string candidate_input;
+  std::string inhibit_input;
+  for(auto con : mtrg->get_inputs()){
+    if(con->get_data_type == datatype_to_string<triggeralgs::TriggerCandidate>())
+      candidate_input = con->UID();
+    else if(con->get_data_type == datatype_to_string<dfmessages::TriggerInhibit>())
+      inhibit_input = con->UID();
+  }
+  m_candidate_input = 
+    get_iom_receiver<triggeralgs::TriggerCandidate>(candidate_input);
+  m_inhibit_input = 
+    get_iom_receiver<triggeralgs::TriggerInhibit>(inhibit_input);
+
+  // Get the outputs
+  for(auto con : mtrg->get_outputs()){
+    if(con->get_data_type == dfmessages::TriggerDecision)
+      m_td_output_connection = con->UID();
+  }
+
+  // Now do the configuration
+  appdal::ModuleLevelTriggerConf conf = mtrg->get_configuration();
+  for(auto const& link : conf.get_mandatory_links){
+    m_mandatory_links.push_back(
+        dfmessages::SourceID{daqdataformats::SourceID::string+to_subsystem(link.get_subsystem), link.get_element});
+  }
+
+  m_group_links_data = conf.get_groups_links();
+  parse_group_links(group_links_data);
+  print_group_links();
+  m_total_group_links = m_group_links.size();
+  TLOG_DEBUG(3) << "Total group links: " << m_total_group_links;
+
+  m_hsi_passthrough = conf.get_hsi_trigger_type_passthrough();
+  m_configured_flag.store(true);
+
+  m_tc_merging        = conf.get_merge_overlapping_tcs();
+  m_buffer_timeout    = conf.get_buffer_timeout();
+  m_send_timed_out_tds = conf.get_td_out_of_timeout();
+  m_td_readout_limit  = conf.get_td_readout_limit();
+  m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
+  m_use_readout_map   = conf.get_use_readout_map();
+  m_use_roi_readout   = conf.get_use_roi_readout();
+  m_use_bitwords      = conf.get_use_bitwords();
+  TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
+  TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
+  TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
+  TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
+  TLOG_DEBUG(3) << "Use ROI readout?: " << m_use_roi_readout;
+
+  // ROI map
+  if(m_use_roi_readout){
+    m_roi_conf_data = conf.get_roi_conf();
+    parse_roi_conf(m_roi_conf_data);
+    print_roi_conf(m_roi_conf);
+  }
+
+  // Custom readout map
+  TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
+  if(m_use_readout_map){
+    m_readout_window_map_data = conf.get_td_readout_map();
+    parse_readout_map(m_readout_window_map_data);
+    print_readout_map(m_readout_window_map);
+  }
+
+  // Ignoring TC types
+  TLOG_DEBUG(3) << "Ignoring TC types: " << m_ignoring_tc_types;
+  if(m_ignoring_tc_types){
+    m_ignored_tc_types = conf.get_ignore_tc();
+    TLOG_DEBUG(3) << "TC types to ignore: ";
+    for (std::vector<int>::iterator it = m_ignored_tc_types.begin(); it != m_ignored_tc_types.end();) {
+      TLOG_DEBUG(3) << *it;
+      ++it;
+    }
+  }
+
+  // Trigger bitwords
+  TLOG_DEBUG(3) << "Use bitwords: " << m_use_bitwords;
+  if(m_use_bitwords){
+    std::string bitwords = conf.get_trigger_bitwords();
+    set_trigger_bitwords(bitwords);
+    print_trigger_bitwords(m_trigger_bitwords);
+  }
+}
+
+void
 ModuleLevelTrigger::init(const nlohmann::json& iniobj)
 {
+
 
   auto ci = appfwk::connection_index(iniobj, { "trigger_candidate_input", "dfo_inhibit_input", "td_output" });
 
@@ -781,6 +872,13 @@ ModuleLevelTrigger::set_trigger_bitwords()
     m_trigger_bitwords.push_back(temp_bitword);
   }
   return;
+}
+
+void 
+ModuleLevelTrigger::set_trigger_bitwords(const std::string& _bitwords)
+{
+  TLOG_DEBUG() << "Warning, bitwords not implemented with OKS (for now) and won't be used!";
+  m_use_bitwords = false;
 }
 
 void

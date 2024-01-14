@@ -20,6 +20,10 @@
 #include "trigger/moduleleveltriggerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
+
+#include "appdal/ModuleLevelTrigger.hpp"
+#include "appdal/ModuleLevelTriggerConf.hpp"
+
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
@@ -60,6 +64,7 @@ public:
   ModuleLevelTrigger& operator=(ModuleLevelTrigger&&) = delete;      ///< ModuleLevelTrigger is not move-assignable
 
   void init(const nlohmann::json& iniobj) override;
+  void ModuleLevelTrigger::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
