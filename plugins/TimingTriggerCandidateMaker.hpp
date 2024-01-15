@@ -13,7 +13,10 @@
 #include "trigger/timingtriggercandidatemaker/Nljs.hpp"
 #include "trigger/timingtriggercandidatemakerinfo/InfoNljs.hpp"
 
+
 #include "appfwk/DAQModule.hpp"
+#include "appdal/TimingTriggerCandidateMaker.hpp"
+#include "appdal/TimingTriggerCandidateMakerConf.hpp"
 #include "daqdataformats/Types.hpp"
 #include "dfmessages/HSIEvent.hpp"
 #include "iomanager/Receiver.hpp"
@@ -41,6 +44,7 @@ public:
   TimingTriggerCandidateMaker& operator=(TimingTriggerCandidateMaker&&) = delete;
 
   void init(const nlohmann::json& iniobj) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:

@@ -78,6 +78,46 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
 }
 
 void
+TimingTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+{
+  auto mtrg = mcfg->module<dal::TimingTriggerCandidateMaker>(get_name());
+
+  try {
+    // Get the inputs
+    for(auto con: mtrg->get_inputs()){
+      if(con->get_data_type() == datatype_to_string<dfmessages::HSIEvent>()){
+        m_hsievent_input = get_iom_receiver<dfmessages::HSIEvent>(con->UID());
+        break;
+      }
+    }
+
+    // Get the outputs
+    for(auto con: mtrg->get_outputs()){
+      if(con->get_data_type() == datatype_to_string<triggeralgs::TriggerCandidate>()){
+        m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
+        break;
+      }
+    }
+
+  } catch (const ers::Issue& excpt) {
+    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
+  }
+
+  // Get the config and configure
+  appdal::TimingTriggerCandidateMakerConf conf = mtrg->get_configuration();;
+  m_detid_offsets_map[conf.get_s0().get_signal_type()] = { conf.get_s0().get_time_before(),
+                                                           conf.get_s0().get_time_after() };
+  m_detid_offsets_map[conf.get_s1().get_signal_type()] = { conf.get_s1().get_time_before(),
+                                                           conf.get_s1().get_time_after() };
+  m_detid_offsets_map[conf.get_s2().get_signal_type()] = { conf.get_s2().get_time_before(),
+                                                           conf.get_s2().get_time_after() };
+  m_hsi_passthrough = conf.get_hsi_trigger_type_passthrough();
+  m_hsi_pt_before = conf.get_s0().get_time_before();
+  m_hsi_pt_after = params.get_s0().get_time_after();
+  TLOG_DEBUG(2) << get_name() + " configured.";
+}
+
+void
 TimingTriggerCandidateMaker::init(const nlohmann::json& iniobj)
 {
   try {
