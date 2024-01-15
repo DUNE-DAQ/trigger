@@ -56,6 +56,44 @@ CustomTriggerCandidateMaker::CustomTriggerCandidateMaker(const std::string& name
 }
 
 void
+CustomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+{
+
+  auto mtrg = mcfg->module<dal::CustomTriggerCandidateMaker>(get_name());
+  try {
+    // Get the outputs
+    for(auto con: mtrg->get_outputs()){
+      if(con->get_data_type() == datatype_to_string<triggeralgs::TriggerCandidate>()){
+        m_trigger_candidate_sink = get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
+        break;
+      }
+    }
+  } catch (const ers::Issue& excpt) {
+    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
+  }
+
+  m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(".*");
+
+  m_conf = mtrg->get_configuration();
+
+  // Parsing configuration object into map
+  for (int i = 0; i < static_cast<int>(m_conf.get_trigger_types().size()); i++) {
+    std::pair<int, long int> temp_pair{ m_conf.trigger_types[i], m_conf.get_trigger_intervals()[i] };
+    m_tc_settings.push_back(temp_pair);
+  }
+
+  print_config();
+
+  // This parameter controls how many new timestamps are calculated when needed
+  // Currently precalculates events for the next 60 seconds
+  m_sorting_size_limit = 60 * m_conf.get_clock_frequency_hz();
+
+
+
+
+}
+
+void
 CustomTriggerCandidateMaker::init(const nlohmann::json& obj)
 {
   m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(".*");
@@ -98,17 +136,17 @@ CustomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
 
   auto start_params = obj.get<rcif::cmd::StartParams>();
 
-  switch (m_conf.timestamp_method) {
+  switch (m_conf.get_timestamp_method()) {
     case customtriggercandidatemaker::timestamp_estimation::kTimeSync:
       TLOG_DEBUG(0) << "Creating TimestampEstimator";
-      m_timestamp_estimator.reset(new utilities::TimestampEstimator(start_params.run, m_conf.clock_frequency_hz));
+      m_timestamp_estimator.reset(new utilities::TimestampEstimator(start_params.run, m_conf.get_clock_frequency_hz()));
       m_time_sync_source->add_callback(std::bind(&utilities::TimestampEstimator::timesync_callback<dfmessages::TimeSync>,
                                                  reinterpret_cast<utilities::TimestampEstimator*>(m_timestamp_estimator.get()),
                                                  std::placeholders::_1));
       break;
     case customtriggercandidatemaker::timestamp_estimation::kSystemClock:
       TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
-      m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_conf.clock_frequency_hz));
+      m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_conf.get_clock_frequency_hz()));
       break;
   }
 
@@ -133,7 +171,7 @@ CustomTriggerCandidateMaker::do_stop(const nlohmann::json& /*obj*/)
 void
 CustomTriggerCandidateMaker::do_scrap(const nlohmann::json& /*obj*/)
 {
-  m_configured_flag.store(false);
+  get_m_configured_flag().store(false);
 }
 
 // This creates TCs of given type at the provided timestamp
@@ -225,7 +263,7 @@ CustomTriggerCandidateMaker::get_initial_timestamps(dfmessages::timestamp_t init
 {
   TLOG_DEBUG(3) << "GIT, init ts: " << initial_timestamp;
   std::vector<std::pair<int, dfmessages::timestamp_t>> initial_timestamps;
-  for (int i = 0; i < static_cast<int>(m_conf.trigger_types.size()); i++) {
+  for (int i = 0; i < static_cast<int>(m_conf.get_trigger_types().size()); i++) {
     dfmessages::timestamp_t next_trigger_timestamp =
       ((initial_timestamp + i * 5000) / m_tc_settings[i].second + 1) * m_tc_settings[i].second;
     std::pair<int, dfmessages::timestamp_t> initial_pair{ m_tc_settings[i].first, next_trigger_timestamp };
