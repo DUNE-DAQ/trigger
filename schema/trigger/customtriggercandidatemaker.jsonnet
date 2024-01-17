@@ -12,9 +12,6 @@ local types = {
   tc_intervals : s.sequence("tc_intervals", self.tc_interval, doc="List of TC intervals"),
 
   conf : s.record("Conf", [
-    s.field("trigger_interval_ticks", self.ticks, 64000000,
-      doc="Interval between triggers in 16 ns time ticks (default 1.024 s) "),
-
     s.field("clock_frequency_hz", self.ticks, 62500000,
       doc="Assumed clock frequency in Hz (for current-timestamp estimation)"),
 
