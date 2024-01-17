@@ -37,6 +37,9 @@ public:
   TriggerActivityMaker(TriggerActivityMaker&&) = delete;
   TriggerActivityMaker& operator=(TriggerActivityMaker&&) = delete;
 
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override
+  {};
+
 private:
   virtual std::shared_ptr<triggeralgs::TriggerActivityMaker> make_maker(const nlohmann::json& obj) override;
   

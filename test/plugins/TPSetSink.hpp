@@ -41,7 +41,7 @@ public:
   TPSetSink(TPSetSink&&) = delete;                 ///< TPSetSink is not move-constructible
   TPSetSink& operator=(TPSetSink&&) = delete;      ///< TPSetSink is not move-assignable
 
-  void init(const nlohmann::json& obj) override;
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
 
 private:
   // Commands

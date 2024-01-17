@@ -8,7 +8,6 @@
 
 #include "TPBuffer.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
 
 #include <string>
@@ -28,21 +27,26 @@ TPBuffer::TPBuffer(const std::string& name)
   register_command("scrap", &TPBuffer::do_scrap);
 }
 
-void
-TPBuffer::init(const nlohmann::json& init_data)
-{
-  try {
-    m_input_queue_tps = get_iom_receiver<TPSet>(appfwk::connection_uid(init_data, "tpset_source"));
-    m_input_queue_dr =
-      get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
-  } catch (const ers::Issue& excpt) {
-    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
-  }
-  m_error_registry = std::make_unique<readoutlibs::FrameErrorRegistry>();
-  m_latency_buffer_impl = std::make_unique<latency_buffer_t>();
-  m_request_handler_impl = std::make_unique<request_handler_t>(m_latency_buffer_impl, m_error_registry);
-  m_request_handler_impl->init(init_data);
-}
+void 
+TPBuffer::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+{}
+
+//void
+//TPBuffer::init(const nlohmann::json& init_data)
+//{
+//  // TODO: Remove, re-implement as OKS
+//  try {
+//    //m_input_queue_tps = get_iom_receiver<TPSet>(appfwk::connection_uid(init_data, "tpset_source"));
+//    //m_input_queue_dr =
+//    //  get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
+//  } catch (const ers::Issue& excpt) {
+//    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
+//  }
+//  m_error_registry = std::make_unique<readoutlibs::FrameErrorRegistry>();
+//  m_latency_buffer_impl = std::make_unique<latency_buffer_t>();
+//  m_request_handler_impl = std::make_unique<request_handler_t>(m_latency_buffer_impl, m_error_registry);
+//  m_request_handler_impl->init(init_data);
+//}
 
 void
 TPBuffer::get_info(opmonlib::InfoCollector& /* ci */, int /*level*/)

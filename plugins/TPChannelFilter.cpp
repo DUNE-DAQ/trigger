@@ -8,7 +8,6 @@
 
 #include "TPChannelFilter.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
 #include "iomanager/IOManager.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
@@ -30,16 +29,21 @@ TPChannelFilter::TPChannelFilter(const std::string& name)
   register_command("scrap", &TPChannelFilter::do_scrap);
 }
 
-void
-TPChannelFilter::init(const nlohmann::json& iniobj)
-{
-  try {
-    m_input_queue = get_iom_receiver<TPSet>(appfwk::connection_uid(iniobj, "tpset_source"));
-    m_output_queue = get_iom_sender<TPSet>(appfwk::connection_uid(iniobj, "tpset_sink"));
-  } catch (const ers::Issue& excpt) {
-    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
-  }
-}
+void 
+TPChannelFilter::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+{}
+
+//void
+//TPChannelFilter::init(const nlohmann::json& iniobj)
+//{
+//  // TODO: delete, reimplement as oks
+//  try {
+//    //m_input_queue = get_iom_receiver<TPSet>(appfwk::connection_uid(iniobj, "tpset_source"));
+//    //m_output_queue = get_iom_sender<TPSet>(appfwk::connection_uid(iniobj, "tpset_sink"));
+//  } catch (const ers::Issue& excpt) {
+//    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
+//  }
+//}
 
 void 
 TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)

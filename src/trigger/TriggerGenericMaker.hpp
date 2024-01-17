@@ -16,7 +16,6 @@
 #include "trigger/triggergenericmakerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "trgdataformats/Types.hpp"
 #include "iomanager/IOManager.hpp"
@@ -73,11 +72,12 @@ public:
   TriggerGenericMaker(TriggerGenericMaker&&) = delete;
   TriggerGenericMaker& operator=(TriggerGenericMaker&&) = delete;
 
-  void init(const nlohmann::json& obj) override
-  {
-    m_input_queue = get_iom_receiver<IN>(appfwk::connection_uid(obj, "input"));
-    m_output_queue = get_iom_sender<OUT>(appfwk::connection_uid(obj, "output"));
-  }
+  //void init(const nlohmann::json& obj) override
+  //{
+  //  // TODO: Reimplement as OKS
+  //  //m_input_queue = get_iom_receiver<IN>(appfwk::connection_uid(obj, "input"));
+  //  //m_output_queue = get_iom_sender<OUT>(appfwk::connection_uid(obj, "output"));
+  //}
 
   void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
   {

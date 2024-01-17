@@ -7,7 +7,6 @@
  */
 
 
-#include "appfwk/DAQModuleHelper.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "trigger/Issues.hpp"
@@ -36,7 +35,7 @@ template<class T>
 void
 Tee<T>::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  auto mtrg = mcfg->module<dal::Tee<T>>(get_name());
+  auto mtrg = mcfg->module<appdal::Tee<T>>(get_name());
 
   try {
     for(auto con: mtrg->get_inputs()){
@@ -53,7 +52,7 @@ Tee<T>::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       }
       else if(con->get_data_type() == datatype_to_string<T>()){
         m_output_queue2 = get_iom_sender<T>(con->UID());
-        break
+        break;
       }
     }
   } catch (const ers::Issue& excpt) {
@@ -61,18 +60,19 @@ Tee<T>::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   }
 }
 
-template<class T>
-void
-Tee<T>::init(const nlohmann::json& iniobj)
-{
-  try {
-    m_input_queue = get_iom_receiver<T>(appfwk::connection_uid(iniobj, "input"));
-    m_output_queue1 = get_iom_sender<T>(appfwk::connection_uid(iniobj, "output1"));
-    m_output_queue2 = get_iom_sender<T>(appfwk::connection_uid(iniobj, "output2"));
-  } catch (const ers::Issue& excpt) {
-    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
-  }
-}
+//template<class T>
+//void
+//Tee<T>::init(const nlohmann::json& iniobj)
+//{
+//  // Remove, move to OKS
+//  try {
+//    //m_input_queue = get_iom_receiver<T>(appfwk::connection_uid(iniobj, "input"));
+//    //m_output_queue1 = get_iom_sender<T>(appfwk::connection_uid(iniobj, "output1"));
+//    //m_output_queue2 = get_iom_sender<T>(appfwk::connection_uid(iniobj, "output2"));
+//  } catch (const ers::Issue& excpt) {
+//    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
+//  }
+//}
 
 template<class T>
 void

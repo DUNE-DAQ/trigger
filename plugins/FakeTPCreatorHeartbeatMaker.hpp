@@ -37,8 +37,9 @@ public:
   FakeTPCreatorHeartbeatMaker(FakeTPCreatorHeartbeatMaker&&) = delete;
   FakeTPCreatorHeartbeatMaker& operator=(FakeTPCreatorHeartbeatMaker&&) = delete;
 
-  void init(const nlohmann::json& iniobj) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
+
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
 
 private:
   void do_conf(const nlohmann::json& config);

@@ -42,7 +42,7 @@ public:
   TASetSink(TASetSink&&) = delete;                 ///< TASetSink is not move-constructible
   TASetSink& operator=(TASetSink&&) = delete;      ///< TASetSink is not move-assignable
 
-  void init(const nlohmann::json& obj) override;
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
 
 private:
   // Commands

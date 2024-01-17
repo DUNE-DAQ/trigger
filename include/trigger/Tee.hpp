@@ -9,6 +9,10 @@
 #ifndef TRIGGER_PLUGINS_TEE_HPP_
 #define TRIGGER_PLUGINS_TEE_HPP_
 
+#include "appdal/TPSetTee.hpp"
+#include "appdal/TASetTee.hpp"
+#include "appdal/TCSetTee.hpp"
+
 #include "appfwk/DAQModule.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
@@ -27,7 +31,6 @@ public:
   Tee(Tee&&) = delete;
   Tee& operator=(Tee&&) = delete;
 
-  void init(const nlohmann::json& iniobj) override;
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
 
 private:

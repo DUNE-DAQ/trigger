@@ -35,6 +35,8 @@ public:
   TriggerDecisionMaker(TriggerDecisionMaker&&) = delete;
   TriggerDecisionMaker& operator=(TriggerDecisionMaker&&) = delete;
 
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
+
 private:
   virtual std::shared_ptr<triggeralgs::TriggerDecisionMaker> make_maker(const nlohmann::json& obj);
 };

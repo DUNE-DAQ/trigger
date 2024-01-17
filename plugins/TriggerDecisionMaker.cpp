@@ -25,6 +25,10 @@ TriggerDecisionMaker::make_maker(const nlohmann::json& obj)
   return maker;
 }
 
+void 
+TriggerDecisionMaker::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+{};
+
 } // namespace dunedaq::trigger
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::TriggerDecisionMaker)

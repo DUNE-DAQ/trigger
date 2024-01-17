@@ -8,7 +8,6 @@
 
 #include "FakeTPCreatorHeartbeatMaker.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
@@ -30,16 +29,21 @@ FakeTPCreatorHeartbeatMaker::FakeTPCreatorHeartbeatMaker(const std::string& name
   register_command("scrap", &FakeTPCreatorHeartbeatMaker::do_scrap);
 }
 
-void
-FakeTPCreatorHeartbeatMaker::init(const nlohmann::json& iniobj)
-{
-  try {
-    m_input_queue = get_iom_receiver<trigger::TPSet>(appfwk::connection_uid(iniobj, "tpset_source"));
-    m_output_queue = get_iom_sender<trigger::TPSet>(appfwk::connection_uid(iniobj, "tpset_sink"));
-  } catch (const ers::Issue& excpt) {
-    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
-  }
-}
+void 
+FakeTPCreatorHeartbeatMaker::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+{};
+
+//void
+//FakeTPCreatorHeartbeatMaker::init(const nlohmann::json& iniobj)
+//{
+//  // TODO: Delete, reimplement as OKS
+//  try {
+//    //m_input_queue = get_iom_receiver<trigger::TPSet>(appfwk::connection_uid(iniobj, "tpset_source"));
+//    //m_output_queue = get_iom_sender<trigger::TPSet>(appfwk::connection_uid(iniobj, "tpset_sink"));
+//  } catch (const ers::Issue& excpt) {
+//    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
+//  }
+//}
 
 void
 FakeTPCreatorHeartbeatMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)

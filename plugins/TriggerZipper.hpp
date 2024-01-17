@@ -17,7 +17,6 @@
 
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
@@ -107,11 +106,15 @@ public:
     // clang-format on
   }
 
-  void init(const nlohmann::json& ini)
-  {
-    set_input(appfwk::connection_uid(ini, "input"));
-    set_output(appfwk::connection_uid(ini, "output"));
-  }
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override
+  {};
+
+  //void init(const nlohmann::json& ini)
+  //{
+  //  // TODO: remove, re-implement as OKS
+  //  //set_input(appfwk::connection_uid(ini, "input"));
+  //  //set_output(appfwk::connection_uid(ini, "output"));
+  //}
 
   void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
   {

@@ -11,7 +11,6 @@
 #include "TPSetBufferCreator.hpp"
 #include "trigger/Issues.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
@@ -46,26 +45,31 @@ TPSetBufferCreator::TPSetBufferCreator(const std::string& name)
   register_command("scrap", &TPSetBufferCreator::do_scrap);
 }
 
-void
-TPSetBufferCreator::init(const nlohmann::json& init_data)
-{
-  auto qi = appfwk::connection_index(init_data, { "tpset_source", "data_request_source", "fragment_sink" });
-  try {
-    m_input_queue_tps = get_iom_receiver<trigger::TPSet>(qi["tpset_source"]);
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "tpset_source", excpt);
-  }
-  try {
-    m_input_queue_dr = get_iom_receiver<dfmessages::DataRequest>(qi["data_request_source"]);
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "data_request_source", excpt);
-  }
-  try {
-    m_output_queue_frag = get_iom_sender<std::pair<std::unique_ptr<daqdataformats::Fragment>, std::string>>(qi["fragment_sink"]);
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "fragment_sink", excpt);
-  }
-}
+void 
+TPSetBufferCreator::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+{};
+
+//void
+//TPSetBufferCreator::init(const nlohmann::json& init_data)
+//{
+//  // TODO: remove, just remove entirely from all of the trigger. What even is this?
+//  //auto qi = appfwk::connection_index(init_data, { "tpset_source", "data_request_source", "fragment_sink" });
+//  //try {
+//  //  m_input_queue_tps = get_iom_receiver<trigger::TPSet>(qi["tpset_source"]);
+//  //} catch (const ers::Issue& excpt) {
+//  //  throw InvalidQueueFatalError(ERS_HERE, get_name(), "tpset_source", excpt);
+//  //}
+//  //try {
+//  //  m_input_queue_dr = get_iom_receiver<dfmessages::DataRequest>(qi["data_request_source"]);
+//  //} catch (const ers::Issue& excpt) {
+//  //  throw InvalidQueueFatalError(ERS_HERE, get_name(), "data_request_source", excpt);
+//  //}
+//  //try {
+//  //  m_output_queue_frag = get_iom_sender<std::pair<std::unique_ptr<daqdataformats::Fragment>, std::string>>(qi["fragment_sink"]);
+//  //} catch (const ers::Issue& excpt) {
+//  //  throw InvalidQueueFatalError(ERS_HERE, get_name(), "fragment_sink", excpt);
+//  //}
+//}
 
 void
 TPSetBufferCreator::get_info(opmonlib::InfoCollector& /*ci*/, int /*level*/)

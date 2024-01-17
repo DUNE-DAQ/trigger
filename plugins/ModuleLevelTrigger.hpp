@@ -23,6 +23,10 @@
 
 #include "appdal/ModuleLevelTrigger.hpp"
 #include "appdal/ModuleLevelTriggerConf.hpp"
+#include "appdal/TCReadoutMap.hpp"
+#include "appdal/ROIGroupConf.hpp"
+
+#include "coredal/Connection.hpp"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -63,13 +67,12 @@ public:
   ModuleLevelTrigger(ModuleLevelTrigger&&) = delete;                 ///< ModuleLevelTrigger is not move-constructible
   ModuleLevelTrigger& operator=(ModuleLevelTrigger&&) = delete;      ///< ModuleLevelTrigger is not move-assignable
 
-  void init(const nlohmann::json& iniobj) override;
-  void ModuleLevelTrigger::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
   // Commands
-  void do_configure(const nlohmann::json& obj);
+  //void do_configure(const nlohmann::json& obj);
   void do_start(const nlohmann::json& obj);
   void do_stop(const nlohmann::json& obj);
   void do_pause(const nlohmann::json& obj);
@@ -112,8 +115,8 @@ private:
     std::string mode;
   };
   std::map<int, roi_group> m_roi_conf;
-  nlohmann::json m_roi_conf_data;
-  void parse_roi_conf(const nlohmann::json& data);
+  std::vector<const appdal::ROIGroupConf*> m_roi_conf_data;
+  void parse_roi_conf(const std::vector<const appdal::ROIGroupConf*>& data);
   void print_roi_conf(std::map<int, roi_group> roi_conf);
   std::vector<int> m_roi_conf_ids;
   std::vector<float> m_roi_conf_probs;
@@ -186,13 +189,14 @@ private:
   bool check_trigger_bitwords();
   void print_bitword_flags(nlohmann::json m_trigger_bitwords_json);
   void set_trigger_bitwords();
+  void set_trigger_bitwords(const std::vector<std::string>& _bitwords);
 
   // Readout map config
   bool m_use_readout_map;
-  nlohmann::json m_readout_window_map_data;
+  std::vector<const appdal::TCReadoutMap*>  m_readout_window_map_data;
   std::map<trgdataformats::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
     m_readout_window_map;
-  void parse_readout_map(const nlohmann::json& data);
+  void parse_readout_map(const std::vector<const appdal::TCReadoutMap*>& data);
   void print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
                                   std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map);
 
@@ -201,9 +205,9 @@ private:
   dfmessages::trigger_type_t m_trigger_type_shifted;
 
   // Optional list of TC types to ignore
-  std::vector<int> m_ignored_tc_types;
+  std::vector<unsigned int> m_ignored_tc_types;
   bool m_ignoring_tc_types;
-  bool check_trigger_type_ignore(int tc_type);
+  bool check_trigger_type_ignore(unsigned int tc_type);
 
   // Opmon variables
   using metric_counter_type = decltype(moduleleveltriggerinfo::Info::tc_received_count);

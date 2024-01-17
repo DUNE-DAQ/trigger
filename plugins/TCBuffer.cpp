@@ -8,7 +8,6 @@
 
 #include "TCBuffer.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "trigger/TriggerCandidate_serialization.hpp"
@@ -31,22 +30,27 @@ TCBuffer::TCBuffer(const std::string& name)
   register_command("scrap", &TCBuffer::do_scrap);
 }
 
-void
-TCBuffer::init(const nlohmann::json& init_data)
-{
-  try {
-    m_input_queue_tcs =
-      get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(init_data, "tc_source"));
-    m_input_queue_dr =
-      get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
-  } catch (const ers::Issue& excpt) {
-    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
-  }
-  m_error_registry = std::make_unique<readoutlibs::FrameErrorRegistry>();
-  m_latency_buffer_impl = std::make_unique<latency_buffer_t>();
-  m_request_handler_impl = std::make_unique<request_handler_t>(m_latency_buffer_impl, m_error_registry);
-  m_request_handler_impl->init(init_data);
-}
+void 
+TCBuffer::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+{}
+
+//void
+//TCBuffer::init(const nlohmann::json& init_data)
+//{
+//  // TODO: Delete, reimplement as OKS
+//  try {
+//    //m_input_queue_tcs =
+//    //  get_iom_receiver<triggeralgs::TriggerCandidate>(appfwk::connection_uid(init_data, "tc_source"));
+//    //m_input_queue_dr =
+//    //  get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
+//  } catch (const ers::Issue& excpt) {
+//    throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
+//  }
+//  m_error_registry = std::make_unique<readoutlibs::FrameErrorRegistry>();
+//  m_latency_buffer_impl = std::make_unique<latency_buffer_t>();
+//  m_request_handler_impl = std::make_unique<request_handler_t>(m_latency_buffer_impl, m_error_registry);
+//  m_request_handler_impl->init(init_data);
+//}
 
 void
 TCBuffer::get_info(opmonlib::InfoCollector& /* ci */, int /*level*/)

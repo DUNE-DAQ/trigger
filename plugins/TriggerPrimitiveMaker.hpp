@@ -39,8 +39,6 @@ public:
   TriggerPrimitiveMaker(TriggerPrimitiveMaker&&) = delete; ///< TriggerPrimitiveMaker is not move-constructible
   TriggerPrimitiveMaker& operator=(TriggerPrimitiveMaker&&) = delete; ///< TriggerPrimitiveMaker is not move-assignable
 
-  void init(const nlohmann::json& obj) override;
-
 private:
   // Commands
   void do_configure(const nlohmann::json& obj);
@@ -55,6 +53,8 @@ private:
                std::chrono::steady_clock::time_point earliest_timestamp_time);
   std::vector<std::unique_ptr<std::thread>> m_threads;
   std::atomic<bool> m_running_flag;
+
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
 
   std::vector<TPSet> read_tpsets(std::string filename, int element);
 

@@ -8,7 +8,6 @@
 
 #include "TPSetSink.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
@@ -28,11 +27,16 @@ TPSetSink::TPSetSink(const std::string& name)
   register_command("stop", &TPSetSink::do_stop);
 }
 
-void
-TPSetSink::init(const nlohmann::json& obj)
-{
-  m_tpset_source = get_iom_receiver<TPSet>(appfwk::connection_uid(obj, "tpset_source"));
-}
+void 
+TPSetSink::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+{};
+
+//void
+//TPSetSink::init(const nlohmann::json& obj)
+//{
+//  // TODO Reimplement as OKS
+//  // m_tpset_source = get_iom_receiver<TPSet>(appfwk::connection_uid(obj, "tpset_source"));
+//}
 
 void
 TPSetSink::do_start(const nlohmann::json& /*obj*/)

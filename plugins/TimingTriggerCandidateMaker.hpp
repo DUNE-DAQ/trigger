@@ -15,8 +15,12 @@
 
 
 #include "appfwk/DAQModule.hpp"
+
+#include "appdal/TimingTriggerOffsetMap.hpp"
 #include "appdal/TimingTriggerCandidateMaker.hpp"
 #include "appdal/TimingTriggerCandidateMakerConf.hpp"
+#include "coredal/Connection.hpp"
+
 #include "daqdataformats/Types.hpp"
 #include "dfmessages/HSIEvent.hpp"
 #include "iomanager/Receiver.hpp"
@@ -43,7 +47,6 @@ public:
   TimingTriggerCandidateMaker(TimingTriggerCandidateMaker&&) = delete;
   TimingTriggerCandidateMaker& operator=(TimingTriggerCandidateMaker&&) = delete;
 
-  void init(const nlohmann::json& iniobj) override;
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 

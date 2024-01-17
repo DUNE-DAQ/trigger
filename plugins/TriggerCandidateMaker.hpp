@@ -31,6 +31,8 @@ public:
     : TriggerGenericMaker(name)
   {}
 
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
+
   TriggerCandidateMaker(const TriggerCandidateMaker&) = delete;
   TriggerCandidateMaker& operator=(const TriggerCandidateMaker&) = delete;
   TriggerCandidateMaker(TriggerCandidateMaker&&) = delete;

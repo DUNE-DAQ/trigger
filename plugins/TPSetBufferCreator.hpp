@@ -51,8 +51,8 @@ public:
   TPSetBufferCreator(TPSetBufferCreator&&) = delete;                 ///< TPSetBufferCreator is not move-constructible
   TPSetBufferCreator& operator=(TPSetBufferCreator&&) = delete;      ///< TPSetBufferCreator is not move-assignable
 
-  void init(const nlohmann::json& obj) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
 
 private:
   // Commands
