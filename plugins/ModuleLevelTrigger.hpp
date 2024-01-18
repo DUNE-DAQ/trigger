@@ -25,6 +25,7 @@
 #include "appdal/ModuleLevelTriggerConf.hpp"
 #include "appdal/TCReadoutMap.hpp"
 #include "appdal/ROIGroupConf.hpp"
+#include "appdal/SourceIDConf.hpp"
 
 #include "coredal/Connection.hpp"
 

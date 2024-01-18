@@ -78,12 +78,15 @@ ModuleLevelTrigger::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       m_td_output_connection = con->UID();
   }
 
+  for(auto const& link : mtrg->get_mandatory_links()){
+    m_mandatory_links.push_back(
+        dfmessages::SourceID{
+        daqdataformats::SourceID::string_to_subsystem(link->get_subsystem()),
+        link->get_id()});
+  }
+
   // Now do the configuration
   const appdal::ModuleLevelTriggerConf* conf = mtrg->get_configuration();
-  //for(auto const& link : conf->get_mandatory_links()){
-  //  m_mandatory_links.push_back(
-  //      dfmessages::SourceID{daqdataformats::SourceID::string_to_subsystem(link.get_subsystem), link.get_element});
-  //}
 
   //m_group_links_data = conf->get_groups_links();
   parse_group_links(m_group_links_data);
