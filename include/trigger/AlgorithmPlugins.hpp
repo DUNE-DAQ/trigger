@@ -14,6 +14,7 @@
 #include "triggeralgs/TriggerDecisionMaker.hpp"
 #include "triggeralgs/TriggerActivityFactory.hpp"
 #include "triggeralgs/TriggerCandidateFactory.hpp"
+#include "trigger/Issues.hpp"
 
 #include "cetlib/BasicPluginFactory.h"
 
@@ -31,7 +32,11 @@ inline std::unique_ptr<triggeralgs::TriggerActivityMaker>
 make_ta_maker(std::string const& plugin_name)
 {
   auto ta_factory = triggeralgs::TriggerActivityFactory::get_instance();
-  return ta_factory->build_maker(plugin_name);
+  auto ta_maker = ta_factory->build_maker(plugin_name);
+  if (!ta_maker) {
+    throw MissingFactoryItemError(ERS_HERE, plugin_name);
+  }
+  return ta_maker;
 }
 
 } // namespace dunedaq::trigger
@@ -47,7 +52,11 @@ inline std::unique_ptr<triggeralgs::TriggerCandidateMaker>
 make_tc_maker(std::string const& plugin_name)
 {
   auto tc_factory = triggeralgs::TriggerCandidateFactory::get_instance();
-  return tc_factory->build_maker(plugin_name);
+  auto tc_maker = tc_factory->build_maker(plugin_name);
+  if (!tc_maker) {
+    throw MissingFactoryItemError(ERS_HERE, plugin_name);
+  }
+  return tc_maker;
 }
 
 } // namespace dunedaq::trigger
