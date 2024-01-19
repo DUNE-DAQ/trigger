@@ -122,6 +122,7 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   m_buffer_timeout = params.buffer_timeout;
   m_send_timed_out_tds = params.td_out_of_timeout;
   m_td_readout_limit = params.td_readout_limit;
+  m_ignored_tc_types = params.ignore_tc;
   m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
   m_use_readout_map = params.use_readout_map;
   m_use_roi_readout = params.use_roi_readout;
@@ -150,7 +151,6 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   // Ignoring TC types
   TLOG_DEBUG(3) << "Ignoring TC types: " << m_ignoring_tc_types;
   if (m_ignoring_tc_types) {
-    m_ignored_tc_types = params.ignore_tc;
     TLOG_DEBUG(3) << "TC types to ignore: ";
     for (std::vector<int>::iterator it = m_ignored_tc_types.begin(); it != m_ignored_tc_types.end();) {
       TLOG_DEBUG(3) << *it;
