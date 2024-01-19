@@ -93,14 +93,7 @@ daq_add_plugin(TCZipper duneDAQModule LINK_LIBRARIES trigger)
 
 
 # Algorithm plugins
-daq_add_plugin(TriggerCandidateMakerADCSimpleWindowPlugin duneTCMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerHorizontalMuonPlugin duneTCMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerPlaneCoincidencePlugin duneTCMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerPrescalePlugin duneTCMaker LINK_LIBRARIES trigger)
-
-daq_add_plugin(TriggerCandidateMakerSupernovaPlugin duneTCMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDecisionMakerSupernovaPlugin duneTDMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerMichelElectronPlugin duneTCMaker LINK_LIBRARIES trigger)
 
 ##############################################################################
 # Integration tests

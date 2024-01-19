@@ -15,12 +15,12 @@
 
 namespace dunedaq::trigger {
 
-std::shared_ptr<triggeralgs::TriggerDecisionMaker>
+std::unique_ptr<triggeralgs::TriggerDecisionMaker>
 TriggerDecisionMaker::make_maker(const nlohmann::json& obj)
 {
   auto params = obj.get<triggerdecisionmaker::Conf>();
   set_algorithm_name(params.decision_maker);
-  std::shared_ptr<triggeralgs::TriggerDecisionMaker> maker = make_td_maker(params.decision_maker);
+  std::unique_ptr<triggeralgs::TriggerDecisionMaker> maker = make_td_maker(params.decision_maker);
   maker->configure(params.decision_maker_config);
   return maker;
 }
