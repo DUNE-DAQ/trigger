@@ -74,7 +74,12 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   m_hsi_passthrough = params.hsi_trigger_type_passthrough;
   m_hsi_pt_before = params.s0.time_before;
   m_hsi_pt_after = params.s0.time_after;
+  m_prescale = params.prescale;
+  m_prescale_flag = (m_prescale > 1) ? true : false;
   TLOG_DEBUG(2) << get_name() + " configured.";
+  if (m_prescale_flag){
+    TLOG(2) << "Runnig with prescale at: " << m_prescale;
+  }
 }
 
 void
@@ -129,7 +134,13 @@ TimingTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
   }
 
   ++m_tsd_received_count;
-  
+
+  if (m_prescale_flag) {
+    if (m_tsd_received_count % m_prescale != 0){
+      return;
+    } 
+  }
+
   if (m_hsi_passthrough == true){
     TLOG_DEBUG(3) << "Signal_map: " << data.signal_map << ", trigger bits: " << (std::bitset<16>)data.signal_map;
     try {

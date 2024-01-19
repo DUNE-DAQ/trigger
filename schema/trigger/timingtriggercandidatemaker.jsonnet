@@ -6,6 +6,7 @@ local types = {
 	time_t : s.number("time_t", "i8", doc="Time"),
 	signal_type_t : s.number("signal_type_t", "u4", doc="Signal type"),
 	hsi_tt_pt : s.boolean("hsi_tt_pt"),
+        count_t : s.number("count_t", "i8", doc="Counter"),
 	map_t : s.record("map_t", [
 			s.field("signal_type",
 				self.signal_type_t,
@@ -45,7 +46,8 @@ local types = {
 				time_after: 2000000
 			},
 			doc="Example 2"),
-		s.field("hsi_trigger_type_passthrough", self.hsi_tt_pt, doc="Option to override the trigger type values")
+		s.field("hsi_trigger_type_passthrough", self.hsi_tt_pt, doc="Option to override the trigger type values"),
+                s.field("prescale", self.count_t, default=1, doc="Option to prescale TTCM TCs")
 	], doc="Configuration of the different readout time maps"),
 
 };
