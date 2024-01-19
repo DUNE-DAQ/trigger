@@ -35,6 +35,7 @@ daq_add_library(TokenManager.cpp LivetimeCounter.cpp
   iomanager::iomanager
   detdataformats::detdataformats
   trgdataformats::trgdataformats
+  hdf5libs::hdf5libs
   Boost::iostreams # Boost::iostreams comes in via readoutlibs
   detchannelmaps::detchannelmaps)
 

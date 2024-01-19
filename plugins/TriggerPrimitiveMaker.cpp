@@ -133,12 +133,6 @@ TriggerPrimitiveMaker::do_scrap(const nlohmann::json& /*args*/)
 std::vector<TPSet>
 TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
 {
-  std::ifstream file(filename);
-  if (!file || file.bad()) {
-    throw BadTPInputFile(ERS_HERE, get_name(), filename);
-  }
-
-  TriggerPrimitive tp;
   TPSet tpset;
   std::vector<TPSet> tpsets;
 
@@ -146,41 +140,62 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
   uint32_t seqno = 0;             // NOLINT(build/unsigned)
   uint64_t old_time_start = 0;    // NOLINT(build/unsigned)
 
+  // Prepare input file
+  std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
+
+  // Check that the file is a TimeSlice type
+  if (!input_file->is_timeslice_type()) {
+    throw BadTPInputFile(ERS_HERE, get_name(), filename);
+  }
+
+  std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
+
   // Read in the file and place the TPs in TPSets. TPSets have time
   // boundaries ( n*tpset_time_width + tpset_time_offset ), and TPs are placed
   // in TPSets based on the TP start time
   //
   // This loop assumes the input file is sorted by TP start time
-  while (file >> tp.time_start >> tp.time_over_threshold >> tp.time_peak >> tp.channel >> tp.adc_integral >>
-         tp.adc_peak >> tp.detid >> tp.type) {
-    if (tp.time_start >= old_time_start) {
-      // NOLINTNEXTLINE(build/unsigned)
-      uint64_t current_tpset_number = (tp.time_start + m_conf.tpset_time_offset) / m_conf.tpset_time_width;
-      old_time_start = tp.time_start;
+  for (std::string& fragment_path : fragment_paths) {
+    std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(fragment_path);
+    // Make sure this fragment is a TriggerPrimitive
+    if (frag->get_fragment_type() != daqdataformats::FragmentType::kTriggerPrimitive) continue;
 
-      // If we crossed a time boundary, push the current TPSet and reset it
-      if (current_tpset_number > prev_tpset_number) {
-        tpset.start_time = prev_tpset_number * m_conf.tpset_time_width + m_conf.tpset_time_offset;
-        tpset.end_time = tpset.start_time + m_conf.tpset_time_width;
-        tpset.seqno = seqno;
-        ++seqno;
+    // Prepare TP buffer
+    size_t num_tps = frag->get_data_size() / sizeof(trgdataformats::TriggerPrimitive);
 
-        // 12-Jul-2021, KAB: setting origin fields from configuration
-        tpset.origin.id = element;
+    trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
 
-        tpset.type = TPSet::Type::kPayload;
+    for (size_t i(0); i < num_tps; i++) {
+      auto& tp = tp_array[i];
+      if (tp.time_start >= old_time_start) {
+        // NOLINTNEXTLINE(build/unsigned)
+        uint64_t current_tpset_number = (tp.time_start + m_conf.tpset_time_offset) / m_conf.tpset_time_width;
+        old_time_start = tp.time_start;
 
-        if (!tpset.objects.empty()) {
-          // We don't send empty TPSets, so there's no point creating them
-          tpsets.push_back(tpset);
+        // If we crossed a time boundary, push the current TPSet and reset it
+        if (current_tpset_number > prev_tpset_number) {
+          tpset.start_time = prev_tpset_number * m_conf.tpset_time_width + m_conf.tpset_time_offset;
+          tpset.end_time = tpset.start_time + m_conf.tpset_time_width;
+          tpset.seqno = seqno;
+          ++seqno;
+
+          // 12-Jul-2021, KAB: setting origin fields from configuration
+          tpset.origin.id = element;
+
+          tpset.type = TPSet::Type::kPayload;
+
+          if (!tpset.objects.empty()) {
+            // We don't send empty TPSets, so there's no point creating them
+            tpsets.push_back(tpset);
+          }
+          prev_tpset_number = current_tpset_number;
+
+          tpset.objects.clear();
         }
-        prev_tpset_number = current_tpset_number;
-
-        tpset.objects.clear();
+        tpset.objects.push_back(tp);
+      } else {
+        ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
       }
-      tpset.objects.push_back(tp);
-    } else {
-      ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
     }
   }
   if (!tpset.objects.empty()) {
