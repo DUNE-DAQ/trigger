@@ -117,8 +117,8 @@ triggeralgs::TriggerCandidate
 RandomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_start = timestamp;
-  candidate.time_end = timestamp;
+  candidate.time_start = (timestamp - 1000);
+  candidate.time_end = (timestamp + 1000);
   candidate.time_candidate = timestamp;
   candidate.detid = { 0 };
   candidate.type = triggeralgs::TriggerCandidate::Type::kRandom;

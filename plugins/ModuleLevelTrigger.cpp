@@ -122,6 +122,7 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   m_buffer_timeout = params.buffer_timeout;
   m_send_timed_out_tds = params.td_out_of_timeout;
   m_td_readout_limit = params.td_readout_limit;
+  m_ignored_tc_types = params.ignore_tc;
   m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
   m_use_readout_map = params.use_readout_map;
   m_use_roi_readout = params.use_roi_readout;
@@ -150,7 +151,6 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   // Ignoring TC types
   TLOG_DEBUG(3) << "Ignoring TC types: " << m_ignoring_tc_types;
   if (m_ignoring_tc_types) {
-    m_ignored_tc_types = params.ignore_tc;
     TLOG_DEBUG(3) << "TC types to ignore: ";
     for (std::vector<int>::iterator it = m_ignored_tc_types.begin(); it != m_ignored_tc_types.end();) {
       TLOG_DEBUG(3) << *it;
@@ -192,9 +192,6 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 void
 ModuleLevelTrigger::do_stop(const nlohmann::json& /*stopobj*/)
 {
-  // flush all pending TDs at run stop
-  flush_td_vectors();
-
   m_running_flag.store(false);
   m_send_trigger_decisions_thread.join();
 
@@ -215,6 +212,9 @@ ModuleLevelTrigger::do_stop(const nlohmann::json& /*stopobj*/)
 void
 ModuleLevelTrigger::do_pause(const nlohmann::json& /*pauseobj*/)
 {
+  // flush all pending TDs at run stop
+  flush_td_vectors(); 
+
   // Drop all TDs in vetors at run stage change
   clear_td_vectors();
 
@@ -437,7 +437,7 @@ ModuleLevelTrigger::send_trigger_decisions()
 }
 
 void
-ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pending_td, bool override_flag)
+ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pending_td)
 {
 
   if (m_use_bitwords) {
@@ -450,8 +450,7 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
 
     dfmessages::TriggerDecision decision = create_decision(pending_td);
 
-    TLOG_DEBUG(10) << "Override?: " << override_flag;
-    if ((!m_paused.load() && !m_dfo_is_busy.load()) || override_flag) {
+    if ((!m_paused.load() && !m_dfo_is_busy.load())) {
 
       TLOG_DEBUG(3) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
              << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
@@ -672,7 +671,7 @@ ModuleLevelTrigger::flush_td_vectors()
   TLOG_DEBUG(3) << "Flushing TDs. Size: " << m_pending_tds.size();
   std::lock_guard<std::mutex> lock(m_td_vector_mutex);
   for (PendingTD pending_td : m_pending_tds) {
-    call_tc_decision(pending_td, true);
+    call_tc_decision(pending_td);
   }
 }
 

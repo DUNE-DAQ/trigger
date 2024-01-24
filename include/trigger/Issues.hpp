@@ -183,6 +183,12 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((std::string)name),
                        ((size_t)received)((size_t)expected)((size_t)ts)((size_t)seq))
 
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       MissingFactoryItemError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Factory could not find requested item " << item << ".",
+                       ((std::string)item),
+                       ERS_EMPTY)
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_
