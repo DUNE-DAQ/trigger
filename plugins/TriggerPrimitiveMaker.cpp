@@ -100,7 +100,7 @@ TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
                                                       std::ref(stream.tpset_sink),
                                                       earliest_timestamp_time));
   }
-  for (size_t i=0; i < m_threads.size(); ++i) {
+  for (size_t i = 0; i < m_threads.size(); ++i) {
     std::string name("replay");
     name += std::to_string(i);
     pthread_setname_np(m_threads[i]->native_handle(), name.c_str());

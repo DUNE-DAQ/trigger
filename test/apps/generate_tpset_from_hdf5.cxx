@@ -10,17 +10,19 @@
 
 #include "../../plugins/TriggerPrimitiveMaker.hpp"
 #include "trgdataformats/TriggerPrimitive.hpp"
-#include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/TriggerRecordHeader.hpp"
 #include "daqdataformats/Types.hpp"
+#include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include <iostream>
 
-int main(int argc, char** argv) {
+int
+main(int argc, char** argv)
+{
   CLI::App app{ "App description" };
 
   std::string filename;
@@ -40,7 +42,8 @@ int main(int argc, char** argv) {
   uint32_t total_tps = 0;
 
   // Prepare input file
-  std::unique_ptr<dunedaq::hdf5libs::HDF5RawDataFile> input_file = std::make_unique<dunedaq::hdf5libs::HDF5RawDataFile>(filename);
+  std::unique_ptr<dunedaq::hdf5libs::HDF5RawDataFile> input_file =
+    std::make_unique<dunedaq::hdf5libs::HDF5RawDataFile>(filename);
 
   // Check that the file is a TimeSlice type
   if (!input_file->is_timeslice_type()) {
@@ -67,7 +70,8 @@ int main(int argc, char** argv) {
     size_t num_tps = frag->get_data_size() / sizeof(dunedaq::trgdataformats::TriggerPrimitive);
     total_tps += num_tps;
 
-    dunedaq::trgdataformats::TriggerPrimitive* tp_array = static_cast<dunedaq::trgdataformats::TriggerPrimitive*>(frag->get_data());
+    dunedaq::trgdataformats::TriggerPrimitive* tp_array =
+      static_cast<dunedaq::trgdataformats::TriggerPrimitive*>(frag->get_data());
 
     for (size_t i(0); i < num_tps; i++) {
       auto& tp = tp_array[i];
