@@ -37,6 +37,7 @@ int main(int argc, char** argv) {
   uint32_t tpset_time_width = 10; // Arbitrary
   uint32_t tpset_time_offset = 5; // Arbitrary
   uint16_t element = 0;           // Arbitrary
+  uint32_t total_tps = 0;
 
   // Prepare input file
   std::unique_ptr<dunedaq::hdf5libs::HDF5RawDataFile> input_file = std::make_unique<dunedaq::hdf5libs::HDF5RawDataFile>(filename);
@@ -64,6 +65,7 @@ int main(int argc, char** argv) {
 
     // Prepare TP buffer
     size_t num_tps = frag->get_data_size() / sizeof(dunedaq::trgdataformats::TriggerPrimitive);
+    total_tps += num_tps;
 
     dunedaq::trgdataformats::TriggerPrimitive* tp_array = static_cast<dunedaq::trgdataformats::TriggerPrimitive*>(frag->get_data());
 
@@ -104,7 +106,7 @@ int main(int argc, char** argv) {
     // We don't send empty TPSets, so there's no point creating them
     tpsets.push_back(tpset);
   }
-  std::cout << "Read " << seqno << " TPs into " << tpsets.size() << " TPSets, from file " << filename << std::endl;
+  std::cout << "Read " << total_tps << " TPs into " << tpsets.size() << " TPSets, from file " << filename << std::endl;
 
   return 0;
 }
