@@ -65,36 +65,35 @@ int main(int argc, char** argv) {
 
     for (size_t i(0); i < num_tps; i++) {
       auto& tp = tp_array[i];
-      if (tp.time_start >= old_time_start) {
-        // NOLINTNEXTLINE(build/unsigned)
-        uint64_t current_tpset_number = (tp.time_start + tpset_time_offset) / tpset_time_width;
-        old_time_start = tp.time_start;
-
-        // If we crossed a time boundary, push the current TPSet and reset it
-        if (current_tpset_number > prev_tpset_number) {
-          tpset.start_time = prev_tpset_number * tpset_time_width + tpset_time_offset;
-          tpset.end_time = tpset.start_time + tpset_time_width;
-          tpset.seqno = seqno;
-          ++seqno;
-
-          // 12-Jul-2021, KAB: setting origin fields from configuration
-          tpset.origin.id = element;
-
-          tpset.type = dunedaq::trigger::TPSet::Type::kPayload;
-
-          if (!tpset.objects.empty()) {
-            // We don't send empty TPSets, so there's no point creating them
-            tpsets.push_back(tpset);
-          }
-          prev_tpset_number = current_tpset_number;
-
-          tpset.objects.clear();
-        }
-        tpset.objects.push_back(tp);
-      } else {
+      if (tp.time_start < old_time_start) {
         std::cout << "TPs are unsorted.\n";
         return 1;
       }
+      // NOLINTNEXTLINE(build/unsigned)
+      uint64_t current_tpset_number = (tp.time_start + tpset_time_offset) / tpset_time_width;
+      old_time_start = tp.time_start;
+
+      // If we crossed a time boundary, push the current TPSet and reset it
+      if (current_tpset_number > prev_tpset_number) {
+        tpset.start_time = prev_tpset_number * tpset_time_width + tpset_time_offset;
+        tpset.end_time = tpset.start_time + tpset_time_width;
+        tpset.seqno = seqno;
+        ++seqno;
+
+        // 12-Jul-2021, KAB: setting origin fields from configuration
+        tpset.origin.id = element;
+
+        tpset.type = dunedaq::trigger::TPSet::Type::kPayload;
+
+        if (!tpset.objects.empty()) {
+          // We don't send empty TPSets, so there's no point creating them
+          tpsets.push_back(tpset);
+        }
+        prev_tpset_number = current_tpset_number;
+
+        tpset.objects.clear();
+      }
+      tpset.objects.push_back(tp);
     }
   }
   if (!tpset.objects.empty()) {

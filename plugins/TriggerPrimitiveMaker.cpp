@@ -167,35 +167,35 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
 
     for (size_t i(0); i < num_tps; i++) {
       auto& tp = tp_array[i];
-      if (tp.time_start >= old_time_start) {
-        // NOLINTNEXTLINE(build/unsigned)
-        uint64_t current_tpset_number = (tp.time_start + m_conf.tpset_time_offset) / m_conf.tpset_time_width;
-        old_time_start = tp.time_start;
-
-        // If we crossed a time boundary, push the current TPSet and reset it
-        if (current_tpset_number > prev_tpset_number) {
-          tpset.start_time = prev_tpset_number * m_conf.tpset_time_width + m_conf.tpset_time_offset;
-          tpset.end_time = tpset.start_time + m_conf.tpset_time_width;
-          tpset.seqno = seqno;
-          ++seqno;
-
-          // 12-Jul-2021, KAB: setting origin fields from configuration
-          tpset.origin.id = element;
-
-          tpset.type = TPSet::Type::kPayload;
-
-          if (!tpset.objects.empty()) {
-            // We don't send empty TPSets, so there's no point creating them
-            tpsets.push_back(tpset);
-          }
-          prev_tpset_number = current_tpset_number;
-
-          tpset.objects.clear();
-        }
-        tpset.objects.push_back(tp);
-      } else {
+      if (tp.time_start < old_time_start) {
         ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
+        continue;
       }
+      // NOLINTNEXTLINE(build/unsigned)
+      uint64_t current_tpset_number = (tp.time_start + m_conf.tpset_time_offset) / m_conf.tpset_time_width;
+      old_time_start = tp.time_start;
+
+      // If we crossed a time boundary, push the current TPSet and reset it
+      if (current_tpset_number > prev_tpset_number) {
+        tpset.start_time = prev_tpset_number * m_conf.tpset_time_width + m_conf.tpset_time_offset;
+        tpset.end_time = tpset.start_time + m_conf.tpset_time_width;
+        tpset.seqno = seqno;
+        ++seqno;
+
+        // 12-Jul-2021, KAB: setting origin fields from configuration
+        tpset.origin.id = element;
+
+        tpset.type = TPSet::Type::kPayload;
+
+        if (!tpset.objects.empty()) {
+          // We don't send empty TPSets, so there's no point creating them
+          tpsets.push_back(tpset);
+        }
+        prev_tpset_number = current_tpset_number;
+
+        tpset.objects.clear();
+      }
+      tpset.objects.push_back(tp);
     }
   }
   if (!tpset.objects.empty()) {
