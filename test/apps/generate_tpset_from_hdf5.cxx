@@ -14,6 +14,7 @@
 
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/FragmentHeader.hpp"
+#include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/TriggerRecordHeader.hpp"
 #include "daqdataformats/Types.hpp"
 
@@ -56,7 +57,10 @@ int main(int argc, char** argv) {
   for (std::string& fragment_path : fragment_paths) {
     std::unique_ptr<dunedaq::daqdataformats::Fragment> frag = input_file->get_frag_ptr(fragment_path);
     // Make sure this fragment is a TriggerPrimitive
-    if (frag->get_fragment_type() != dunedaq::daqdataformats::FragmentType::kTriggerPrimitive) continue;
+    if (frag->get_fragment_type() != dunedaq::daqdataformats::FragmentType::kTriggerPrimitive)
+      continue;
+    if (frag->get_element_id().subsystem != dunedaq::daqdataformats::SourceID::Subsystem::kTrigger)
+      continue;
 
     // Prepare TP buffer
     size_t num_tps = frag->get_data_size() / sizeof(dunedaq::trgdataformats::TriggerPrimitive);

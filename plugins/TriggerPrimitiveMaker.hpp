@@ -12,6 +12,7 @@
 #include "trigger/TPSet.hpp"
 #include "trigger/triggerprimitivemaker/Nljs.hpp"
 
+#include "daqdataformats/SourceID.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
 #include "appfwk/DAQModule.hpp"
 #include "iomanager/Sender.hpp"

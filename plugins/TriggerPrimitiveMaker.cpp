@@ -158,7 +158,10 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
   for (std::string& fragment_path : fragment_paths) {
     std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(fragment_path);
     // Make sure this fragment is a TriggerPrimitive
-    if (frag->get_fragment_type() != daqdataformats::FragmentType::kTriggerPrimitive) continue;
+    if (frag->get_fragment_type() != daqdataformats::FragmentType::kTriggerPrimitive)
+      continue;
+    if (frag->get_element_id().subsystem != daqdataformats::SourceID::Subsystem::kTrigger)
+      continue;
 
     // Prepare TP buffer
     size_t num_tps = frag->get_data_size() / sizeof(trgdataformats::TriggerPrimitive);
