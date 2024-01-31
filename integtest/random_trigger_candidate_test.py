@@ -7,7 +7,7 @@ import integrationtest.log_file_checks as log_file_checks
 import integrationtest.config_file_gen as config_file_gen
 
 # Values that help determine the running conditions
-number_of_data_producers=1 # 2
+number_of_data_producers=2
 data_rate_slowdown_factor=1 # 10 for ProtoWIB/DuneWIB
 run_duration=20  # seconds
 readout_window_time_before=1000
@@ -19,16 +19,20 @@ check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
 wibeth_frag_params={"fragment_type_description": "WIBEth",
-                   "fragment_type": "WIBEth",
-                   "hdf5_source_subsystem": "Detector_Readout",
-                   "expected_fragment_count": number_of_data_producers,
-                   "min_size_bytes": 7272, "max_size_bytes": 14472}
+                    "fragment_type": "WIBEth",
+                    "hdf5_source_subsystem": "Detector_Readout",
+                    "expected_fragment_count": number_of_data_producers,
+                    "min_size_bytes": 7272, "max_size_bytes": 14472}
+#hsi_frag_params ={"fragment_type_description": "HSI",
+#                             "fragment_type": "Hardware_Signal",
+#                             "hdf5_source_subsystem": "HW_Signals_Interface",
+#                             "expected_fragment_count": 1,
+#                             "min_size_bytes": 72, "max_size_bytes": 100}
 rtcm_frag_params ={"fragment_type_description": "Trigger Candidate",
                    "fragment_type": "Trigger_Candidate",
                    "hdf5_source_subsystem": "Trigger",
-                   "expected_fragment_count": number_of_data_producers, # 1
+                   "expected_fragment_count": 1, 
                    "min_size_bytes": 72, "max_size_bytes": 216}
-#ignored_logfile_problems={"connectionservice": ["Searching for connections matching uid_regex<errored_frames_q> and data_type Unknown"]}
 ignored_logfile_problems={}
 
 # The variable declarations of confgen_name, confgen_arguments, and 
@@ -53,10 +57,9 @@ conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
 # Enable random trigger candidate maker
 conf_dict["trigger"]["use_random_maker"] = True
-conf_dict["trigger"]["rtcm_timestamp_method"]: "kTimeSync"
-conf_dict["trigger"]["rtcm_time_distribution"]: "kUniform"
-conf_dict["trigger"]["trigger_type"]: "kRandom"
-conf_dict["trigger"]["rtcm_trigger_interval_ticks"]: 62500000
+conf_dict["trigger"]["rtcm_timestamp_method"] = "kTimeSync"
+conf_dict["trigger"]["rtcm_time_distribution"] = "kUniform"
+conf_dict["trigger"]["rtcm_trigger_interval_ticks"] = 62500000
 
 conf_dict["readout"]["data_files"] = []
 datafile_conf = {}
@@ -68,20 +71,6 @@ conf_dict["readout"]["data_files"].append(datafile_conf)
 conf_dict["hsi"]["use_fake_hsi"] = False
 conf_dict["hsi"]["use_timing_hsi"] = False
 conf_dict["hsi"]["random_trigger_rate_hz"] = 1.0
-
-# Lol idk what this does
-conf_dict["trigger"]["mlt_merge_overlapping_tcs"] = True
-conf_dict["trigger"]["mlt_send_timed_out_tds"] = True
-conf_dict["trigger"]["mlt_buffer_timeout"] = 1000
-conf_dict["trigger"]["mlt_use_readout_map"] = True
-conf_dict["trigger"]["mlt_td_readout_map"] = []
-
-# Readout map config? Maybe?
-rmap_conf = {}
-rmap_conf["candidate_type"] = 4 # Random
-rmap_conf["time_before"] = readout_window_time_before
-rmap_conf["time_after"] = readout_window_time_after
-conf_dict["trigger"]["mlt_td_readout_map"].append(rmap_conf)
 
 confgen_arguments={"RandomTriggerCandidateMaker": conf_dict}
 
@@ -103,9 +92,9 @@ def test_data_files(run_nanorc):
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
 
-    #fragment_check_list=[triggercandidate_frag_params, rtcm_frag_params]
-    #fragment_check_list=[triggercandidate_frag_params, rtcm_frag_params]
     fragment_check_list=[rtcm_frag_params]
+    #fragment_check_list=[triggercandidate_frag_params, rtcm_frag_params]
+    #fragment_check_list=[rtcm_frag_params, hsi_frag_params]
     #fragment_check_list.append(wib1_frag_hsi_trig_params) # ProtoWIB
     #fragment_check_list.append(wib2_frag_params) # DuneWIB
     fragment_check_list.append(wibeth_frag_params) # WIBEth
