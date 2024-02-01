@@ -14,8 +14,6 @@ from daqconf.core.fragment_producers import  connect_all_fragment_producers, set
 from daqconf.core.conf_utils import make_app_command_data, make_system_command_datas, write_json_files
 from daqconf.core.metadata import write_metadata_file
 
-debug = False
-
 def expand_conf(config_data, debug=False):
     """Expands the moo configuration record into sub-records,
     re-casting its members into the corresponding moo objects.
@@ -78,6 +76,30 @@ def expand_conf(config_data, debug=False):
         dataflow
     )
 
+def validate_conf(boot, readout, dataflow):
+    """Validate the consistency of confgen parameters
+
+    Args:
+        boot (_type_): _description_
+        readout (_type_): _description_
+        dataflow (_type_): _description_
+
+    Raises:
+        Exception: _description_
+        Exception: _description_
+        Exception: _description_
+    """
+    if readout.enable_tpg and readout.use_fake_data_producers:
+        raise Exception("Fake data producers don't support software tpg")
+
+    if dataflow.enable_tpset_writing and not readout.enable_tpg:
+        raise Exception("TP writing can only be used when either software or firmware TPG is enabled")
+
+    if boot.process_manager == 'k8s' and not boot.k8s_image:
+        raise Exception("You need to define k8s_image if running with k8s")
+
+    return
+
 def create_df_apps(
         dataflow,
         sourceid_broker
@@ -109,7 +131,7 @@ def create_df_apps(
             host_df += [appconfig.host_df]
     return host_df, appconfig_df, df_app_names
 
-def detector_readout_map(readout, sourceid_broker):
+def detector_readout_map(readout, sourceid_broker, debug):
     dro_map_file = "map.json"
     dro_map = dromap.DetReadoutMapService()
     if dro_map_file:
@@ -133,18 +155,18 @@ def detector_readout_map(readout, sourceid_broker):
 
     return tp_infos, number_of_ru_streams, ru_descs, dro_map
 
-def replay_app(the_system):
-    input_file = "someinput.file"
+def replay_app(the_system, input_file, slowdown_factor, number_of_loops, tp_infos):
     from .replay_tp_app import get_replay_app
     the_system.apps["replay"] = get_replay_app(
         INPUT_FILES = input_file,
-        SLOWDOWN_FACTOR = 1,
-        NUMBER_OF_LOOPS = 1
+        SLOWDOWN_FACTOR = slowdown_factor,
+        NUMBER_OF_LOOPS = number_of_loops,
+        N_STREAMS = len(tp_infos)
     )
 
     return
 
-def trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_infos):
+def trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_infos, debug):
     trigger_data_request_timeout = daq_common.data_request_timeout_ms
     the_system.apps['trigger'] = get_trigger_app(
         trigger=trigger,
@@ -157,7 +179,7 @@ def trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_i
 
     return
 
-def dfo_apps(the_system, get_dfo_app, appconfig_df, daq_common, ru_descs, number_of_ru_streams, readout, dataflow):
+def dfo_apps(the_system, get_dfo_app, appconfig_df, daq_common, ru_descs, number_of_ru_streams, readout, dataflow, debug):
     max_expected_tr_sequences = 1
     for df_config in appconfig_df.values():
         if df_config.max_trigger_record_window >= 1:
@@ -191,7 +213,7 @@ def dfo_apps(the_system, get_dfo_app, appconfig_df, daq_common, ru_descs, number
 
     return max_expected_tr_sequences, trigger_record_building_timeout
 
-def dataflow_apps(the_system, get_dataflow_app, appconfig_df, dataflow, detector, max_expected_tr_sequences, trigger_record_building_timeout, dro_map):
+def dataflow_apps(the_system, get_dataflow_app, appconfig_df, dataflow, detector, max_expected_tr_sequences, trigger_record_building_timeout, dro_map, debug):
     file_label = None
     idx = 0
     for app_name,df_config in appconfig_df.items():
@@ -213,7 +235,7 @@ def dataflow_apps(the_system, get_dataflow_app, appconfig_df, dataflow, detector
 
     return
 
-def def_boot_order(the_system, df_app_names):
+def def_boot_order(the_system, df_app_names, debug):
     ru_app_names=[]
     all_apps_except_ru = []
     all_apps_except_ru_and_df = []
@@ -234,20 +256,16 @@ def def_boot_order(the_system, df_app_names):
 
     return
 
-def export():
+def export(the_system, debug_dir):
     #     console.log(f"MDAapp config generated in {json_dir}")
 
-    if debug:
-        output_dir = Path(json_dir)
-        debug_dir = output_dir / 'debug'
-        debug_dir.mkdir(parents=True)
-        the_system.export(debug_dir / "system.dot")
-        for name in the_system.apps:
-            the_system.apps[name].export(debug_dir / f"{name}.dot")
+    the_system.export(debug_dir / "system.dot")
+    for name in the_system.apps:
+        the_system.apps[name].export(debug_dir / f"{name}.dot")
 
     return
 
-def mlt_links(the_system, tp_infos):
+def mlt_links(the_system, tp_infos, debug):
     set_mlt_links(the_system, tp_infos, "trigger", verbose=debug)
 
     mlt_mandatory_links=the_system.apps["trigger"].modulegraph.get_module("mlt").conf.mandatory_links
@@ -258,19 +276,45 @@ def mlt_links(the_system, tp_infos):
 
     return
 
+def print_cli_config(config, slowdown_factor, number_of_loops, input_file, debug, json_dir):
+    print("CONFIGURATION")
+    print("Config:", config)
+    print("slowdown-factor:", slowdown_factor)
+    print("number-of-loops:", number_of_loops)
+    print("input-file:", input_file)
+    print("debug:", debug)
+    print("json_dir:", json_dir)
+    return
 
 # Add -h as default help option
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @generate_cli_from_schema('fddaqconf/confgen.jsonnet', 'fddaqconf_gen', 'daqconf.dataflowgen.dataflowapp')
+@click.option('-s', '--slowdown-factor', default=1.0)
+@click.option('-l', '--number-of-loops', default='-1', help="Number of times to loop over the input files (-1 for infinite)")
+@click.option('-f', '--input-file', type=click.Path(exists=True, dir_okay=False), multiple=True, required=True)
+@click.option('--debug', default=False, is_flag=True, help="Switch to get a lot of printout and dot files")
 @click.argument('json_dir', type=click.Path())
 def cli(
     config,
+    slowdown_factor,
+    number_of_loops,
+    input_file,
+    debug,
     json_dir
     ):
+    """
+      JSON_DIR: Json file output folder
+    """
 
     config_data = config[0]
     config_file = Path(config[1] if config[1] is not None else "fddaqconf_default.json")
+
+    if debug:
+        output_dir = Path(json_dir)
+        debug_dir = output_dir / 'debug'
+        debug_dir.mkdir(parents=True)
+        print_cli_config(config, slowdown_factor, number_of_loops, input_file, debug, json_dir)
 
     (
         boot,
@@ -284,7 +328,13 @@ def cli(
         dataflow
     ) = expand_conf(config_data, debug)
 
-    if debug: print(config_data)
+    #--------------------------------------------------------------------------
+    # Validate configuration
+    #--------------------------------------------------------------------------
+    validate_conf(boot, readout, dataflow)
+
+    if debug:
+        console.log(f"Configuration for fddaqconf: {config_data.pod()}")
 
     console.log("Loading dataflow config generator")
     from daqconf.apps.dataflow_gen import get_dataflow_app
@@ -301,6 +351,7 @@ def cli(
     # Create dataflow applications
     #--------------------------------------------------------------------------
     sourceid_broker = SourceIDBroker()
+    sourceid_broker.debug = debug
     host_df, appconfig_df, df_app_names = create_df_apps(dataflow=dataflow, sourceid_broker=sourceid_broker)
 
     #--------------------------------------------------------------------------
@@ -312,37 +363,39 @@ def cli(
     #--------------------------------------------------------------------------
     # Load Detector Readout map
     #--------------------------------------------------------------------------
-    tp_infos, number_of_ru_streams, ru_descs, dro_map = detector_readout_map(readout, sourceid_broker)
+    tp_infos, number_of_ru_streams, ru_descs, dro_map = detector_readout_map(readout, sourceid_broker, debug)
 
     #--------------------------------------------------------------------------
     # Replay
     #--------------------------------------------------------------------------
-    replay_app(the_system)
+    replay_app(the_system, input_file, slowdown_factor, number_of_loops, tp_infos)
 
     #--------------------------------------------------------------------------
     # Trigger
     #--------------------------------------------------------------------------
-    trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_infos)
+    trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_infos, debug)
 
     #--------------------------------------------------------------------------
     # DFO
     #--------------------------------------------------------------------------
-    max_expected_tr_sequences, trigger_record_building_timeout = dfo_apps(the_system, get_dfo_app, appconfig_df, daq_common, ru_descs, number_of_ru_streams, readout, dataflow)
+    max_expected_tr_sequences, trigger_record_building_timeout = dfo_apps(the_system, get_dfo_app, appconfig_df, daq_common, ru_descs, number_of_ru_streams, readout, dataflow, debug)
 
     #--------------------------------------------------------------------------
     # Dataflow applications generation
     #--------------------------------------------------------------------------
-    dataflow_apps(the_system, get_dataflow_app, appconfig_df, dataflow, detector, max_expected_tr_sequences, trigger_record_building_timeout, dro_map)
+    dataflow_apps(the_system, get_dataflow_app, appconfig_df, dataflow, detector, max_expected_tr_sequences, trigger_record_building_timeout, dro_map, debug)
 
     #--------------------------------------------------------------------------
     # App generation completed
     #--------------------------------------------------------------------------
-    def_boot_order(the_system, df_app_names)
+    def_boot_order(the_system, df_app_names, debug)
 
-    if debug: export()
+    if debug:
+        the_system.export(debug_dir / "system_no_frag_prod_connection.dot")
 
     connect_all_fragment_producers(the_system, verbose=debug)
-    mlt_links(the_system, tp_infos)
+    mlt_links(the_system, tp_infos, debug)
+    if debug: export(the_system, debug_dir)
 
     ####################################################################
     # Application command data generation

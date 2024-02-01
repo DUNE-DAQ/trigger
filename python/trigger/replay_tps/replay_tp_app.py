@@ -18,20 +18,20 @@ from daqconf.core.conf_utils import Direction
 
 def get_replay_app(INPUT_FILES: [str],
                    SLOWDOWN_FACTOR: float,
-                   NUMBER_OF_LOOPS: int):
+                   NUMBER_OF_LOOPS: int,
+                   N_STREAMS: int):
 
     clock_frequency_hz = 62_500_000 / SLOWDOWN_FACTOR
     modules = []
 
+    #n_streams = N_STREAMS
     n_streams = 1
 
-    tp_streams = [tpm.TPStream(#filename=input_file,
-                               filename="/nfs/home/mrigan/dune-daq/run/tp_dataset_run020472_2s.txt",
+    tp_streams = [tpm.TPStream(filename= input_file,
                                # region_id = 0,
-                               #element_id = istream,
-                               element_id = 0,
-                               output_sink_name = f"output0")]
-                  #for istream,input_file in enumerate(INPUT_FILES)]
+                               element_id = istream,
+                               output_sink_name = f"output{istream}")
+                  for istream, input_file in enumerate(INPUT_FILES)]
 
     modules.append(
         DAQModule(
@@ -52,7 +52,7 @@ def get_replay_app(INPUT_FILES: [str],
     for istream in range(n_streams):
         # mgraph.add_endpoint(f"tpsets_rulocalhost_{istream}_link0", f"tpm.output{istream}", Direction.OUT, topic=["TPSets"])
         mgraph.add_endpoint(
-            external_name = f"tpsets_tplink0",
+            external_name = f"tpsets_tplink{istream}",
             data_type = 'TPSet',
             internal_name = f"tpm.output{istream}",
             inout = Direction.OUT,
