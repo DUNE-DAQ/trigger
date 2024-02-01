@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 import click
-from rich.console import Console
-from daqconf.core.config_file import generate_cli_from_schema
-import os.path
 import math
+import os.path
+from rich.console import Console
 from pathlib import Path
-from daqconf.core.sourceid import SourceIDBroker
-from daqconf.core.system import System
+
 import integrationtest.dro_map_gen as dro_map_gen
 import daqconf.detreadoutmap as dromap
+from daqconf.core.config_file import generate_cli_from_schema
+from daqconf.core.sourceid import SourceIDBroker
+from daqconf.core.system import System
+from daqconf.core.fragment_producers import  connect_all_fragment_producers, set_mlt_links#, remove_mlt_link
+from daqconf.core.conf_utils import make_app_command_data, make_system_command_datas, write_json_files
+from daqconf.core.metadata import write_metadata_file
 
 debug = False
 
 def expand_conf(config_data, debug=False):
-    """Expands the moo configuration record into sub-records, 
+    """Expands the moo configuration record into sub-records,
     re-casting its members into the corresponding moo objects.
 
     Args:
@@ -105,84 +109,19 @@ def create_df_apps(
             host_df += [appconfig.host_df]
     return host_df, appconfig_df, df_app_names
 
-# Add -h as default help option
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-@click.command(context_settings=CONTEXT_SETTINGS)
-@generate_cli_from_schema('fddaqconf/confgen.jsonnet', 'fddaqconf_gen', 'daqconf.dataflowgen.dataflowapp')
-@click.argument('json_dir', type=click.Path())
-def cli(
-    config,
-    json_dir
-    ):
-    
-    config_data = config[0]
-    config_file = Path(config[1] if config[1] is not None else "fddaqconf_default.json")
-
-    (
-        boot,
-        detector,
-        daq_common,
-        timing,
-        hsi,
-        ctb_hsi,
-        readout,
-        trigger,
-        dataflow
-    ) = expand_conf(config_data, debug)
-  
-    print(config_data)
-
-    console.log("Loading dataflow config generator")
-    from daqconf.apps.dataflow_gen import get_dataflow_app
-    console.log("Loading readout config generator")
-    from fddaqconf.apps.readout_gen import FDReadoutAppGenerator
-    console.log("Loading trigger config generator")
-    from daqconf.apps.trigger_gen import get_trigger_app
-    console.log("Loading DFO config generator")
-    from daqconf.apps.dfo_gen import get_dfo_app
-    #console.log("Loading timing hsi config generator")
-    #from daqconf.apps.hsi_gen import get_timing_hsi_app
-    #console.log("Loading fake hsi config generator")
-    #from daqconf.apps.fake_hsi_gen import get_fake_hsi_app
-    #console.log("Loading ctb config generator")
-    #from ctbmodules.apps.ctb_hsi_gen import get_ctb_hsi_app
-    #console.log("Loading timing partition controller config generator")
-    #from daqconf.apps.tprtc_gen import get_tprtc_app
-
-    sourceid_broker = SourceIDBroker()
-
-    #--------------------------------------------------------------------------
-    # Create dataflow applications
-    #--------------------------------------------------------------------------
-    host_df, appconfig_df, df_app_names = create_df_apps(dataflow=dataflow, sourceid_broker=sourceid_broker)
-
-    #--------------------------------------------------------------------------
-    # Generation starts here
-    #--------------------------------------------------------------------------
-    console.log(f"Generating configs for hosts trigger={trigger.host_trigger} DFO={dataflow.host_dfo} dataflow={host_df} timing_hsi={hsi.host_timing_hsi} fake_hsi={hsi.host_fake_hsi} ctb_hsi={ctb_hsi.host_ctb_hsi}")
-
-    the_system = System()
-
-    #--------------------------------------------------------------------------
-    # Load Detector Readout map
-    #--------------------------------------------------------------------------
-    number_of_data_producers=2
-    dro_map_contents = dro_map_gen.generate_dromap_contents(number_of_data_producers)
-    #dro_map_contents = readout.pop("dro_map", dro_map_contents)
+def detector_readout_map(readout, sourceid_broker):
     dro_map_file = "map.json"
-
     dro_map = dromap.DetReadoutMapService()
     if dro_map_file:
         dro_map.load(dro_map_file)
 
     ru_descs = dro_map.get_ru_descriptors()
-
-    print(ru_descs)
-    print(dro_map.streams)
-    print(readout.enable_tpg)
     readout.enable_tpg = True
-    print(readout.enable_tpg)
-    # tp_mode = get_tpg_mode(readout.enable_firmware_tpg,readout.enable_tpg)
+
+    if debug:
+        print(ru_descs)
+        print(dro_map.streams)
+
     sourceid_broker.register_readout_source_ids(dro_map.streams)
     sourceid_broker.generate_trigger_source_ids(ru_descs, readout.enable_tpg)
     tp_infos = sourceid_broker.get_all_source_ids("Trigger")
@@ -192,9 +131,9 @@ def cli(
         console.log(f"Will generate a RU process on {ru_name} ({ru_desc.iface}, {ru_desc.kind}), {len(ru_desc.streams)} streams active")
         number_of_ru_streams += len(ru_desc.streams)
 
-    #--------------------------------------------------------------------------
-    # Replay
-    #--------------------------------------------------------------------------
+    return tp_infos, number_of_ru_streams, ru_descs, dro_map
+
+def replay_app(the_system):
     input_file = "someinput.file"
     from .replay_tp_app import get_replay_app
     the_system.apps["replay"] = get_replay_app(
@@ -203,9 +142,9 @@ def cli(
         NUMBER_OF_LOOPS = 1
     )
 
-    #--------------------------------------------------------------------------
-    # Trigger
-    #--------------------------------------------------------------------------
+    return
+
+def trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_infos):
     trigger_data_request_timeout = daq_common.data_request_timeout_ms
     the_system.apps['trigger'] = get_trigger_app(
         trigger=trigger,
@@ -216,9 +155,9 @@ def cli(
         use_hsi_input=False,
         DEBUG=debug)
 
-    #--------------------------------------------------------------------------
-    # DFO
-    #--------------------------------------------------------------------------
+    return
+
+def dfo_apps(the_system, get_dfo_app, appconfig_df, daq_common, ru_descs, number_of_ru_streams, readout, dataflow):
     max_expected_tr_sequences = 1
     for df_config in appconfig_df.values():
         if df_config.max_trigger_record_window >= 1:
@@ -250,9 +189,9 @@ def cli(
         HOST=dataflow.host_dfo,
         DEBUG=debug)
 
-    #--------------------------------------------------------------------------
-    # Dataflow applications generatioo
-    #--------------------------------------------------------------------------
+    return max_expected_tr_sequences, trigger_record_building_timeout
+
+def dataflow_apps(the_system, get_dataflow_app, appconfig_df, dataflow, detector, max_expected_tr_sequences, trigger_record_building_timeout, dro_map):
     file_label = None
     idx = 0
     for app_name,df_config in appconfig_df.items():
@@ -272,9 +211,9 @@ def cli(
 
         idx += 1
 
-    #--------------------------------------------------------------------------
-    # App generation completed
-    #--------------------------------------------------------------------------
+    return
+
+def def_boot_order(the_system, df_app_names):
     ru_app_names=[]
     all_apps_except_ru = []
     all_apps_except_ru_and_df = []
@@ -293,14 +232,22 @@ def cli(
         if debug:
             console.log(f'Boot order: {boot_order}')
 
+    return
+
+def export():
     #     console.log(f"MDAapp config generated in {json_dir}")
-    from daqconf.core.conf_utils import make_app_command_data
-    from daqconf.core.fragment_producers import  connect_all_fragment_producers, set_mlt_links#, remove_mlt_link
 
     if debug:
-        the_system.export(debug_dir / "system_no_frag_prod_connection.dot")
+        output_dir = Path(json_dir)
+        debug_dir = output_dir / 'debug'
+        debug_dir.mkdir(parents=True)
+        the_system.export(debug_dir / "system.dot")
+        for name in the_system.apps:
+            the_system.apps[name].export(debug_dir / f"{name}.dot")
 
-    connect_all_fragment_producers(the_system, verbose=debug)
+    return
+
+def mlt_links(the_system, tp_infos):
     set_mlt_links(the_system, tp_infos, "trigger", verbose=debug)
 
     mlt_mandatory_links=the_system.apps["trigger"].modulegraph.get_module("mlt").conf.mandatory_links
@@ -309,13 +256,98 @@ def cli(
         console.log(f"After set_mlt_links, mlt_mandatory_links are {mlt_mandatory_links}")
         console.log(f"Groups links are {mlt_groups_links}")
 
+    return
+
+
+# Add -h as default help option
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+@click.command(context_settings=CONTEXT_SETTINGS)
+@generate_cli_from_schema('fddaqconf/confgen.jsonnet', 'fddaqconf_gen', 'daqconf.dataflowgen.dataflowapp')
+@click.argument('json_dir', type=click.Path())
+def cli(
+    config,
+    json_dir
+    ):
+
+    config_data = config[0]
+    config_file = Path(config[1] if config[1] is not None else "fddaqconf_default.json")
+
+    (
+        boot,
+        detector,
+        daq_common,
+        timing,
+        hsi,
+        ctb_hsi,
+        readout,
+        trigger,
+        dataflow
+    ) = expand_conf(config_data, debug)
+
+    if debug: print(config_data)
+
+    console.log("Loading dataflow config generator")
+    from daqconf.apps.dataflow_gen import get_dataflow_app
+    console.log("Loading readout config generator")
+    from fddaqconf.apps.readout_gen import FDReadoutAppGenerator
+    console.log("Loading trigger config generator")
+    from daqconf.apps.trigger_gen import get_trigger_app
+    console.log("Loading DFO config generator")
+    from daqconf.apps.dfo_gen import get_dfo_app
+    #console.log("Loading fake hsi config generator")
+    #from daqconf.apps.fake_hsi_gen import get_fake_hsi_app
+
+    #--------------------------------------------------------------------------
+    # Create dataflow applications
+    #--------------------------------------------------------------------------
+    sourceid_broker = SourceIDBroker()
+    host_df, appconfig_df, df_app_names = create_df_apps(dataflow=dataflow, sourceid_broker=sourceid_broker)
+
+    #--------------------------------------------------------------------------
+    # Generation starts here
+    #--------------------------------------------------------------------------
+    console.log(f"Generating configs for hosts trigger={trigger.host_trigger} DFO={dataflow.host_dfo} dataflow={host_df} timing_hsi={hsi.host_timing_hsi} fake_hsi={hsi.host_fake_hsi} ctb_hsi={ctb_hsi.host_ctb_hsi}")
+    the_system = System()
+
+    #--------------------------------------------------------------------------
+    # Load Detector Readout map
+    #--------------------------------------------------------------------------
+    tp_infos, number_of_ru_streams, ru_descs, dro_map = detector_readout_map(readout, sourceid_broker)
+
+    #--------------------------------------------------------------------------
+    # Replay
+    #--------------------------------------------------------------------------
+    replay_app(the_system)
+
+    #--------------------------------------------------------------------------
+    # Trigger
+    #--------------------------------------------------------------------------
+    trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_infos)
+
+    #--------------------------------------------------------------------------
+    # DFO
+    #--------------------------------------------------------------------------
+    max_expected_tr_sequences, trigger_record_building_timeout = dfo_apps(the_system, get_dfo_app, appconfig_df, daq_common, ru_descs, number_of_ru_streams, readout, dataflow)
+
+    #--------------------------------------------------------------------------
+    # Dataflow applications generation
+    #--------------------------------------------------------------------------
+    dataflow_apps(the_system, get_dataflow_app, appconfig_df, dataflow, detector, max_expected_tr_sequences, trigger_record_building_timeout, dro_map)
+
+    #--------------------------------------------------------------------------
+    # App generation completed
+    #--------------------------------------------------------------------------
+    def_boot_order(the_system, df_app_names)
+
+    if debug: export()
+
+    connect_all_fragment_producers(the_system, verbose=debug)
+    mlt_links(the_system, tp_infos)
+
     ####################################################################
     # Application command data generation
     ####################################################################
     use_k8s = False
-
-    from daqconf.core.conf_utils import make_app_command_data, make_system_command_datas, write_json_files
-    from daqconf.core.metadata import write_metadata_file
 
     # Arrange per-app command data into the format used by util.write_json_files()
     app_command_datas = {
@@ -330,7 +362,7 @@ def cli(
     write_metadata_file(json_dir, "replay_tps", "./daqconf.ini")
 
 if __name__ == '__main__':
-    print( "NEW REPLAY" )
+    print( "NEW TRIGGER REPLAY APP" )
     console = Console()
 
     try:
