@@ -7,7 +7,7 @@ import integrationtest.log_file_checks as log_file_checks
 import integrationtest.config_file_gen as config_file_gen
 
 # Values that help determine the running conditions
-number_of_data_producers=2
+number_of_data_producers=3
 data_rate_slowdown_factor=1 # 10 for ProtoWIB/DuneWIB
 run_duration=20  # seconds
 readout_window_time_before=1000
@@ -18,16 +18,13 @@ expected_number_of_data_files=1
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wibeth_frag_params={"fragment_type_description": "WIBEth",
+readout_window_scale_factor=1
+wibeth_frag_params={"fragment_type_description": "ScaledWIBEth",
                     "fragment_type": "WIBEth",
                     "hdf5_source_subsystem": "Detector_Readout",
                     "expected_fragment_count": number_of_data_producers,
-                    "min_size_bytes": 7272, "max_size_bytes": 14472}
-#hsi_frag_params ={"fragment_type_description": "HSI",
-#                             "fragment_type": "Hardware_Signal",
-#                             "hdf5_source_subsystem": "HW_Signals_Interface",
-#                             "expected_fragment_count": 1,
-#                             "min_size_bytes": 72, "max_size_bytes": 100}
+                    "min_size_bytes": 72+(readout_window_scale_factor*7200),
+                    "max_size_bytes": 72+((readout_window_scale_factor+1)*7200)}
 rtcm_frag_params ={"fragment_type_description": "Trigger Candidate",
                    "fragment_type": "Trigger_Candidate",
                    "hdf5_source_subsystem": "Trigger",
@@ -52,8 +49,8 @@ conf_dict["detector"]["op_env"] = "integtest"
 conf_dict["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
-conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
-conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
+conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_scale_factor*readout_window_time_before
+conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_scale_factor*readout_window_time_after
 
 # Enable random trigger candidate maker
 conf_dict["trigger"]["use_random_maker"] = True
@@ -72,13 +69,21 @@ conf_dict["hsi"]["use_fake_hsi"] = False
 conf_dict["hsi"]["use_timing_hsi"] = False
 conf_dict["hsi"]["random_trigger_rate_hz"] = 1.0
 
+# Readout map config
+conf_dict["trigger"]["mlt_use_readout_map"] = True
+conf_dict["trigger"]["mlt_td_readout_map"] = []
+rmap_conf = {}
+rmap_conf["candidate_type"] = 4
+rmap_conf["time_before"] = readout_window_scale_factor*readout_window_time_before
+rmap_conf["time_after"] = readout_window_scale_factor*readout_window_time_after
+conf_dict["trigger"]["mlt_td_readout_map"].append(rmap_conf)
+
 confgen_arguments={"RandomTriggerCandidateMaker": conf_dict}
 
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf start 101 wait 1 enable_triggers wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2 scrap terminate".split()
 
 # The tests themselves
-
 def test_nanorc_success(run_nanorc):
     # Check that nanorc completed correctly
     assert run_nanorc.completed_process.returncode==0
@@ -93,10 +98,6 @@ def test_data_files(run_nanorc):
     assert len(run_nanorc.data_files)==expected_number_of_data_files
 
     fragment_check_list=[rtcm_frag_params]
-    #fragment_check_list=[triggercandidate_frag_params, rtcm_frag_params]
-    #fragment_check_list=[rtcm_frag_params, hsi_frag_params]
-    #fragment_check_list.append(wib1_frag_hsi_trig_params) # ProtoWIB
-    #fragment_check_list.append(wib2_frag_params) # DuneWIB
     fragment_check_list.append(wibeth_frag_params) # WIBEth
 
     for idx in range(len(run_nanorc.data_files)):
@@ -107,3 +108,4 @@ def test_data_files(run_nanorc):
         for jdx in range(len(fragment_check_list)):
             assert data_file_checks.check_fragment_count(data_file, fragment_check_list[jdx])
             assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
+
