@@ -12,9 +12,10 @@
 #define TRIGGER_INCLUDE_TRIGGER_ALGORITHMPLUGINS_HPP_
 
 #include "triggeralgs/TriggerActivityMaker.hpp"
-#include "triggeralgs/TriggerCandidateMaker.hpp"
+#include "triggeralgs/TriggerCandidateFactory.hpp"
 #include "triggeralgs/TriggerDecisionMaker.hpp"
 #include "triggeralgs/TriggerActivityFactory.hpp"
+#include "trigger/Issues.hpp"
 
 #include "cetlib/BasicPluginFactory.h"
 
@@ -45,7 +46,11 @@ namespace dunedaq::trigger {
 inline std::shared_ptr<triggeralgs::TriggerActivityMaker>
 make_ta_maker(std::string const& plugin_name)
 {
-  return triggeralgs::TriggerActivityFactory::makeTAMaker(plugin_name);
+  auto ta_maker = triggeralgs::TriggerActivityFactory::get_instance()->build_maker(plugin_name);
+  if (!ta_maker) {
+    throw MissingFactoryItemError(ERS_HERE, plugin_name);
+  }
+  return ta_maker;
 }
 
 } // namespace dunedaq::trigger
@@ -74,10 +79,11 @@ namespace dunedaq::trigger {
 inline std::shared_ptr<triggeralgs::TriggerCandidateMaker>
 make_tc_maker(std::string const& plugin_name)
 {
-  static cet::BasicPluginFactory bpf("duneTCMaker", "make");
-
-  // TODO Philip Rodrigues <philiprodrigues@github.com> Apr-04-2021: Rethrow any cetlib exception as an ERS issue
-  return bpf.makePlugin<std::shared_ptr<triggeralgs::TriggerCandidateMaker>>(plugin_name);
+  auto tc_maker = triggeralgs::TriggerCandidateFactory::get_instance()->build_maker(plugin_name);
+  if (!tc_maker) {
+    throw MissingFactoryItemError(ERS_HERE, plugin_name);
+  }
+  return tc_maker;
 }
 
 } // namespace dunedaq::trigger
