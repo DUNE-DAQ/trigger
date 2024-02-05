@@ -1,4 +1,6 @@
 import pytest
+import math
+import copy
 import urllib.request
 
 import integrationtest.data_file_checks as data_file_checks
@@ -18,13 +20,21 @@ expected_number_of_data_files=1
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-readout_window_scale_factor=1
-wibeth_frag_params={"fragment_type_description": "ScaledWIBEth",
+readout_window_scale_factor=0.5
+#readout_window_scale_factors=[1, 2]
+wibeth_frag_params={"fragment_type_description": "WIBEth",
                     "fragment_type": "WIBEth",
                     "hdf5_source_subsystem": "Detector_Readout",
                     "expected_fragment_count": number_of_data_producers,
-                    "min_size_bytes": 72+(readout_window_scale_factor*7200),
-                    "max_size_bytes": 72+((readout_window_scale_factor+1)*7200)}
+                    "min_size_bytes": 7272, "max_size_bytes": 14472}
+wibeth_frag_params_scaled={"fragment_type_description": "ScaledWIBEth",
+                           "fragment_type": "WIBEth",
+                           "hdf5_source_subsystem": "Detector_Readout",
+                           "expected_fragment_count": number_of_data_producers,
+                           "min_size_bytes": 72+( math.ceil(readout_window_scale_factor)   *7200),
+                           "max_size_bytes": 72+((math.ceil(readout_window_scale_factor)+1)*7200)}
+print('SANITY CHECK min_size_bytes = ', wibeth_frag_params_scaled["min_size_bytes"])
+print('SANITY CHECK max_size_bytes = ', wibeth_frag_params_scaled["max_size_bytes"])
 rtcm_frag_params ={"fragment_type_description": "Trigger Candidate",
                    "fragment_type": "Trigger_Candidate",
                    "hdf5_source_subsystem": "Trigger",
@@ -49,8 +59,8 @@ conf_dict["detector"]["op_env"] = "integtest"
 conf_dict["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
-conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_scale_factor*readout_window_time_before
-conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_scale_factor*readout_window_time_after
+conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
+conf_dict["trigger"]["trigger_window_after_ticks"]  = readout_window_time_after
 
 # Enable random trigger candidate maker
 conf_dict["trigger"]["use_random_maker"] = True
@@ -74,11 +84,22 @@ conf_dict["trigger"]["mlt_use_readout_map"] = True
 conf_dict["trigger"]["mlt_td_readout_map"] = []
 rmap_conf = {}
 rmap_conf["candidate_type"] = 4
-rmap_conf["time_before"] = readout_window_scale_factor*readout_window_time_before
-rmap_conf["time_after"] = readout_window_scale_factor*readout_window_time_after
+rmap_conf["time_before"] = readout_window_time_before
+rmap_conf["time_after"] = readout_window_time_after
 conf_dict["trigger"]["mlt_td_readout_map"].append(rmap_conf)
 
-confgen_arguments={"RandomTriggerCandidateMaker": conf_dict}
+# conf_dict with readout window scaling
+conf_dict_scaled = copy.deepcopy(conf_dict)
+conf_dict_scaled["trigger"]["trigger_window_before_ticks"] = math.ceil(readout_window_scale_factor)*readout_window_time_before
+conf_dict_scaled["trigger"]["trigger_window_after_ticks"]  = math.ceil(readout_window_scale_factor)*readout_window_time_after
+rmap_conf_scaled = copy.deepcopy(rmap_conf)
+rmap_conf_scaled["time_before"] = readout_window_scale_factor*readout_window_time_before
+rmap_conf_scaled["time_after"] = readout_window_scale_factor*readout_window_time_after
+conf_dict_scaled["trigger"]["mlt_td_readout_map"].append(rmap_conf_scaled)
+
+confgen_arguments={"RandomTriggerCandidateMaker": conf_dict,
+                   "RandomTriggerCandidateMakerScaled": conf_dict_scaled
+                  }
 
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf start 101 wait 1 enable_triggers wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2 scrap terminate".split()
@@ -99,6 +120,7 @@ def test_data_files(run_nanorc):
 
     fragment_check_list=[rtcm_frag_params]
     fragment_check_list.append(wibeth_frag_params) # WIBEth
+    fragment_check_list.append(wibeth_frag_params_scaled) # ScaledWIBEth
 
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
