@@ -143,8 +143,8 @@ triggeralgs::TriggerCandidate
 CustomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp, int tc_type)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_start = timestamp;
-  candidate.time_end = timestamp;
+  candidate.time_start = (timestamp - 1000);
+  candidate.time_end = (timestamp + 1000);
   candidate.time_candidate = timestamp;
   candidate.detid = { 0 };
   candidate.type = static_cast<dunedaq::trgdataformats::TriggerCandidateData::Type>(tc_type);

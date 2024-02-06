@@ -157,7 +157,7 @@ private:
   void add_tc(const triggeralgs::TriggerCandidate& tc);
   void add_td(const PendingTD& pending_td);
   void add_tc_ignored(const triggeralgs::TriggerCandidate& tc);
-  void call_tc_decision(const PendingTD& pending_td, bool override_flag = false);
+  void call_tc_decision(const PendingTD& pending_td);
   bool check_overlap(const triggeralgs::TriggerCandidate& tc, const PendingTD& pending_td);
   bool check_overlap_td(const PendingTD& pending_td);
   bool check_td_readout_length(const PendingTD&);

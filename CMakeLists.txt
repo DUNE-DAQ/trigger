@@ -35,6 +35,7 @@ daq_add_library(TokenManager.cpp LivetimeCounter.cpp
   iomanager::iomanager
   detdataformats::detdataformats
   trgdataformats::trgdataformats
+  hdf5libs::hdf5libs
   Boost::iostreams # Boost::iostreams comes in via readoutlibs
   detchannelmaps::detchannelmaps)
 
@@ -93,34 +94,16 @@ daq_add_plugin(TCZipper duneDAQModule LINK_LIBRARIES trigger)
 
 
 # Algorithm plugins
-daq_add_plugin(TriggerActivityMakerADCSimpleWindowPlugin duneTAMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerADCSimpleWindowPlugin duneTCMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerActivityMakerHorizontalMuonPlugin duneTAMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerHorizontalMuonPlugin duneTCMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerActivityMakerPlaneCoincidencePlugin duneTAMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerPlaneCoincidencePlugin duneTCMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerActivityMakerPrescalePlugin duneTAMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerPrescalePlugin duneTCMaker LINK_LIBRARIES trigger)
-
-daq_add_plugin(TriggerActivityMakerSupernovaPlugin duneTAMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerSupernovaPlugin duneTCMaker LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDecisionMakerSupernovaPlugin duneTDMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerActivityMakerMichelElectronPlugin duneTAMaker LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerCandidateMakerMichelElectronPlugin duneTCMaker LINK_LIBRARIES trigger)
-# daq_add_plugin(TriggerActivityMakerDBSCANPlugin duneTAMaker LINK_LIBRARIES trigger)
-
-
-daq_add_plugin(TriggerActivityMakerDBSCANPlugin duneTAMaker LINK_LIBRARIES trigger)
 
 ##############################################################################
 # Integration tests
 
 daq_add_application( set_serialization_speed set_serialization_speed.cxx TEST LINK_LIBRARIES trigger)
 daq_add_application( taset_serialization taset_serialization.cxx TEST LINK_LIBRARIES trigger)
-daq_add_application( check_fragment_TPs check_fragment_TPs.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
 daq_add_application( print_trigger_type print_trigger_type.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
 daq_add_application( print_ds_fragments print_ds_fragments.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
-daq_add_application( streamed_TPs_to_text streamed_TPs_to_text.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
+daq_add_application( generate_tpset_from_hdf5 generate_tpset_from_hdf5.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
 
 ##############################################################################
 # Unit Tests
@@ -130,6 +113,7 @@ daq_add_unit_test(TxSet_test                     LINK_LIBRARIES trigger)
 daq_add_unit_test(BufferManager_test             LINK_LIBRARIES trigger)
 daq_add_unit_test(TriggerZipper_test             LINK_LIBRARIES trigger)
 daq_add_unit_test(TriggerObjectOverlay_test      LINK_LIBRARIES trigger)
+daq_add_unit_test(AlgorithmPlugins_test          LINK_LIBRARIES trigger)
 
 ##############################################################################
 
