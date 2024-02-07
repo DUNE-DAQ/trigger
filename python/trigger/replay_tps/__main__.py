@@ -148,20 +148,25 @@ def detector_readout_map(readout, sourceid_broker, debug):
     sourceid_broker.generate_trigger_source_ids(ru_descs, readout.enable_tpg)
     tp_infos = sourceid_broker.get_all_source_ids("Trigger")
 
+    number_of_rus = 0
     number_of_ru_streams = 0
     for ru_name, ru_desc in ru_descs.items():
         console.log(f"Will generate a RU process on {ru_name} ({ru_desc.iface}, {ru_desc.kind}), {len(ru_desc.streams)} streams active")
+        number_of_rus += 1
         number_of_ru_streams += len(ru_desc.streams)
 
-    return tp_infos, number_of_ru_streams, ru_descs, dro_map
+    return tp_infos, number_of_ru_streams, ru_descs, dro_map, number_of_rus
 
-def replay_app(the_system, input_file, slowdown_factor, number_of_loops, tp_infos):
+def replay_app(the_system, input_file, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, number_of_rus):
     from .replay_tp_app import get_replay_app
     the_system.apps["replay"] = get_replay_app(
         INPUT_FILES = input_file,
         SLOWDOWN_FACTOR = slowdown_factor,
         NUMBER_OF_LOOPS = number_of_loops,
-        N_STREAMS = len(tp_infos)
+        N_STREAMS = number_of_rus,
+        TIME_OFFSET = tpset_time_offset, 
+        TIME_WIDTH = tpset_time_width,
+        WAIT_TIME = maximum_wait_time_us
     )
 
     return
@@ -276,11 +281,14 @@ def mlt_links(the_system, tp_infos, debug):
 
     return
 
-def print_cli_config(config, slowdown_factor, number_of_loops, input_file, debug, json_dir):
+def print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, input_file, debug, json_dir):
     print("CONFIGURATION")
     print("Config:", config)
     print("slowdown-factor:", slowdown_factor)
     print("number-of-loops:", number_of_loops)
+    print("tpset-time-offset:", tpset_time_offset)
+    print("tpset-time-width:", tpset_time_width)
+    print("maximum-wait-time-us:", maximum_wait_time_us)
     print("input-file:", input_file)
     print("debug:", debug)
     print("json_dir:", json_dir)
@@ -292,6 +300,9 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @generate_cli_from_schema('fddaqconf/confgen.jsonnet', 'fddaqconf_gen', 'daqconf.dataflowgen.dataflowapp')
 @click.option('-s', '--slowdown-factor', default=1.0)
 @click.option('-l', '--number-of-loops', default='-1', help="Number of times to loop over the input files (-1 for infinite)")
+@click.option('-to', '--tpset-time-offset', default=0)
+@click.option('-tw', '--tpset-time-width', default=10000)
+@click.option('-wt', '--maximum-wait-time-us', default=1000)
 @click.option('-f', '--input-file', type=click.Path(exists=True, dir_okay=False), multiple=True, required=True)
 @click.option('--debug', default=False, is_flag=True, help="Switch to get a lot of printout and dot files")
 @click.argument('json_dir', type=click.Path())
@@ -299,6 +310,9 @@ def cli(
     config,
     slowdown_factor,
     number_of_loops,
+    tpset_time_offset,
+    tpset_time_width,
+    maximum_wait_time_us,
     input_file,
     debug,
     json_dir
@@ -314,7 +328,7 @@ def cli(
         output_dir = Path(json_dir)
         debug_dir = output_dir / 'debug'
         debug_dir.mkdir(parents=True)
-        print_cli_config(config, slowdown_factor, number_of_loops, input_file, debug, json_dir)
+        print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, input_file, debug, json_dir)
 
     (
         boot,
@@ -363,12 +377,12 @@ def cli(
     #--------------------------------------------------------------------------
     # Load Detector Readout map
     #--------------------------------------------------------------------------
-    tp_infos, number_of_ru_streams, ru_descs, dro_map = detector_readout_map(readout, sourceid_broker, debug)
+    tp_infos, number_of_ru_streams, ru_descs, dro_map, number_of_rus = detector_readout_map(readout, sourceid_broker, debug)
 
     #--------------------------------------------------------------------------
     # Replay
     #--------------------------------------------------------------------------
-    replay_app(the_system, input_file, slowdown_factor, number_of_loops, tp_infos)
+    replay_app(the_system, input_file, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, number_of_rus)
 
     #--------------------------------------------------------------------------
     # Trigger

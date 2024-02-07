@@ -19,13 +19,15 @@ from daqconf.core.conf_utils import Direction
 def get_replay_app(INPUT_FILES: [str],
                    SLOWDOWN_FACTOR: float,
                    NUMBER_OF_LOOPS: int,
-                   N_STREAMS: int):
+                   N_STREAMS: int,
+                   TIME_OFFSET: int,
+                   TIME_WIDTH: int,
+                   WAIT_TIME: int):
 
     clock_frequency_hz = 62_500_000 / SLOWDOWN_FACTOR
     modules = []
 
-    #n_streams = N_STREAMS
-    n_streams = 1
+    n_streams = N_STREAMS
 
     tp_streams = [tpm.TPStream(filename= input_file,
                                # region_id = 0,
@@ -40,10 +42,10 @@ def get_replay_app(INPUT_FILES: [str],
             conf = tpm.ConfParams(
                 tp_streams = tp_streams,
                 number_of_loops=NUMBER_OF_LOOPS,
-                tpset_time_offset=0,
-                tpset_time_width=10000,
+                tpset_time_offset=TIME_OFFSET,
+                tpset_time_width=TIME_WIDTH,
                 clock_frequency_hz=clock_frequency_hz,
-                maximum_wait_time_us=1000,
+                maximum_wait_time_us=WAIT_TIME,
             )
         )
     )
