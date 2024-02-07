@@ -78,7 +78,7 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   m_prescale_flag = (m_prescale > 1) ? true : false;
   TLOG_DEBUG(2) << get_name() + " configured.";
   if (m_prescale_flag){
-    TLOG(2) << "Runnig with prescale at: " << m_prescale;
+    TLOG(2) << "Running with prescale at: " << m_prescale;
   }
 }
 
