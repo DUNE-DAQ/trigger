@@ -132,14 +132,14 @@ private:
   daqdataformats::timestamp_t m_buffer_time;
   daqdataformats::timestamp_t m_window_time;
 
-  std::unique_ptr<MAKER> m_maker;
+  std::shared_ptr<MAKER> m_maker;
   nlohmann::json m_maker_conf;
   
   TriggerGenericWorker<IN, OUT, MAKER> worker;
 
-  // This should return a unique_ptr to the MAKER created from conf command arguments.
+  // This should return a shared_ptr to the MAKER created from conf command arguments.
   // Should also call set_algorithm_name and set_geoid/set_windowing (if desired)
-  virtual std::unique_ptr<MAKER> make_maker(const nlohmann::json& obj) = 0;
+  virtual std::shared_ptr<MAKER> make_maker(const nlohmann::json& obj) = 0;
 
   void do_start(const nlohmann::json& startobj)
   {

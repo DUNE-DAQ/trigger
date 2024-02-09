@@ -38,7 +38,7 @@ public:
   TriggerActivityMaker& operator=(TriggerActivityMaker&&) = delete;
 
 private:
-  virtual std::unique_ptr<triggeralgs::TriggerActivityMaker> make_maker(const nlohmann::json& obj) override;
+  virtual std::shared_ptr<triggeralgs::TriggerActivityMaker> make_maker(const nlohmann::json& obj) override;
   
 };
 

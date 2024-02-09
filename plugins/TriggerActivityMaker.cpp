@@ -15,14 +15,14 @@
 
 namespace dunedaq::trigger {
 
-std::unique_ptr<triggeralgs::TriggerActivityMaker>
+std::shared_ptr<triggeralgs::TriggerActivityMaker>
 TriggerActivityMaker::make_maker(const nlohmann::json& obj)
 {
   auto params = obj.get<triggeractivitymaker::Conf>();
   set_algorithm_name(params.activity_maker);
   set_sourceid(params.geoid_element);
   set_windowing(params.window_time, params.buffer_time);
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> maker = make_ta_maker(params.activity_maker);
+  std::shared_ptr<triggeralgs::TriggerActivityMaker> maker = make_ta_maker(params.activity_maker);
   maker->configure(params.activity_maker_config);
   std::cout << "Made a TAMaker - data_vs_system_time param: " << maker->m_data_vs_system_time << "\n";
 

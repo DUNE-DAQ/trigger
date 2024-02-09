@@ -21,10 +21,10 @@ BOOST_AUTO_TEST_SUITE(BOOST_TEST_MODULE);
 BOOST_AUTO_TEST_CASE(TAFactory)
 {
   // Get a few algorithms
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> prescale_maker = trigger::make_ta_maker("TriggerActivityMakerPrescalePlugin");
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> h_muon_maker = trigger::make_ta_maker("TriggerActivityMakerHorizontalMuonPlugin");
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> dbscan_maker = trigger::make_ta_maker("TriggerActivityMakerDBSCANPlugin");
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> fake_maker = trigger::make_ta_maker("TriggerActivityMakerFakerPlugin");
+  std::shared_ptr<triggeralgs::TriggerActivityMaker> prescale_maker = trigger::make_ta_maker("TriggerActivityMakerPrescalePlugin");
+  std::shared_ptr<triggeralgs::TriggerActivityMaker> h_muon_maker = trigger::make_ta_maker("TriggerActivityMakerHorizontalMuonPlugin");
+  std::shared_ptr<triggeralgs::TriggerActivityMaker> dbscan_maker = trigger::make_ta_maker("TriggerActivityMakerDBSCANPlugin");
+  std::shared_ptr<triggeralgs::TriggerActivityMaker> fake_maker = trigger::make_ta_maker("TriggerActivityMakerFakerPlugin");
 
   // Only the fake_maker should be nullptr
   BOOST_TEST(static_cast<bool>(prescale_maker != nullptr));

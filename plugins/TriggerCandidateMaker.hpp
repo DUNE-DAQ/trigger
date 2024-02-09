@@ -37,7 +37,7 @@ public:
   TriggerCandidateMaker& operator=(TriggerCandidateMaker&&) = delete;
 
 private:
-  virtual std::unique_ptr<triggeralgs::TriggerCandidateMaker> make_maker(const nlohmann::json& obj);
+  virtual std::shared_ptr<triggeralgs::TriggerCandidateMaker> make_maker(const nlohmann::json& obj);
 };
 
 } // namespace dunedaq::trigger
