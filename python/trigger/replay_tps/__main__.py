@@ -131,11 +131,20 @@ def create_df_apps(
             host_df += [appconfig.host_df]
     return host_df, appconfig_df, df_app_names
 
-def detector_readout_map(readout, sourceid_broker, debug):
-    dro_map_file = "map.json"
+def detector_readout_map(readout, sourceid_broker, map_file, number_of_links, debug):
+    if map_file == None:
+        print("Generating DRO map file as none provided")
+        dro_map_contents = dro_map_gen.generate_dromap_contents(n_streams=1, n_apps=number_of_links, det_id = 3) # default HD_TPC
+        ### This is a weird hack, don't blame me!
+        temp_map_file = "temp_map.json"
+        with open(temp_map_file, 'w', encoding='utf8') as f:
+            f.write(dro_map_contents)
+        map_file = temp_map_file
+    
+    dro_map_file = map_file
     dro_map = dromap.DetReadoutMapService()
-    if dro_map_file:
-        dro_map.load(dro_map_file)
+    dro_map.load(dro_map_file)
+    if debug: print("map:", dro_map) 
 
     ru_descs = dro_map.get_ru_descriptors()
     readout.enable_tpg = True
@@ -281,7 +290,7 @@ def mlt_links(the_system, tp_infos, debug):
 
     return
 
-def print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, input_file, debug, json_dir):
+def print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, input_file, map_file, number_of_links, debug, json_dir):
     print("CONFIGURATION")
     print("Config:", config)
     print("slowdown-factor:", slowdown_factor)
@@ -290,9 +299,18 @@ def print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset
     print("tpset-time-width:", tpset_time_width)
     print("maximum-wait-time-us:", maximum_wait_time_us)
     print("input-file:", input_file)
+    print("map-file:", map_file)
+    print("number-of-links:", number_of_links)
     print("debug:", debug)
     print("json_dir:", json_dir)
     return
+
+def check_file_extension(input_file):
+    if input_file.lower().endswith(".hdf5"):
+        return
+    else: 
+        print("Invalid file provided. HDF5 tpstream file required.")
+        raise SystemExit(-1)
 
 # Add -h as default help option
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -303,7 +321,9 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('-to', '--tpset-time-offset', default=0)
 @click.option('-tw', '--tpset-time-width', default=10000)
 @click.option('-wt', '--maximum-wait-time-us', default=1000)
-@click.option('-f', '--input-file', type=click.Path(exists=True, dir_okay=False), multiple=True, required=True)
+@click.option('-f', '--input-file', type=click.Path(exists=True, dir_okay=False), multiple=True, required=True, help="TPStream HDF5 file")
+@click.option('-map', '--map-file', type=click.Path(exists=True, dir_okay=False), help="DRO map file")
+@click.option('-n', '--number-of-links', default=1, help="If DRO map not provided, will generate one for this number of links")
 @click.option('--debug', default=False, is_flag=True, help="Switch to get a lot of printout and dot files")
 @click.argument('json_dir', type=click.Path())
 def cli(
@@ -314,6 +334,8 @@ def cli(
     tpset_time_width,
     maximum_wait_time_us,
     input_file,
+    map_file,
+    number_of_links,
     debug,
     json_dir
     ):
@@ -324,12 +346,25 @@ def cli(
     config_data = config[0]
     config_file = Path(config[1] if config[1] is not None else "fddaqconf_default.json")
 
+    #--------------------------------------------------------------------------
+    # Check output directory does not exist
+    #--------------------------------------------------------------------------
+    output_dir = Path(json_dir)
+    if output_dir.exists():
+        raise RuntimeError(f"Directory {output_dir} already exists")
+
+    #--------------------------------------------------------------------------
+    # Prepare debug
+    #--------------------------------------------------------------------------
     if debug:
         output_dir = Path(json_dir)
         debug_dir = output_dir / 'debug'
         debug_dir.mkdir(parents=True)
-        print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, input_file, debug, json_dir)
+        print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, input_file, map_file, number_of_links, debug, json_dir)
 
+    #--------------------------------------------------------------------------
+    # Expand config (fill in defaults)
+    #--------------------------------------------------------------------------
     (
         boot,
         detector,
@@ -346,6 +381,12 @@ def cli(
     # Validate configuration
     #--------------------------------------------------------------------------
     validate_conf(boot, readout, dataflow)
+
+    #--------------------------------------------------------------------------
+    # Check input files
+    #--------------------------------------------------------------------------
+    for each_file in input_file:
+        check_file_extension(each_file)
 
     if debug:
         console.log(f"Configuration for fddaqconf: {config_data.pod()}")
@@ -377,7 +418,7 @@ def cli(
     #--------------------------------------------------------------------------
     # Load Detector Readout map
     #--------------------------------------------------------------------------
-    tp_infos, number_of_ru_streams, ru_descs, dro_map, number_of_rus = detector_readout_map(readout, sourceid_broker, debug)
+    tp_infos, number_of_ru_streams, ru_descs, dro_map, number_of_rus = detector_readout_map(readout, sourceid_broker, map_file, number_of_links, debug)
 
     #--------------------------------------------------------------------------
     # Replay

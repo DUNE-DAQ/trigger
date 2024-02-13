@@ -28,12 +28,13 @@ def get_replay_app(INPUT_FILES: [str],
     modules = []
 
     n_streams = N_STREAMS
+    input_file = INPUT_FILES[0]
 
     tp_streams = [tpm.TPStream(filename= input_file,
                                # region_id = 0,
                                element_id = istream,
                                output_sink_name = f"output{istream}")
-                  for istream, input_file in enumerate(INPUT_FILES)]
+                  for istream in range(0, n_streams)]
 
     modules.append(
         DAQModule(
