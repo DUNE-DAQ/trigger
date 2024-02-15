@@ -313,7 +313,10 @@ def mlt_links(the_system, tp_infos, debug):
 
     return
 
-def print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, input_file, map_file, number_of_links, debug, json_dir):
+def print_cli_config(
+        config, slowdown_factor, number_of_loops, 
+        tpset_time_offset, tpset_time_width, maximum_wait_time_us, 
+        input_file, map_file, number_of_links, debug, json_dir):
     print("CONFIGURATION")
     print("Config:", config)
     print("slowdown-factor:", slowdown_factor)
@@ -380,7 +383,17 @@ def cli(
         output_dir = Path(json_dir)
         debug_dir = output_dir / 'debug'
         debug_dir.mkdir(parents=True)
-        print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, input_file, map_file, number_of_links, debug, json_dir)
+        print_cli_config(
+                config, 
+                slowdown_factor, 
+                number_of_loops, 
+                tpset_time_offset, 
+                tpset_time_width, 
+                maximum_wait_time_us, 
+                input_file, map_file, 
+                number_of_links, 
+                debug, 
+                json_dir)
 
     #--------------------------------------------------------------------------
     # Prepare config
@@ -463,7 +476,16 @@ def cli(
     #--------------------------------------------------------------------------
     # DFO
     #--------------------------------------------------------------------------
-    max_expected_tr_sequences, trigger_record_building_timeout = dfo_apps(the_system, get_dfo_app, appconfig_df, daq_common, ru_descs, number_of_ru_streams, readout, dataflow, debug)
+    max_expected_tr_sequences, trigger_record_building_timeout = dfo_apps(
+            the_system, 
+            get_dfo_app, 
+            appconfig_df, 
+            daq_common, 
+            ru_descs, 
+            number_of_ru_streams, 
+            readout, 
+            dataflow, 
+            debug)
 
     #--------------------------------------------------------------------------
     # Dataflow applications generation
@@ -489,7 +511,14 @@ def cli(
 
     # Arrange per-app command data into the format used by util.write_json_files()
     app_command_datas = {
-        name : make_app_command_data(the_system, app,name, verbose=debug, use_k8s=use_k8s, use_connectivity_service=boot.use_connectivity_service, connectivity_service_interval=boot.connectivity_service_interval)
+        name : make_app_command_data(
+            the_system, 
+            app,
+            name, 
+            verbose=debug, 
+            use_k8s=use_k8s, 
+            use_connectivity_service=boot.use_connectivity_service, 
+            connectivity_service_interval=boot.connectivity_service_interval)
         for name,app in the_system.apps.items()
     }
 

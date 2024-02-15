@@ -24,18 +24,20 @@ def get_replay_app(INPUT_FILES: [str],
                    TIME_WIDTH: int,
                    WAIT_TIME: int):
 
+    ### set up variables
     clock_frequency_hz = 62_500_000 / SLOWDOWN_FACTOR
     modules = []
-
     n_streams = N_STREAMS
-    input_file = INPUT_FILES[0]
+    input_file = INPUT_FILES[0] # currently just one, do we want to support multiple? in what way?
 
+    ### create TP streams (using TrigerPrimitiveMaker plugin(s))
     tp_streams = [tpm.TPStream(filename= input_file,
                                # region_id = 0,
                                element_id = istream,
                                output_sink_name = f"output{istream}")
                   for istream in range(0, n_streams)]
 
+    ### add above created TPM(s) to the list of modules to be used, configure plugin(s)
     modules.append(
         DAQModule(
             name = "tpm",
@@ -51,6 +53,7 @@ def get_replay_app(INPUT_FILES: [str],
         )
     )
 
+    ### add these modules to the 'graph', create connections
     mgraph = ModuleGraph(modules)
     for istream in range(n_streams):
         # mgraph.add_endpoint(f"tpsets_rulocalhost_{istream}_link0", f"tpm.output{istream}", Direction.OUT, topic=["TPSets"])
