@@ -51,6 +51,10 @@ private:
 
   std::string m_hsievent_receive_connection;
 
+  // Prescale functionality
+  bool m_prescale_flag;
+  int m_prescale;
+
   // HSI Passthrough changes
   std::atomic<bool> m_hsi_passthrough;
   int m_hsi_pt_before;
