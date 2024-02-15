@@ -12,7 +12,7 @@ from daqconf.core.sourceid import SourceIDBroker
 from daqconf.core.system import System
 from daqconf.core.fragment_producers import  connect_all_fragment_producers, set_mlt_links#, remove_mlt_link
 from daqconf.core.conf_utils import make_app_command_data, make_system_command_datas, write_json_files
-from daqconf.core.metadata import write_metadata_file
+from daqconf.core.metadata import write_metadata_file, write_config_file
 
 def expand_conf(config_data, debug=False):
     """Expands the moo configuration record into sub-records,
@@ -30,8 +30,8 @@ def expand_conf(config_data, debug=False):
     import dunedaq.daqconf.bootgen as bootgen
     import dunedaq.daqconf.detectorgen as detectorgen
     import dunedaq.daqconf.daqcommongen as daqcommongen
-    import dunedaq.daqconf.timinggen as timinggen
-    import dunedaq.daqconf.hsigen as hsigen
+    #import dunedaq.daqconf.timinggen as timinggen
+    #import dunedaq.daqconf.hsigen as hsigen
     import dunedaq.fddaqconf.readoutgen as readoutgen
     import dunedaq.daqconf.triggergen as triggergen
     import dunedaq.daqconf.dataflowgen as dataflowgen
@@ -46,14 +46,14 @@ def expand_conf(config_data, debug=False):
     daq_common = daqcommongen.daq_common(**config_data.daq_common)
     if debug: console.log(f"daq_common configuration object: {daq_common.pod()}")
 
-    timing = timinggen.timing(**config_data.timing)
-    if debug: console.log(f"timing configuration object: {timing.pod()}")
+    #timing = timinggen.timing(**config_data.timing)
+    #if debug: console.log(f"timing configuration object: {timing.pod()}")
 
-    hsi = hsigen.hsi(**config_data.hsi)
-    if debug: console.log(f"hsi configuration object: {hsi.pod()}")
+    #hsi = hsigen.hsi(**config_data.hsi)
+    #if debug: console.log(f"hsi configuration object: {hsi.pod()}")
 
-    ctb_hsi = confgen.ctb_hsi(**config_data.ctb_hsi)
-    if debug: console.log(f"ctb_hsi configuration object: {ctb_hsi.pod()}")
+    #ctb_hsi = confgen.ctb_hsi(**config_data.ctb_hsi)
+    #if debug: console.log(f"ctb_hsi configuration object: {ctb_hsi.pod()}")
 
     readout = readoutgen.readout(**config_data.readout)
     if debug: console.log(f"readout configuration object: {readout.pod()}")
@@ -68,9 +68,9 @@ def expand_conf(config_data, debug=False):
         boot,
         detector,
         daq_common,
-        timing,
-        hsi,
-        ctb_hsi,
+        #timing,
+        #hsi,
+        #ctb_hsi,
         readout,
         trigger,
         dataflow
@@ -164,7 +164,7 @@ def detector_readout_map(readout, sourceid_broker, map_file, number_of_links, de
         number_of_rus += 1
         number_of_ru_streams += len(ru_desc.streams)
 
-    return tp_infos, number_of_ru_streams, ru_descs, dro_map, number_of_rus
+    return tp_infos, number_of_ru_streams, ru_descs, dro_map, number_of_rus, map_file
 
 def replay_app(the_system, input_file, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, number_of_rus):
     from .replay_tp_app import get_replay_app
@@ -270,9 +270,32 @@ def def_boot_order(the_system, df_app_names, debug):
 
     return
 
-def export(the_system, debug_dir):
-    #     console.log(f"MDAapp config generated in {json_dir}")
+def write_final_files(app_command_datas, system_command_datas, json_dir, map_file, output_dir, config_file, boot, detector, daq_common, dataflow, trigger, debug):
+    write_json_files(app_command_datas, system_command_datas, output_dir, verbose=debug)
+    console.log(f"MDAapp config generated in {output_dir}")
 
+    write_metadata_file(json_dir, "replay_tps", "./daqconf.ini")
+  
+    import shutil
+    import dunedaq.fddaqconf.confgen as confgen
+
+    write_config_file(
+            output_dir,
+            config_file.name if config_file else "default.json",
+            confgen.fddaqconf_gen(  # :facepalm:
+                boot = boot,
+                detector = detector,
+                daq_common = daq_common,
+                dataflow = dataflow,
+                trigger = trigger,
+            ) # </facepalm>
+        )
+
+    shutil.copyfile(map_file, output_dir/'dromap.json')
+
+    return
+
+def export(the_system, debug_dir):
     the_system.export(debug_dir / "system.dot")
     for name in the_system.apps:
         the_system.apps[name].export(debug_dir / f"{name}.dot")
@@ -343,9 +366,6 @@ def cli(
       JSON_DIR: Json file output folder
     """
 
-    config_data = config[0]
-    config_file = Path(config[1] if config[1] is not None else "fddaqconf_default.json")
-
     #--------------------------------------------------------------------------
     # Check output directory does not exist
     #--------------------------------------------------------------------------
@@ -363,19 +383,32 @@ def cli(
         print_cli_config(config, slowdown_factor, number_of_loops, tpset_time_offset, tpset_time_width, maximum_wait_time_us, input_file, map_file, number_of_links, debug, json_dir)
 
     #--------------------------------------------------------------------------
+    # Prepare config
+    #--------------------------------------------------------------------------
+    config_data = config[0]
+    config_file = Path(config[1] if config[1] is not None else "fddaqconf_default.json")
+
+    if debug:
+        console.log(f"Configuration for fddaqconf: {config_data.pod()}")
+
+    #--------------------------------------------------------------------------
     # Expand config (fill in defaults)
     #--------------------------------------------------------------------------
     (
         boot,
         detector,
         daq_common,
-        timing,
-        hsi,
-        ctb_hsi,
+        #timing,
+        #hsi,
+        #ctb_hsi,
         readout,
         trigger,
         dataflow
     ) = expand_conf(config_data, debug)
+
+    if map_file is not None:
+        readout.detector_readout_map_file = map_file
+        console.log(f"readout.detector_readout_map_file set to {readout.detector_readout_map_file}")
 
     #--------------------------------------------------------------------------
     # Validate configuration
@@ -387,9 +420,6 @@ def cli(
     #--------------------------------------------------------------------------
     for each_file in input_file:
         check_file_extension(each_file)
-
-    if debug:
-        console.log(f"Configuration for fddaqconf: {config_data.pod()}")
 
     console.log("Loading dataflow config generator")
     from daqconf.apps.dataflow_gen import get_dataflow_app
@@ -412,13 +442,13 @@ def cli(
     #--------------------------------------------------------------------------
     # Generation starts here
     #--------------------------------------------------------------------------
-    console.log(f"Generating configs for hosts trigger={trigger.host_trigger} DFO={dataflow.host_dfo} dataflow={host_df} timing_hsi={hsi.host_timing_hsi} fake_hsi={hsi.host_fake_hsi} ctb_hsi={ctb_hsi.host_ctb_hsi}")
+    console.log(f"Generating configs for hosts trigger={trigger.host_trigger} DFO={dataflow.host_dfo} dataflow={host_df}")
     the_system = System()
 
     #--------------------------------------------------------------------------
     # Load Detector Readout map
     #--------------------------------------------------------------------------
-    tp_infos, number_of_ru_streams, ru_descs, dro_map, number_of_rus = detector_readout_map(readout, sourceid_broker, map_file, number_of_links, debug)
+    tp_infos, number_of_ru_streams, ru_descs, dro_map, number_of_rus, map_file = detector_readout_map(readout, sourceid_broker, map_file, number_of_links, debug)
 
     #--------------------------------------------------------------------------
     # Replay
@@ -465,12 +495,15 @@ def cli(
 
     system_command_datas = make_system_command_datas(boot, the_system)
 
-    write_json_files(app_command_datas, system_command_datas, json_dir)
-
-    write_metadata_file(json_dir, "replay_tps", "./daqconf.ini")
+    ####################################################################
+    # Write / Store final config, (meta)data, map
+    ####################################################################
+    write_final_files(app_command_datas, system_command_datas, json_dir, map_file, output_dir, config_file, boot, detector, daq_common, dataflow, trigger, debug)
 
 if __name__ == '__main__':
-    print( "NEW TRIGGER REPLAY APP" )
+    print( "##############################" )
+    print( "### NEW TRIGGER REPLAY APP ###" )
+    print( "##############################" )
     console = Console()
 
     try:
