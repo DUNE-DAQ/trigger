@@ -64,4 +64,21 @@ This script defines the dunedaq replay application, `replay_app`. The configurat
 
 ## Example plots:
 ### Configuration with 1 link
+- replay app: <br>
+![plot](./doc/1_replay.png)
+- system (no frags): <br>
+![plot](./doc/1_system_no_frag_prod_connection.png)
+- system: <br>
+![plot](./doc/1_system.png)
+- trigger: <br>
+![plot](./doc/1_trigger.png)
 
+### Configuration with 4 links
+- replay app: <br>
+![plot](./doc/replay.png)
+- system (no frags): <br>
+![plot](./doc/system_no_frag_prod_connection.png)
+- system: <br>
+![plot](./doc/system.png)
+- trigger: <br>
+![plot](./doc/trigger.png)
