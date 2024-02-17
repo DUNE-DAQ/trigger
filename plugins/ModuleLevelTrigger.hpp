@@ -78,7 +78,7 @@ private:
   void do_stop(const nlohmann::json& obj);
   void do_pause(const nlohmann::json& obj);
   void do_resume(const nlohmann::json& obj);
-  void do_scrap(const nlohmann::json& obj);
+  //void do_scrap(const nlohmann::json& obj);
 
   void send_trigger_decisions();
   std::thread m_send_trigger_decisions_thread;
@@ -91,16 +91,16 @@ private:
   std::string m_td_output_connection;
 
   // TD requests
-  std::vector<dfmessages::SourceID> m_mandatory_links;
-  std::map<int, std::vector<dfmessages::SourceID>> m_group_links;
+  std::vector<daqdataformats::SourceID> m_mandatory_links;
+  std::map<int, std::vector<daqdataformats::SourceID>> m_group_links;
   nlohmann::json m_group_links_data;
   int m_total_group_links;
   void parse_group_links(const nlohmann::json& data);
   void print_group_links();
-  dfmessages::ComponentRequest create_request_for_link(dfmessages::SourceID link,
+  dfmessages::ComponentRequest create_request_for_link(daqdataformats::SourceID link,
                                                        triggeralgs::timestamp_t start,
                                                        triggeralgs::timestamp_t end);
-  std::vector<dfmessages::ComponentRequest> create_all_decision_requests(std::vector<dfmessages::SourceID> links,
+  std::vector<dfmessages::ComponentRequest> create_all_decision_requests(std::vector<daqdataformats::SourceID> links,
                                                                          triggeralgs::timestamp_t start,
                                                                          triggeralgs::timestamp_t end);
   void add_requests_to_decision(dfmessages::TriggerDecision& decision,

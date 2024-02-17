@@ -8,7 +8,7 @@
 #define TRIGGER_PLUGINS_RANDOMTRIGGERCANDIDATEMAKER_HPP_
 
 #include "trigger/TokenManager.hpp"
-#include "trigger/randomtriggercandidatemaker/Nljs.hpp"
+//#include "trigger/randomtriggercandidatemaker/Nljs.hpp"
 #include "trigger/randomtriggercandidatemakerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"

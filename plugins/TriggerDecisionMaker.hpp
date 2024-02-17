@@ -38,7 +38,7 @@ public:
   virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
 
 private:
-  virtual std::shared_ptr<triggeralgs::TriggerDecisionMaker> make_maker(const nlohmann::json& obj);
+  virtual std::unique_ptr<triggeralgs::TriggerDecisionMaker> make_maker(const nlohmann::json& obj);
 };
 
 } // namespace dunedaq::trigger

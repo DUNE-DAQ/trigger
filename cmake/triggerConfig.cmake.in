@@ -16,6 +16,7 @@ find_dependency(readoutlibs)
 find_dependency(iomanager)
 find_dependency(utilities)
 find_dependency(hdf5libs)
+find_dependency(readoutmodules)
 find_dependency(CLI11)
 
 if (EXISTS ${CMAKE_SOURCE_DIR}/@PROJECT_NAME@)
