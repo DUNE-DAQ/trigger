@@ -12,22 +12,16 @@
 
 #include "readoutlibs/ReadoutIssues.hpp"
 #include "readoutlibs/ReadoutLogging.hpp"
-#include "readoutlibs/concepts/ReadoutConcept.hpp"
-#include "readoutlibs/models/BinarySearchQueueModel.hpp"
-#include "readoutlibs/models/DefaultRequestHandlerModel.hpp"
-#include "readoutlibs/models/EmptyFragmentRequestHandlerModel.hpp"
-#include "readoutlibs/models/FixedRateQueueModel.hpp"
 #include "readoutlibs/models/ReadoutModel.hpp"
-#include "readoutlibs/models/ZeroCopyRecordingRequestHandlerModel.hpp"
-#include "readoutlibs/models/DefaultSkipListRequestHandler.hpp"
 #include "readoutlibs/models/SkipListLatencyBufferModel.hpp"
+#include "readoutlibs/models/DefaultSkipListRequestHandler.hpp"
+#include "trigger/TPRequestHandler.hpp"
 
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TPProcessor.hpp"
 #include "trigger/TAProcessor.hpp"
-#include "trigger/TCProcessor.hpp"
+#include "trigger/TCWrapper.hpp"
 
-#include "trigger/TPRequestHandler.hpp"
 
 #include <memory>
 #include <sstream>
@@ -86,8 +80,8 @@ TriggerDataHandler::create_readout(const appdal::ReadoutModule* modconf, std::at
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitive";
     auto readout_model = std::make_unique<rol::ReadoutModel<
       TriggerPrimitiveTypeAdapter,
-      TPRequestHandler<fdt::TriggerPrimitiveTypeAdapter>,
-      rol::SkipListLatencyBufferModel<fdt::TriggerPrimitiveTypeAdapter>,
+      TPRequestHandler,
+      rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
       TPProcessor>>(run_marker);
     
     readout_model->init(modconf);
@@ -114,7 +108,7 @@ TriggerDataHandler::create_readout(const appdal::ReadoutModule* modconf, std::at
       TCWrapper,
       rol::DefaultSkipListRequestHandler<trigger::TCWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TCWrapper>,
-      rol::TaskRawDataProcessorModel>>(run_marker);
+      rol::TaskRawDataProcessorModel<trigger::TCWrapper>>>(run_marker);
     
     readout_model->init(modconf);
     return readout_model;

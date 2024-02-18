@@ -65,14 +65,14 @@ namespace trigger {
 
     size_t get_frame_size() { return get_payload_size(); }
 
-    uint8_t* begin()
+    TAWrapper* begin()
     {
-      return activity_overlay_buffer.data();
+      return this;
     }
     
-    uint8_t* end()
+    TAWrapper* end()
     {
-      return activity_overlay_buffer.data()+activity_overlay_buffer.size();
+      return (TAWrapper*)(activity_overlay_buffer.data()+activity_overlay_buffer.size());
     }
 
     static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;

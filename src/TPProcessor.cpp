@@ -82,10 +82,14 @@ TPProcessor::conf(const appdal::ReadoutModule* conf)
     }
 
   for (auto algo : ta_algorithms)  {
-    TLOG() << "Selected TA algorithm: " << algo->UID();
-    std::unique_ptr<triggeralgs::TriggerActivityMaker> maker = make_ta_maker(algo->class_name());
+    TLOG() << "Selected TA algorithm: " << algo->UID() << " from class " << algo->class_name();
+    //std::unique_ptr<triggeralgs::TriggerActivityMaker> maker = make_ta_maker(algo->class_name());
+    std::unique_ptr<triggeralgs::TriggerActivityMaker> maker = make_ta_maker("TriggerActivityMakerPrescalePlugin");
     //FIXME: I need and oks2json....
     nlohmann::json algo_json = algo->to_json(true);
+
+    TLOG() << "Algo config:\n" << algo_json.dump();
+
     maker->configure(algo_json);
     inherited::add_postprocess_task(std::bind(&TPProcessor::find_ta, this, std::placeholders::_1, maker.get()));
     m_tams.push_back(std::move(maker));

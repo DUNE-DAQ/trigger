@@ -46,7 +46,6 @@ class TPRequestHandler : public dunedaq::readoutlibs::DefaultSkipListRequestHand
 {
 public:
   using inherited2 = readoutlibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>;
-  using timestamp_t = std::uint64_t;
 
   // Constructor that binds LB and error registry
 
@@ -65,6 +64,7 @@ public:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
   
 private:
+  using timestamp_t = std::uint64_t;
   std::shared_ptr<iomanager::SenderConcept<dunedaq::trigger::TPSet>> m_tpset_sink;
   uint64_t m_run_number;
   uint64_t m_next_tpset_seqno;

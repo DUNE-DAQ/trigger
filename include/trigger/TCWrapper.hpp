@@ -43,6 +43,11 @@ namespace trigger {
       return this->candidate.time_start < other.candidate.time_start;
     }
 
+    uint64_t get_timestamp() const // NOLINT(build/unsigned)
+    {
+      return candidate.time_start;;
+    }
+
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
     {
       return candidate.time_start;
@@ -59,14 +64,15 @@ namespace trigger {
 
     size_t get_frame_size() { return get_payload_size(); }
 
-    uint8_t* begin()
+    TCWrapper* begin()
     {
-      return candidate_overlay_buffer.data();
+      //return candidate_overlay_buffer.data();
+      return this;
     }
     
-    uint8_t* end()
+    TCWrapper* end()
     {
-      return candidate_overlay_buffer.data()+candidate_overlay_buffer.size();
+      return (TCWrapper*)(candidate_overlay_buffer.data()+candidate_overlay_buffer.size());
     }
 
     //static const constexpr size_t fixed_payload_size = 5568;

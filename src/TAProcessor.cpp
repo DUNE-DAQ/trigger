@@ -87,7 +87,8 @@ TAProcessor::conf(const appdal::ReadoutModule* conf)
 
   for (auto algo : tc_algorithms)  {
     TLOG() << "Selected TC algorithm: " << algo->UID();
-    std::unique_ptr<triggeralgs::TriggerCandidateMaker> maker = make_tc_maker(algo->class_name());
+    //std::unique_ptr<triggeralgs::TriggerCandidateMaker> maker = make_tc_maker(algo->class_name());
+    std::unique_ptr<triggeralgs::TriggerCandidateMaker> maker = make_tc_maker("TriggerCandidateMakerPrescalePlugin");
     //FIXME: I need and oks2json....
     nlohmann::json algo_json = algo->to_json(true);
     maker->configure(algo_json);
