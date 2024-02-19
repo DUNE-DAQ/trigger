@@ -34,6 +34,7 @@ python -m trigger.replay_tps -f <tpstream_file.hdf5> -c <config.json> <name_of_o
 - the tpsets are 'custom' made by the TPM
 - no readout = no readout buffers
 - several applications are 'missing': timing, hsi, tpsetwritter...
+- (automated) integration test using replay for new PRs
 
 ## Details:
 This application consists of 2 scripts:
