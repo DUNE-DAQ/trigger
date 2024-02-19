@@ -74,10 +74,11 @@ TPProcessor::conf(const appdal::ReadoutModule* conf)
 
   m_sourceid.id = conf->get_source_id();
   m_sourceid.subsystem = TriggerPrimitiveTypeAdapter::subsystem;
+  
   std::vector<const appdal::TAAlgorithm*> ta_algorithms;
   auto dp = conf->get_module_configuration()->get_data_processor();
   auto proc_conf = dp->cast<appdal::TPDataProcessor>();
-  if (proc_conf != nullptr) {
+  if (proc_conf != nullptr && proc_conf->get_mask_processing() == false) {
     ta_algorithms = proc_conf->get_algorithms();
     }
 

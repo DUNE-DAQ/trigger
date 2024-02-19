@@ -81,7 +81,7 @@ TAProcessor::conf(const appdal::ReadoutModule* conf)
   std::vector<const appdal::TCAlgorithm*> tc_algorithms;
   auto dp = conf->get_module_configuration()->get_data_processor();
   auto proc_conf = dp->cast<appdal::TADataProcessor>();
-  if (proc_conf != nullptr) {
+  if (proc_conf != nullptr && proc_conf->get_mask_processing() == false ) {
     tc_algorithms = proc_conf->get_algorithms();
     }
 

@@ -12,11 +12,14 @@
 #include "readoutlibs/ReadoutIssues.hpp"
 #include "readoutlibs/models/DataSubscriberModel.hpp"
 #include "trigger/HSISourceModel.hpp"
+#include "trigger/TPSetSourceModel.hpp"
 
 #include "appdal/DataSubscriber.hpp"
 
+#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TAWrapper.hpp"
 #include "trigger/TCWrapper.hpp"
+#include "trgdataformats/TriggerPrimitive.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
@@ -25,6 +28,8 @@ using namespace dunedaq::readoutlibs::logging;
 namespace dunedaq {
 
 
+//DUNE_DAQ_TYPESTRING(dunedaq::trigger::TPSet, "TPSet")
+DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter, "TriggerPrimitive")
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TAWrapper, "TriggerActivity")
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 
@@ -77,14 +82,14 @@ DataSubscriber::create_data_subscriber(const coredal::DaqModule* cfg)
  
   auto datatypes = cfg->get_outputs()[0]->get_data_type();
   auto raw_dt = cfg->get_inputs()[0]->get_data_type();
-/*  
-  if (raw_dt.find("TriggerPrimitive") != std::string::npos) {
+  
+  if (raw_dt.find("TPSet") != std::string::npos) {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Creating trigger primitives subscriber";
     auto source_model =
-      std::make_unique<trigger::DataSubscriberModel<trgdataformats::TriggerPrimitive, fdreadoutlibs::types::TriggerPrimitiveTypeAdapter>>();
+      std::make_unique<trigger::TPSetSourceModel>();
     return source_model;
   }
-*/
+
   if (raw_dt.find("TriggerActivity") != std::string::npos) {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Creating trigger activities subscriber";
     auto source_model =
