@@ -34,7 +34,6 @@ TPRequestHandler::start(const nlohmann::json& args) {
    m_new_tps = 0;
    m_new_tpsets = 0;
    m_new_tps_dropped = 0;
-   inherited2::start(args);
 
    rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
    m_run_number = start_params.run;
