@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(TriggerActivityOverlay_in_out) {
     primitive.adc_peak = i+5;     // NOLINT(build/unsigned)
     primitive.detid = i+65;
     primitive.type = TriggerPrimitive::Type::kPDS;
-    primitive.algorithm = TriggerPrimitive::Algorithm::kTPCDefault;
+    primitive.algorithm = TriggerPrimitive::Algorithm::kSimpleThreshold;
     primitive.flag = 1;
 
     activity.inputs.push_back(primitive);
