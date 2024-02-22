@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(TAFactory)
 
   for (int idx = 0; idx < 10; idx++) {
     tp.type = triggeralgs::TriggerPrimitive::Type::kTPC;
-    tp.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
+    tp.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kSimpleThreshold;
     tp.time_start = idx;
     tp.time_peak = 1+idx;
     tp.time_over_threshold = 2;
