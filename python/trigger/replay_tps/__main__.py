@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import click
 import math
-import os.path
 from rich.console import Console
 from pathlib import Path
 
@@ -193,7 +192,7 @@ def trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_i
 
     return
 
-def dfo_apps(the_system, get_dfo_app, appconfig_df, daq_common, ru_descs, number_of_ru_streams, readout, dataflow, debug):
+def dfo_apps(the_system, trigger, get_dfo_app, appconfig_df, daq_common, ru_descs, number_of_ru_streams, readout, dataflow, debug):
     max_expected_tr_sequences = 1
     for df_config in appconfig_df.values():
         if df_config.max_trigger_record_window >= 1:
@@ -332,7 +331,7 @@ def print_cli_config(
     return
 
 def check_file_extension(input_file):
-    if input_file.lower().endswith(".hdf5"):
+    if input_file.lower().endswith(".hdf5") or input_file.lower().endswith(".hdf5.copied"):
         return
     else: 
         print("Invalid file provided. HDF5 tpstream file required.")
@@ -436,8 +435,6 @@ def cli(
 
     console.log("Loading dataflow config generator")
     from daqconf.apps.dataflow_gen import get_dataflow_app
-    console.log("Loading readout config generator")
-    from fddaqconf.apps.readout_gen import FDReadoutAppGenerator
     console.log("Loading trigger config generator")
     from daqconf.apps.trigger_gen import get_trigger_app
     console.log("Loading DFO config generator")
@@ -477,7 +474,8 @@ def cli(
     # DFO
     #--------------------------------------------------------------------------
     max_expected_tr_sequences, trigger_record_building_timeout = dfo_apps(
-            the_system, 
+            the_system,
+            trigger,
             get_dfo_app, 
             appconfig_df, 
             daq_common, 
