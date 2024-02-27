@@ -114,12 +114,15 @@ TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  triggeralgs::Trigge
 	
   std::vector<triggeralgs::TriggerActivity> tas;
   taa->operator()(tp->tp, tas);
-  for (auto ta : tas) {
-    if(!m_ta_sink->try_send(std::move(ta), iomanager::Sender::s_no_block)) {
-        ers::warning(TADropped(ERS_HERE, ta.time_start, m_sourceid.id));
+
+  while (tas.size()) {
+      if (!m_ta_sink->try_send(std::move(tas.back()), iomanager::Sender::s_no_block)) {
+        ers::warning(TADropped(ERS_HERE, tp->tp.time_start, m_sourceid.id));
         m_tas_dropped++;
-    }
-    m_new_tas++;
+      }
+      TLOG() << "TA for channel" << tp->tp.channel << " at time " << tp->tp.time_start;
+      m_new_tas++;
+      tas.pop_back();
   }
   return;
 }

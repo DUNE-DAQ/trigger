@@ -52,20 +52,16 @@ RandomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> m
 {
   auto mtrg = mcfg->module<appdal::RandomTriggerCandidateMaker>(get_name());
 
-  std::string connection_queue;
   for(auto con: mtrg->get_outputs()){
     if(con->get_data_type() == datatype_to_string<triggeralgs::TriggerCandidate>()){
-      connection_queue = con->UID();
+      m_trigger_candidate_sink =
+        get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
       break;
     }
   }
 
   // Get the time sync source
   m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(".*");
-
-  // Get the connection queue
-  m_trigger_candidate_sink = 
-    get_iom_sender<triggeralgs::TriggerCandidate>(connection_queue);
 
   m_conf = mtrg->get_configuration();
 }
@@ -147,12 +143,12 @@ triggeralgs::TriggerCandidate
 RandomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_start = timestamp;
+  candidate.time_start = timestamp - 62500*4; // 4 ms readout window;
   candidate.time_end = timestamp;
   candidate.time_candidate = timestamp;
   candidate.detid = { 0 };
   candidate.type = triggeralgs::TriggerCandidate::Type::kRandom;
-  candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
+  candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kCustom;
 
   return candidate;
 }
@@ -201,7 +197,7 @@ RandomTriggerCandidateMaker::send_trigger_candidates()
   dfmessages::timestamp_t first_interval = get_interval(gen);
   // Round up to the next multiple of trigger_interval_ticks
   dfmessages::timestamp_t next_trigger_timestamp = (initial_timestamp / first_interval + 1) * first_interval;
-  TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp
+  TLOG() << get_name() << " initial timestamp estimate is " << initial_timestamp
                 << ", next_trigger_timestamp is " << next_trigger_timestamp;
 
   while (m_running_flag.load()) {
@@ -212,7 +208,7 @@ RandomTriggerCandidateMaker::send_trigger_candidates()
 
     triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
 
-    TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
+    TLOG() << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
     m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
     m_tc_sent_count++;
