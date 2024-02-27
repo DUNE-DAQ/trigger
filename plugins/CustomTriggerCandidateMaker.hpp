@@ -8,7 +8,7 @@
 #define TRIGGER_PLUGINS_CUSTOMTRIGGERCANDIDATEMAKER_HPP_
 
 #include "trigger/TokenManager.hpp"
-#include "trigger/customtriggercandidatemaker/Nljs.hpp"
+//#include "trigger/customtriggercandidatemaker/Nljs.hpp"
 #include "trigger/customtriggercandidatemakerinfo/InfoNljs.hpp"
 
 #include "appdal/CustomTriggerCandidateMaker.hpp"

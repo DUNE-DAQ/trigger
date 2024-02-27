@@ -30,20 +30,20 @@
 #define DEFINE_DUNE_TA_MAKER(klass)                                                                                    \
   extern "C"                                                                                                           \
   {                                                                                                                    \
-    std::shared_ptr<triggeralgs::TriggerActivityMaker> make()                                                          \
+    std::unique_ptr<triggeralgs::TriggerActivityMaker> make()                                                          \
     {                                                                                                                  \
-      return std::shared_ptr<triggeralgs::TriggerActivityMaker>(new klass());                                            \
+      return std::unique_ptr<triggeralgs::TriggerActivityMaker>(new klass());                                            \
     }                                                                                                                  \
   }
 
 namespace dunedaq::trigger {
 /**
- * @brief Load a TriggerActivityMaker plugin and return a shared_ptr to the contained
+ * @brief Load a TriggerActivityMaker plugin and return a unique_ptr to the contained
  * class
  * @param plugin_name Name of the plugin
- * @return shared_ptr to created TriggerActivityMaker instance
+ * @return unique_ptr to created TriggerActivityMaker instance
  */
-inline std::shared_ptr<triggeralgs::TriggerActivityMaker>
+inline std::unique_ptr<triggeralgs::TriggerActivityMaker>
 make_ta_maker(std::string const& plugin_name)
 {
   auto ta_maker = triggeralgs::TriggerActivityFactory::get_instance()->build_maker(plugin_name);
@@ -63,9 +63,9 @@ make_ta_maker(std::string const& plugin_name)
 #define DEFINE_DUNE_TC_MAKER(klass)                                                                                    \
   extern "C"                                                                                                           \
   {                                                                                                                    \
-    std::shared_ptr<triggeralgs::TriggerCandidateMaker> make()                                                         \
+    std::unique_ptr<triggeralgs::TriggerCandidateMaker> make()                                                         \
     {                                                                                                                  \
-      return std::shared_ptr<triggeralgs::TriggerCandidateMaker>(new klass());                                           \
+      return std::unique_ptr<triggeralgs::TriggerCandidateMaker>(new klass());                                           \
     }                                                                                                                  \
   }
 
@@ -76,7 +76,7 @@ namespace dunedaq::trigger {
  * @param plugin_name Name of the plugin
  * @return shared_ptr to created TriggerCandidateMaker instance
  */
-inline std::shared_ptr<triggeralgs::TriggerCandidateMaker>
+inline std::unique_ptr<triggeralgs::TriggerCandidateMaker>
 make_tc_maker(std::string const& plugin_name)
 {
   auto tc_maker = triggeralgs::TriggerCandidateFactory::get_instance()->build_maker(plugin_name);
@@ -96,9 +96,9 @@ make_tc_maker(std::string const& plugin_name)
 #define DEFINE_DUNE_TD_MAKER(klass)                                                                                    \
   extern "C"                                                                                                           \
   {                                                                                                                    \
-    std::shared_ptr<triggeralgs::TriggerDecisionMaker> make()                                                          \
+    std::unique_ptr<triggeralgs::TriggerDecisionMaker> make()                                                          \
     {                                                                                                                  \
-      return std::shared_ptr<triggeralgs::TriggerDecisionMaker>(new klass());                                            \
+      return std::unique_ptr<triggeralgs::TriggerDecisionMaker>(new klass());                                            \
     }                                                                                                                  \
   }
 
@@ -109,13 +109,13 @@ namespace dunedaq::trigger {
  * @param plugin_name Name of the plugin
  * @return shared_ptr to created TriggerDecisionMaker instance
  */
-inline std::shared_ptr<triggeralgs::TriggerDecisionMaker>
+inline std::unique_ptr<triggeralgs::TriggerDecisionMaker>
 make_td_maker(std::string const& plugin_name)
 {
   static cet::BasicPluginFactory bpf("duneTDMaker", "make");
 
   // TODO Philip Rodrigues <philiprodrigues@github.com> Apr-04-2021: Rethrow any cetlib exception as an ERS issue
-  return bpf.makePlugin<std::shared_ptr<triggeralgs::TriggerDecisionMaker>>(plugin_name);
+  return bpf.makePlugin<std::unique_ptr<triggeralgs::TriggerDecisionMaker>>(plugin_name);
 }
 
 } // namespace dunedaq::trigger

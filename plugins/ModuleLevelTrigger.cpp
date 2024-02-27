@@ -16,7 +16,7 @@
 
 #include "trigger/Issues.hpp"
 #include "trigger/LivetimeCounter.hpp"
-#include "trigger/moduleleveltrigger/Nljs.hpp"
+//#include "trigger/moduleleveltrigger/Nljs.hpp"
 
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
@@ -49,7 +49,7 @@ ModuleLevelTrigger::ModuleLevelTrigger(const std::string& name)
   register_command("stop",   &ModuleLevelTrigger::do_stop);
   register_command("disable_triggers",  &ModuleLevelTrigger::do_pause);
   register_command("enable_triggers", &ModuleLevelTrigger::do_resume);
-  register_command("scrap",  &ModuleLevelTrigger::do_scrap);
+//  register_command("scrap",  &ModuleLevelTrigger::do_scrap);
   // clang-format on
 }
 
@@ -78,6 +78,7 @@ ModuleLevelTrigger::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       m_td_output_connection = con->UID();
   }
 
+  const appdal::ModuleLevelTriggerConf* conf = mtrg->get_configuration();
   for(auto const& link : mtrg->get_mandatory_links()){
     m_mandatory_links.push_back(
         dfmessages::SourceID{
@@ -86,7 +87,6 @@ ModuleLevelTrigger::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   }
 
   // Now do the configuration
-  const appdal::ModuleLevelTriggerConf* conf = mtrg->get_configuration();
 
   //m_group_links_data = conf->get_groups_links();
   parse_group_links(m_group_links_data);
@@ -281,7 +281,7 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
   m_inhibit_input->add_callback(std::bind(&ModuleLevelTrigger::dfo_busy_callback, this, std::placeholders::_1));
 
   m_send_trigger_decisions_thread = std::thread(&ModuleLevelTrigger::send_trigger_decisions, this);
-  pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-trig-dec");
+  pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-dec");
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
 
@@ -338,14 +338,6 @@ ModuleLevelTrigger::do_resume(const nlohmann::json& /*resumeobj*/)
                 << std::chrono::duration_cast<std::chrono::microseconds>(
                      std::chrono::system_clock::now().time_since_epoch())
                      .count();
-}
-
-void
-ModuleLevelTrigger::do_scrap(const nlohmann::json& /*scrapobj*/)
-{
-  m_mandatory_links.clear();
-  m_group_links.clear();
-  m_configured_flag.store(false);
 }
 
 dfmessages::TriggerDecision
@@ -552,13 +544,15 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
     TLOG_DEBUG(10) << "Override?: " << override_flag;
     if ((!m_paused.load() && !m_dfo_is_busy.load()) || override_flag) {
 
-      TLOG_DEBUG(3) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
+      //TLOG_DEBUG(3) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
+      TLOG() << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
              << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
  	     << " number of links " << decision.components.size()
              << " based on TC of type "
              << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
                   pending_td.contributing_tcs[m_earliest_tc_index].type);
-
+      for (auto c : decision.components)
+	      TLOG() << "TR " << decision.trigger_number << " component " << c;
       using namespace std::chrono;
       // uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
       try {
