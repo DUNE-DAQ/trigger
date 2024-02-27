@@ -83,28 +83,28 @@ DataSubscriber::create_data_subscriber(const coredal::DaqModule* cfg)
   auto datatypes = cfg->get_outputs()[0]->get_data_type();
   auto raw_dt = cfg->get_inputs()[0]->get_data_type();
   
-  if (raw_dt.find("TPSet") != std::string::npos) {
+  if (raw_dt == "TPSet") {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Creating trigger primitives subscriber";
     auto source_model =
       std::make_unique<trigger::TPSetSourceModel>();
     return source_model;
   }
 
-  if (raw_dt.find("TriggerActivity") != std::string::npos) {
+  if (raw_dt == "TriggerActivity") {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Creating trigger activities subscriber";
     auto source_model =
       std::make_unique<readoutlibs::DataSubscriberModel<triggeralgs::TriggerActivity, trigger::TAWrapper>>();
     return source_model;
   }
 
-  if (raw_dt.find("TriggerCandidate") != std::string::npos) {
+  if (raw_dt == "TriggerCandidate") {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Creating trigger candidates subscriber";
     auto source_model =
       std::make_unique<readoutlibs::DataSubscriberModel<triggeralgs::TriggerCandidate, trigger::TCWrapper>>();
     return source_model;
   }
 
-   if (raw_dt.find("HSIEvent") != std::string::npos) {
+   if (raw_dt == "HSIEvent") {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Creating trigger candidates subscriber";
     auto source_model =
       std::make_unique<trigger::HSISourceModel>();
