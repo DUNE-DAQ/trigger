@@ -103,7 +103,7 @@ TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
                                                       std::ref(stream.tpset_sink),
                                                       earliest_timestamp_time));
   }
-  for (size_t i=0; i < m_threads.size(); ++i) {
+  for (size_t i = 0; i < m_threads.size(); ++i) {
     std::string name("replay");
     name += std::to_string(i);
     pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
@@ -136,12 +136,6 @@ TriggerPrimitiveMaker::do_scrap(const nlohmann::json& /*args*/)
 std::vector<TPSet>
 TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
 {
-  std::ifstream file(filename);
-  if (!file || file.bad()) {
-    throw BadTPInputFile(ERS_HERE, get_name(), filename);
-  }
-
-  TriggerPrimitive tp;
   TPSet tpset;
   std::vector<TPSet> tpsets;
 
@@ -149,14 +143,40 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
   uint32_t seqno = 0;             // NOLINT(build/unsigned)
   uint64_t old_time_start = 0;    // NOLINT(build/unsigned)
 
+  // Prepare input file
+  std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
+
+  // Check that the file is a TimeSlice type
+  if (!input_file->is_timeslice_type()) {
+    throw BadTPInputFile(ERS_HERE, get_name(), filename);
+  }
+
+  std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
+
   // Read in the file and place the TPs in TPSets. TPSets have time
   // boundaries ( n*tpset_time_width + tpset_time_offset ), and TPs are placed
   // in TPSets based on the TP start time
   //
   // This loop assumes the input file is sorted by TP start time
-  while (file >> tp.time_start >> tp.time_over_threshold >> tp.time_peak >> tp.channel >> tp.adc_integral >>
-         tp.adc_peak >> tp.detid >> tp.type) {
-    if (tp.time_start >= old_time_start) {
+  for (std::string& fragment_path : fragment_paths) {
+    std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(fragment_path);
+    // Make sure this fragment is a TriggerPrimitive
+    if (frag->get_fragment_type() != daqdataformats::FragmentType::kTriggerPrimitive)
+      continue;
+    if (frag->get_element_id().subsystem != daqdataformats::SourceID::Subsystem::kTrigger)
+      continue;
+
+    // Prepare TP buffer
+    size_t num_tps = frag->get_data_size() / sizeof(trgdataformats::TriggerPrimitive);
+
+    trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
+
+    for (size_t i(0); i < num_tps; i++) {
+      auto& tp = tp_array[i];
+      if (tp.time_start < old_time_start) {
+        ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
+        continue;
+      }
       // NOLINTNEXTLINE(build/unsigned)
       uint64_t current_tpset_number = (tp.time_start + m_conf.tpset_time_offset) / m_conf.tpset_time_width;
       old_time_start = tp.time_start;
@@ -182,8 +202,6 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
         tpset.objects.clear();
       }
       tpset.objects.push_back(tp);
-    } else {
-      ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
     }
   }
   if (!tpset.objects.empty()) {

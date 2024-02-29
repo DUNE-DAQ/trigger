@@ -44,7 +44,6 @@ RandomTriggerCandidateMaker::RandomTriggerCandidateMaker(const std::string& name
   register_command("start", &RandomTriggerCandidateMaker::do_start);
   register_command("stop", &RandomTriggerCandidateMaker::do_stop);
   register_command("scrap", &RandomTriggerCandidateMaker::do_scrap);
-
 }
 
 void
@@ -143,11 +142,12 @@ triggeralgs::TriggerCandidate
 RandomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_start = timestamp - 62500*4; // 4 ms readout window;
-  candidate.time_end = timestamp;
+  candidate.time_start = (timestamp - 1000);
+  candidate.time_end = (timestamp + 1000);
   candidate.time_candidate = timestamp;
   candidate.detid = { 0 };
   candidate.type = triggeralgs::TriggerCandidate::Type::kRandom;
+  // TODO: Originally kHSIEventToTriggerCandidate
   candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kCustom;
 
   return candidate;
@@ -158,16 +158,17 @@ RandomTriggerCandidateMaker::get_interval(std::mt19937& gen)
 {
   std::string time_distribution = m_conf->get_time_distribution();
 
-    if( time_distribution == "kUniform"){
-      return m_conf->get_trigger_interval_ticks();
-    }
-    else if(time_distribution == "kPoisson"){
-      std::exponential_distribution<double> d(1.0 / m_conf->get_trigger_interval_ticks());
-      return static_cast<int>(0.5 + d(gen));
-    }
-    else{
-      TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
-    }
+  if( time_distribution == "kUniform"){
+    return m_conf->get_trigger_interval_ticks();
+  }
+  else if(time_distribution == "kPoisson"){
+    std::exponential_distribution<double> d(1.0 / m_conf->get_trigger_interval_ticks());
+    return static_cast<int>(0.5 + d(gen));
+  }
+  else{
+    TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
+  }
+  return m_conf->get_trigger_interval_ticks();
   //switch (m_conf->get_time_distribution()) {
   //  default: // Treat an unknown distribution as kUniform, but warn
   //    TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
@@ -197,7 +198,7 @@ RandomTriggerCandidateMaker::send_trigger_candidates()
   dfmessages::timestamp_t first_interval = get_interval(gen);
   // Round up to the next multiple of trigger_interval_ticks
   dfmessages::timestamp_t next_trigger_timestamp = (initial_timestamp / first_interval + 1) * first_interval;
-  TLOG() << get_name() << " initial timestamp estimate is " << initial_timestamp
+  TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp
                 << ", next_trigger_timestamp is " << next_trigger_timestamp;
 
   while (m_running_flag.load()) {
@@ -208,7 +209,7 @@ RandomTriggerCandidateMaker::send_trigger_candidates()
 
     triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
 
-    TLOG() << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
+    TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
     m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
     m_tc_sent_count++;
