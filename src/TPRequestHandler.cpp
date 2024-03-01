@@ -57,7 +57,7 @@ TPRequestHandler::get_info(opmonlib::InfoCollector& ci, int level)
  
   info.num_tps_sent = new_tps;
   info.num_tpsets_sent = new_tpsets;
-  info.num_tps_dropped = new_tps_dropped;
+  //info.num_tps_dropped = new_tps_dropped;
   info.num_heartbeats = new_heartbeats;
   m_t0 = now;
   inherited2::get_info(ci, level);
