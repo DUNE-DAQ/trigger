@@ -12,6 +12,8 @@
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
 
+#include "appdal/ReadoutModule.hpp"
+
 #include "readoutlibs/ReadoutLogging.hpp"
 #include "readoutlibs/utils/ReusableThread.hpp"
 #include "readoutlibs/FrameErrorRegistry.hpp"

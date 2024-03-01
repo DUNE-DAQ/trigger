@@ -12,6 +12,8 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 
+#include "appdal/ReadoutModule.hpp"
+
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "trigger/Issues.hpp"

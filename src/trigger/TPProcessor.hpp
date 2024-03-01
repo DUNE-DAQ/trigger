@@ -21,6 +21,8 @@
 #include "triggeralgs/Types.hpp"
 #include "triggeralgs/TriggerActivityMaker.hpp"
 
+#include "appdal/ReadoutModule.hpp"
+
 namespace dunedaq {
 namespace trigger {
 
