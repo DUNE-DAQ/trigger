@@ -10,7 +10,6 @@
 
 #include "trigger/Issues.hpp" // For TLVL_*
 
-#include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
@@ -40,12 +39,15 @@ TriggerPrimitiveMaker::TriggerPrimitiveMaker(const std::string& name)
   register_command("scrap", &TriggerPrimitiveMaker::do_scrap);
   // clang-format on
 }
+void 
+TriggerPrimitiveMaker::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+{}
 
-void
-TriggerPrimitiveMaker::init(const nlohmann::json& obj)
-{
-  m_init_obj = obj;
-}
+//void
+//TriggerPrimitiveMaker::init(const nlohmann::json& obj)
+//{
+//  m_init_obj = obj;
+//}
 
 void
 TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
@@ -61,9 +63,10 @@ TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
   m_earliest_first_tpset_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
   m_latest_last_tpset_timestamp = 0;
 
+  // TODO: Delete, reimplement as oks
   for (auto& stream : m_conf.tp_streams) {
     TPStream this_stream;
-    this_stream.tpset_sink = get_iom_sender<TPSet>(appfwk::connection_uid(m_init_obj, stream.output_sink_name));
+    //this_stream.tpset_sink = get_iom_sender<TPSet>(appfwk::connection_uid(m_init_obj, stream.output_sink_name));
 
     this_stream.tpsets = read_tpsets(stream.filename, stream.element_id);
 

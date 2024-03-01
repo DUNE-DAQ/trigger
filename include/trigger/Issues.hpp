@@ -189,6 +189,16 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        "Factory could not find requested item " << item << ".",
                        ((std::string)item),
                        ERS_EMPTY)
+
+ERS_DECLARE_ISSUE(trigger,
+                  TADropped,
+                  "TA timestamp " << time << " for channel " << channel,
+                  ((uint64_t)time) ((uint64_t)channel))
+
+ERS_DECLARE_ISSUE(trigger,
+                  TCDropped,
+                  "TC timestamp " << time << " for src " << src,
+                  ((uint64_t)time) ((uint64_t)src))
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_

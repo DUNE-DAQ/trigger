@@ -10,7 +10,6 @@
 
 #include "logging/Logging.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "iomanager/IOManager.hpp"
 #include "triggeralgs/Types.hpp"
@@ -28,11 +27,16 @@ TASetSink::TASetSink(const std::string& name)
   register_command("conf", &TASetSink::do_conf);
 }
 
-void
-TASetSink::init(const nlohmann::json& obj)
-{
-  m_taset_source = get_iom_receiver<TASet>(appfwk::connection_uid(obj, "taset_source"));
-}
+void 
+TASetSink::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+{};
+
+//void
+//TASetSink::init(const nlohmann::json& obj)
+//{
+//  // TODO: Reimplement as OKS
+//  //m_taset_source = get_iom_receiver<TASet>(appfwk::connection_uid(obj, "taset_source"));
+//}
 
 void
 TASetSink::do_start(const nlohmann::json& /*obj*/)

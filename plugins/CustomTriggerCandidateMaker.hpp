@@ -8,9 +8,14 @@
 #define TRIGGER_PLUGINS_CUSTOMTRIGGERCANDIDATEMAKER_HPP_
 
 #include "trigger/TokenManager.hpp"
-#include "trigger/customtriggercandidatemaker/Nljs.hpp"
+//#include "trigger/customtriggercandidatemaker/Nljs.hpp"
 #include "trigger/customtriggercandidatemakerinfo/InfoNljs.hpp"
 
+#include "appdal/CustomTriggerCandidateMaker.hpp"
+#include "appdal/CustomTriggerCandidateMakerConf.hpp"
+#include "coredal/Connection.hpp"
+
+#include "appfwk/ModuleConfiguration.hpp"
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TimeSync.hpp"
@@ -55,7 +60,7 @@ public:
   CustomTriggerCandidateMaker& operator=(CustomTriggerCandidateMaker&&) =
     delete; ///< CustomTriggerCandidateMaker is not move-assignable
 
-  void init(const nlohmann::json& iniobj) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
@@ -78,7 +83,7 @@ private:
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
   // Config parameters
-  customtriggercandidatemaker::Conf m_conf;
+  const appdal::CustomTriggerCandidateMakerConf* m_conf;
   std::vector<std::pair<int, long int>> m_tc_settings;
   void print_config();
 

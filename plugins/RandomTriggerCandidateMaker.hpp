@@ -8,10 +8,16 @@
 #define TRIGGER_PLUGINS_RANDOMTRIGGERCANDIDATEMAKER_HPP_
 
 #include "trigger/TokenManager.hpp"
-#include "trigger/randomtriggercandidatemaker/Nljs.hpp"
+//#include "trigger/randomtriggercandidatemaker/Nljs.hpp"
 #include "trigger/randomtriggercandidatemakerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "appfwk/ModuleConfiguration.hpp"
+#include "coredal/Connection.hpp"
+
+#include "appdal/RandomTriggerCandidateMakerConf.hpp"
+#include "appdal/RandomTriggerCandidateMaker.hpp"
+
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -56,7 +62,7 @@ public:
   RandomTriggerCandidateMaker& operator=(RandomTriggerCandidateMaker&&) =
     delete; ///< RandomTriggerCandidateMaker is not move-assignable
 
-  void init(const nlohmann::json& iniobj) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
@@ -78,7 +84,8 @@ private:
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
-  randomtriggercandidatemaker::Conf m_conf;
+  //randomtriggercandidatemaker::Conf m_conf;
+  const appdal::RandomTriggerCandidateMakerConf* m_conf;
 
   int get_interval(std::mt19937& gen);
 
