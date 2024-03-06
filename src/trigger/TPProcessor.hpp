@@ -56,11 +56,11 @@ protected:
    * Pipeline Stage 2.: Do TA finding
    * */
 
-  void find_ta(const TriggerPrimitiveTypeAdapter* tp,  triggeralgs::TriggerActivityMaker* tam);
+  void find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<triggeralgs::TriggerActivityMaker> tam);
 
   private:
 
-  std::vector<std::unique_ptr<triggeralgs::TriggerActivityMaker>> m_tams;
+  std::vector<std::shared_ptr<triggeralgs::TriggerActivityMaker>> m_tams;
 
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerActivity>> m_ta_sink;
 

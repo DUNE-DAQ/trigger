@@ -87,11 +87,11 @@ TAProcessor::conf(const appdal::ReadoutModule* conf)
 
   for (auto algo : tc_algorithms)  {
     TLOG() << "Selected TC algorithm: " << algo->UID();
-    std::unique_ptr<triggeralgs::TriggerCandidateMaker> maker = make_tc_maker(algo->class_name());
+    std::shared_ptr<triggeralgs::TriggerCandidateMaker> maker = make_tc_maker(algo->class_name());
     nlohmann::json algo_json = algo->to_json(true);
-    maker->configure(algo_json);
-    inherited::add_postprocess_task(std::bind(&TAProcessor::find_tc, this, std::placeholders::_1, maker.get()));
-    m_tcms.push_back(std::move(maker));
+    maker->configure(algo_json[algo->UID()]);
+    inherited::add_postprocess_task(std::bind(&TAProcessor::find_tc, this, std::placeholders::_1, maker));
+    m_tcms.push_back(maker);
   }
   inherited::conf(conf);
 }
@@ -109,7 +109,7 @@ TAProcessor::get_info(opmonlib::InfoCollector& ci, int level)
  * Pipeline Stage 2.: Do software TPG
  * */
 void
-TAProcessor::find_tc(const TAWrapper* ta,  triggeralgs::TriggerCandidateMaker* tca)
+TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerCandidateMaker> tca)
 {
 	
   std::vector<triggeralgs::TriggerCandidate> tcs;

@@ -63,7 +63,6 @@ public:
   void conf(const appdal::ReadoutModule* conf) override;
   void start(const nlohmann::json& args) override;
   void periodic_data_transmission() override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
   
 private:
   using timestamp_t = std::uint64_t;
@@ -77,11 +76,6 @@ private:
   timestamp_t m_end_win_ts=0;
   bool m_first_cycle = true;
   uint64_t m_ts_set_sender_offset_ticks = 6250000; // 100 ms delay in transmission
-
-  std::atomic<uint64_t> m_new_tps{ 0 }; // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_new_tpsets{ 0 };  // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_new_tps_dropped{ 0 };
-  std::atomic<uint64_t> m_new_heartbeats{ 0 };
 
 };
 

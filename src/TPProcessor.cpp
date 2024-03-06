@@ -84,14 +84,14 @@ TPProcessor::conf(const appdal::ReadoutModule* conf)
 
   for (auto algo : ta_algorithms)  {
     TLOG() << "Selected TA algorithm: " << algo->UID() << " from class " << algo->class_name();
-    std::unique_ptr<triggeralgs::TriggerActivityMaker> maker = make_ta_maker(algo->class_name());
+    std::shared_ptr<triggeralgs::TriggerActivityMaker> maker = make_ta_maker(algo->class_name());
     nlohmann::json algo_json = algo->to_json(true);
 
     TLOG() << "Algo config:\n" << algo_json.dump();
 
-    maker->configure(algo_json);
-    inherited::add_postprocess_task(std::bind(&TPProcessor::find_ta, this, std::placeholders::_1, maker.get()));
-    m_tams.push_back(std::move(maker));
+    maker->configure(algo_json[algo->UID()]);
+    inherited::add_postprocess_task(std::bind(&TPProcessor::find_ta, this, std::placeholders::_1, maker));
+    m_tams.push_back(maker);
   }
   inherited::conf(conf);
 }
@@ -99,7 +99,7 @@ TPProcessor::conf(const appdal::ReadoutModule* conf)
 void
 TPProcessor::get_info(opmonlib::InfoCollector& ci, int level)
 {
-
+  TLOG() << "Generated TAs = " << m_new_tas << ", dropped TAs = " << m_tas_dropped;
   inherited::get_info(ci, level);
   //ci.add(info);
 }
@@ -109,7 +109,7 @@ TPProcessor::get_info(opmonlib::InfoCollector& ci, int level)
  * Pipeline Stage 2.: Do software TPG
  * */
 void
-TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  triggeralgs::TriggerActivityMaker* taa)
+TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<triggeralgs::TriggerActivityMaker> taa)
 {
 	
   std::vector<triggeralgs::TriggerActivity> tas;
@@ -120,7 +120,6 @@ TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  triggeralgs::Trigge
         ers::warning(TADropped(ERS_HERE, tp->tp.time_start, m_sourceid.id));
         m_tas_dropped++;
       }
-      TLOG() << "TA for channel" << tp->tp.channel << " at time " << tp->tp.time_start;
       m_new_tas++;
       tas.pop_back();
   }
