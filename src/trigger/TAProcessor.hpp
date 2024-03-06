@@ -56,11 +56,11 @@ protected:
    * Pipeline Stage 2.: Do TA finding
    * */
 
-  void find_tc(const TAWrapper* ta, triggeralgs::TriggerCandidateMaker* tcm);
+  void find_tc(const TAWrapper* ta, std::shared_ptr<triggeralgs::TriggerCandidateMaker> tcm);
 
   private:
 
-  std::vector<std::unique_ptr<triggeralgs::TriggerCandidateMaker>> m_tcms;
+  std::vector<std::shared_ptr<triggeralgs::TriggerCandidateMaker>> m_tcms;
 
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_tc_sink;
 

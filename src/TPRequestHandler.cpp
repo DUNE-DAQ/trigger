@@ -31,39 +31,11 @@ TPRequestHandler::start(const nlohmann::json& args) {
    m_end_win_ts=0;
    m_first_cycle = true;
 	
-   m_new_tps = 0;
-   m_new_tpsets = 0;
-   m_new_tps_dropped = 0;
-
+   inherited2::start(args);
    rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
    m_run_number = start_params.run;
 
-   inherited2::start(args);
 }
-
-void
-TPRequestHandler::get_info(opmonlib::InfoCollector& ci, int level)
-{
-  readoutlibs::readoutinfo::RawDataProcessorInfo info;
-
-  auto now = std::chrono::high_resolution_clock::now();
-  int new_tps = m_new_tps.exchange(0);
-  int new_tpsets = m_new_tpsets.exchange(0);
-  int new_tps_dropped = m_new_tps_dropped.exchange(0);
-  int new_heartbeats = m_new_heartbeats.exchange(0);
-  //double seconds = std::chrono::duration_cast<std::chrono::microseconds>(now - m_t0).count() / 1000000.;
-  //TLOG() << "TPSets rate: " << std::to_string(new_tpsets / seconds) << " [Hz], TP rate: " << std::to_string(new_tps / seconds) << ", heartbeats: " << std::to_string(new_heartbeats / seconds) << " [Hz]";
-  //info.rate_tp_hits = new_hits / seconds / 1000.;
- 
-  info.num_tps_sent = new_tps;
-  info.num_tpsets_sent = new_tpsets;
-  //info.num_tps_dropped = new_tps_dropped;
-  info.num_heartbeats = new_heartbeats;
-  m_t0 = now;
-  inherited2::get_info(ci, level);
-  ci.add(info);
-}
-
 
 void
 TPRequestHandler::periodic_data_transmission() {
@@ -119,14 +91,10 @@ TPRequestHandler::periodic_data_transmission() {
 	      } 
          if(!m_tpset_sink->try_send(std::move(tpset), iomanager::Sender::s_no_block)) {
             ers::warning(DroppedTPSet(ERS_HERE, m_start_win_ts, m_end_win_ts));
-            m_new_tps_dropped += num_tps;
+            m_num_periodic_send_failed++;
          }
-         m_new_tps += num_tps;
-         m_new_tpsets++;
+         m_num_periodic_sent++;
 
-         if (num_tps == 0) {
-            m_new_heartbeats++;
-         }
          //remember what we sent for the next loop
          m_start_win_ts = m_end_win_ts;
        }
