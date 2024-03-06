@@ -89,7 +89,7 @@ TAProcessor::conf(const appdal::ReadoutModule* conf)
     TLOG() << "Selected TC algorithm: " << algo->UID();
     std::shared_ptr<triggeralgs::TriggerCandidateMaker> maker = make_tc_maker(algo->class_name());
     nlohmann::json algo_json = algo->to_json(true);
-    maker->configure(algo_json);
+    maker->configure(algo_json[algo->UID()]);
     inherited::add_postprocess_task(std::bind(&TAProcessor::find_tc, this, std::placeholders::_1, maker));
     m_tcms.push_back(maker);
   }

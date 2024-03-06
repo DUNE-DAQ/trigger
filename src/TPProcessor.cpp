@@ -89,7 +89,7 @@ TPProcessor::conf(const appdal::ReadoutModule* conf)
 
     TLOG() << "Algo config:\n" << algo_json.dump();
 
-    maker->configure(algo_json);
+    maker->configure(algo_json[algo->UID()]);
     inherited::add_postprocess_task(std::bind(&TPProcessor::find_ta, this, std::placeholders::_1, maker));
     m_tams.push_back(maker);
   }
