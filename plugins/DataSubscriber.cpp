@@ -13,6 +13,7 @@
 #include "readoutlibs/models/DataSubscriberModel.hpp"
 #include "trigger/HSISourceModel.hpp"
 #include "trigger/TPSetSourceModel.hpp"
+#include "trigger/TriggerSourceModel.hpp"
 
 #include "appdal/DataSubscriber.hpp"
 
@@ -93,14 +94,14 @@ DataSubscriber::create_data_subscriber(const coredal::DaqModule* cfg)
   if (raw_dt == "TriggerActivity") {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Creating trigger activities subscriber";
     auto source_model =
-      std::make_unique<readoutlibs::DataSubscriberModel<triggeralgs::TriggerActivity, trigger::TAWrapper>>();
+      std::make_unique<trigger::TriggerSourceModel<triggeralgs::TriggerActivity, trigger::TAWrapper>>();
     return source_model;
   }
 
   if (raw_dt == "TriggerCandidate") {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Creating trigger candidates subscriber";
     auto source_model =
-      std::make_unique<readoutlibs::DataSubscriberModel<triggeralgs::TriggerCandidate, trigger::TCWrapper>>();
+      std::make_unique<trigger::TriggerSourceModel<triggeralgs::TriggerCandidate, trigger::TCWrapper>>();
     return source_model;
   }
 
