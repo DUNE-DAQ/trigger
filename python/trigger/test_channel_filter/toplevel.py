@@ -18,8 +18,9 @@ import click
 @click.option('--keep-collection/--discard-collection', is_flag=True, default=True, show_default=True, help="Keep/discard collection TPs")
 @click.option('--keep-induction/--discard-induction', is_flag=True, default=True, show_default=True, help="Keep/discard induction TPs")
 @click.option('--channel-map-name', type=click.Choice(["VDColdboxChannelMap", "ProtoDUNESP1ChannelMap"]), default="ProtoDUNESP1ChannelMap", help="Channel map name")
+@click.option('--max-time-over-threshold', default=10_000, help="Maximum allowed time over threshold per TP in number of ticks")
 @click.argument('json_dir', type=click.Path())
-def cli(slowdown_factor, input_file, keep_collection, keep_induction, channel_map_name, json_dir):
+def cli(slowdown_factor, input_file, keep_collection, keep_induction, channel_map_name, max_time_over_threshold, json_dir):
     """
       JSON_DIR: Json file output folder
     """
@@ -35,7 +36,8 @@ def cli(slowdown_factor, input_file, keep_collection, keep_induction, channel_ma
         SLOWDOWN_FACTOR = slowdown_factor,
         KEEP_COLLECTION = keep_collection,
         KEEP_INDUCTION = keep_induction,
-        CHANNEL_MAP_NAME = channel_map_name
+        CHANNEL_MAP_NAME = channel_map_name,
+        MAX_TIME_OVER_THRESHOLD = max_time_over_threshold
     )
 
     from appfwk.conf_utils import make_app_command_data, make_system_command_datas, generate_boot, write_json_files
