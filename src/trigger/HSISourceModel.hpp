@@ -13,8 +13,7 @@
 #include "detdataformats/DetID.hpp"
 #include "dfmessages/HSIEvent.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
-#include "trigger/TCWrapper.hpp"
-
+#include "trigger/Issues.hpp"
 
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
@@ -45,7 +44,7 @@ public:
     if (cfg->get_outputs().size() != 1) {
       throw readoutlibs::InitializationError(ERS_HERE, "Only 1 output supported for subscribers");
     }
-    m_data_sender = get_iom_sender<trigger::TCWrapper>(cfg->get_outputs()[0]->UID());
+    m_data_sender = get_iom_sender<triggeralgs::TriggerCandidate>(cfg->get_outputs()[0]->UID());
 
     if (cfg->get_inputs().size() != 1) {
       throw readoutlibs::InitializationError(ERS_HERE, "Only 1 input supported for subscribers");
@@ -76,7 +75,7 @@ public:
 
   bool handle_payload(dfmessages::HSIEvent& data) // NOLINT(build/unsigned)
   {
-    
+    TLOG_DEBUG(1) << "Received HSIEvent with signal map " << data.signal_map << " and timestamp " << data.timestamp; 
     triggeralgs::TriggerCandidate candidate;
     auto signal_info = m_signals.find(data.signal_map);
     if (signal_info != m_signals.end()) {
@@ -96,8 +95,7 @@ public:
     candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
     candidate.inputs = {};
 
-    trigger::TCWrapper tc(candidate);
-    if (!m_data_sender->try_send(std::move(tc), iomanager::Sender::s_no_block)) {
+    if (!m_data_sender->try_send(std::move(candidate), iomanager::Sender::s_no_block)) {
       ++m_dropped_packets;
     }
     
@@ -108,7 +106,7 @@ private:
   using source_t = dunedaq::iomanager::ReceiverConcept<dfmessages::HSIEvent>;
   std::shared_ptr<source_t> m_data_receiver;
 
-  using sink_t = dunedaq::iomanager::SenderConcept<trigger::TCWrapper>;
+  using sink_t = dunedaq::iomanager::SenderConcept<triggeralgs::TriggerCandidate>;
   std::shared_ptr<sink_t> m_data_sender;
 
   std::map<uint32_t, std::pair<uint32_t,uint32_t>> m_signals;
