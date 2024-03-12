@@ -6,6 +6,7 @@
  */
 
 #include "trigger/AlgorithmPlugins.hpp"
+#include "trigger/Issues.hpp"
 
 /**
  * @brief Name of this test module
@@ -24,7 +25,13 @@ BOOST_AUTO_TEST_CASE(TAFactory)
   std::unique_ptr<triggeralgs::TriggerActivityMaker> prescale_maker = trigger::make_ta_maker("TriggerActivityMakerPrescalePlugin");
   std::unique_ptr<triggeralgs::TriggerActivityMaker> h_muon_maker = trigger::make_ta_maker("TriggerActivityMakerHorizontalMuonPlugin");
   std::unique_ptr<triggeralgs::TriggerActivityMaker> dbscan_maker = trigger::make_ta_maker("TriggerActivityMakerDBSCANPlugin");
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> fake_maker = trigger::make_ta_maker("TriggerActivityMakerFakerPlugin");
+  std::unique_ptr<triggeralgs::TriggerActivityMaker> fake_maker = nullptr; // Expect this not to change because of the try-catch
+  try {
+    fake_maker = trigger::make_ta_maker("TriggerActivityMakerFakerPlugin"); // Throws a MissingFactoryItemError.
+  } catch (ers::Issue& ex) {
+    bool caught_fake_maker = true; // Successfully threw and caught the MissingFactoryItemError.
+    BOOST_TEST(caught_fake_maker); // Using this variable to be more informative on testing output.
+  }
 
   // Only the fake_maker should be nullptr
   BOOST_TEST(static_cast<bool>(prescale_maker != nullptr));
@@ -41,7 +48,7 @@ BOOST_AUTO_TEST_CASE(TAFactory)
 
   for (int idx = 0; idx < 10; idx++) {
     tp.type = triggeralgs::TriggerPrimitive::Type::kTPC;
-    tp.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
+    tp.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kSimpleThreshold;
     tp.time_start = idx;
     tp.time_peak = 1+idx;
     tp.time_over_threshold = 2;
