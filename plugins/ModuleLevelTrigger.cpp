@@ -273,7 +273,7 @@ ModuleLevelTrigger::create_decision(const ModuleLevelTrigger::PendingTD& pending
       decision.trigger_type = m_trigger_type_shifted;
     }
   } else {
-    decision.trigger_type = 1; // m_trigger_type;
+    decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
   }
 
   TLOG_DEBUG(3) << "HSI passthrough: " << m_hsi_passthrough
@@ -440,9 +440,10 @@ void
 ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pending_td)
 {
 
+  m_TD_bitword = get_TD_bitword(pending_td);
+  TLOG_DEBUG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " " << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
   if (m_use_bitwords) {
     // Check trigger bitwords
-    m_TD_bitword = get_TD_bitword(pending_td);
     m_bitword_check = check_trigger_bitwords();
   }
 
