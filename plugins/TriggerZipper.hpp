@@ -12,6 +12,7 @@
 #include "zipper.hpp"
 
 #include "trigger/Issues.hpp"
+#include "trigger/Logging.hpp"
 #include "trigger/triggerzipper/Nljs.hpp"
 #include "trigger/triggerzipperinfo/InfoNljs.hpp"
 
@@ -36,6 +37,8 @@
 
 const char* inqs_name = "inputs";
 const char* outq_name = "output";
+
+using dunedaq::trigger::logging::TLVL_DEBUG_INFO;
 
 namespace dunedaq::trigger {
 
@@ -165,13 +168,13 @@ public:
     m_thread.join();
     flush();
     m_zm.clear();
-    TLOG() << "Received " << m_n_received << " Sets. Sent " << m_n_sent << " Sets. " << m_n_tardy << " were tardy";
+    TLOG(1) << "[Zipper] Received " << m_n_received << " Sets. Sent " << m_n_sent << " Sets. " << m_n_tardy << " were tardy";
     std::stringstream ss;
     ss << std::endl;
     for (auto& [id, n] : m_tardy_counts) {
       ss << id << "\t" << n << std::endl;
     }
-    TLOG_DEBUG(1) << "Tardy counts:" << ss.str();
+    TLOG_DEBUG(TLVL_DEBUG_INFO) << "[Zipper] Tardy counts:" << ss.str();
   }
 
   // thread worker

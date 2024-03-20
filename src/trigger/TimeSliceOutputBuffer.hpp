@@ -11,12 +11,15 @@
 
 #include "trigger/Issues.hpp"
 #include "trigger/Set.hpp"
+#include "trigger/Logging.hpp"
 
 #include "logging/Logging.hpp"
 
 #include <queue>
 #include <string>
 #include <vector>
+
+using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
 
 namespace dunedaq::trigger {
 
@@ -142,7 +145,7 @@ public:
     // buffer
     if (!m_heartbeat_buffer.empty() && m_heartbeat_buffer.top().start_time == m_next_window_start) {
       auto& hb = m_heartbeat_buffer.top();
-      TLOG_DEBUG(4) << "Flushing heartbeat with start time " << hb.start_time;
+      TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TimeSliceOutputBuffer] Flushing heartbeat with start time " << hb.start_time;
       out_set.start_time = hb.start_time;
       out_set.end_time = hb.end_time;
       out_set.origin = hb.origin;
@@ -164,7 +167,7 @@ public:
       }
       m_buffer.pop();
     }
-    TLOG_DEBUG(4) << "Filled payload from " << out_set.start_time << " to " << out_set.end_time << " with " << out_set.objects.size() << " objects";
+    TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TimeSliceOutputBuffer] Filled payload from " << out_set.start_time << " to " << out_set.end_time << " with " << out_set.objects.size() << " objects";
   }
 
 private:

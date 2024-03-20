@@ -7,12 +7,16 @@
  */
 
 #include "FakeTPCreatorHeartbeatMaker.hpp"
+#include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
 #include <string>
+
+using dunedaq::trigger::logging::TLVL_GENERAL;
+using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
 
 namespace dunedaq {
 namespace trigger {
@@ -57,7 +61,7 @@ void
 FakeTPCreatorHeartbeatMaker::do_conf(const nlohmann::json& conf)
 {
   m_heartbeat_interval = conf.get<dunedaq::trigger::faketpcreatorheartbeatmaker::Conf>().heartbeat_interval;
-  TLOG_DEBUG(2) << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[FHM] " << get_name() + " configured.";
 }
 
 void
@@ -67,14 +71,14 @@ FakeTPCreatorHeartbeatMaker::do_start(const nlohmann::json& args)
   m_run_number = start_params.run;
 
   m_thread.start_working_thread("heartbeater");
-  TLOG_DEBUG(2) << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[FHM] " << get_name() + " successfully started.";
 }
 
 void
 FakeTPCreatorHeartbeatMaker::do_stop(const nlohmann::json&)
 {
   m_thread.stop_working_thread();
-  TLOG_DEBUG(2) << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[FHM] " << get_name() + " successfully stopped.";
 }
 
 void
@@ -112,7 +116,7 @@ FakeTPCreatorHeartbeatMaker::do_work(std::atomic<bool>& running_flag)
     if (m_sourceid.id == daqdataformats::SourceID::s_invalid_id) {
       m_sourceid = tpset->origin;
     }
-    TLOG_DEBUG(3) << "Activity received.";
+    TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[FHM] Activity received.";
 
     daqdataformats::timestamp_t current_tpset_start_time = tpset->start_time;
 
@@ -159,9 +163,9 @@ FakeTPCreatorHeartbeatMaker::do_work(std::atomic<bool>& running_flag)
     }
   }
 
-  TLOG() << "Received " << m_tpset_received_count << " and sent " << m_tpset_sent_count << " real TPSets. Sent "
+  TLOG(1) << "[FHM] Received " << m_tpset_received_count << " and sent " << m_tpset_sent_count << " real TPSets. Sent "
          << m_heartbeats_sent << " fake heartbeats." << std::endl;
-  TLOG_DEBUG(2) << "Exiting do_work() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[FHM] Exiting do_work() method";
 }
 
 bool

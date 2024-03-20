@@ -7,12 +7,18 @@
  */
 
 #include "TPChannelFilter.hpp"
+#include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "iomanager/IOManager.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include <string>
+
+using dunedaq::trigger::logging::TLVL_GENERAL;
+using dunedaq::trigger::logging::TLVL_IMPORTANT;
+using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
+using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 
 namespace dunedaq {
 namespace trigger {
@@ -57,7 +63,7 @@ TPChannelFilter::do_conf(const nlohmann::json& conf_arg)
 {
   m_conf = conf_arg.get<dunedaq::trigger::tpchannelfilter::Conf>();
   m_channel_map = dunedaq::detchannelmaps::make_map(m_conf.channel_map_name);
-  TLOG() << "Configured the TPChannelFilter!";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPCF] Configured the TPChannelFilter!";
 }
 
 void
@@ -67,7 +73,7 @@ TPChannelFilter::do_start(const nlohmann::json&)
   m_received_count.store(0);
   m_sent_count.store(0);
   m_thread.start_working_thread("channelfilter");
-  TLOG_DEBUG(2) << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPCF] " << get_name() + " successfully started.";
 }
 
 void
@@ -75,7 +81,7 @@ TPChannelFilter::do_stop(const nlohmann::json&)
 {
   m_running_flag.store(false); 
   m_thread.stop_working_thread();
-  TLOG_DEBUG(2) << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPCF] " << get_name() + " successfully stopped.";
 }
 
 void
@@ -88,7 +94,7 @@ TPChannelFilter::channel_should_be_removed(int channel) const
   // The plane numbering convention is found in detchannelmaps/plugins/VDColdboxChannelMap.cpp and is:
   // U (induction) = 0, Y (induction) = 1, Z (induction) = 2, unconnected channel = 9999
   uint plane = m_channel_map->get_plane_from_offline_channel(channel);
-  TLOG_DEBUG(5) << "Checking received TP with channel " << channel << " and plane " << plane;
+  TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TPCF] Checking received TP with channel " << channel << " and plane " << plane;
   // Check for collection
   if (plane == 0 || plane == 1) {
     return !m_conf.keep_induction;
@@ -102,7 +108,7 @@ TPChannelFilter::channel_should_be_removed(int channel) const
     return true;
   }
   // Unknown plane?!
-  TLOG() << "Encountered unexpected plane " << plane << " from channel " << channel << ", check channel map?";
+  TLOG_DEBUG(TLVL_IMPORTANT) << "[TPCF] Encountered unexpected plane " << plane << " from channel " << channel << ", check channel map?";
   return false;
 }
 
@@ -135,7 +141,7 @@ TPChannelFilter::do_work()
       });
       tpset->objects.erase(it, tpset->objects.end());
       size_t n_after = tpset->objects.size();
-      TLOG_DEBUG(2) << "Removed " << (n_before - n_after) << " TPs out of " << n_before << " TPs remaining: " << n_after;
+      TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TPCF] Removed " << (n_before - n_after) << " TPs out of " << n_before << " TPs remaining: " << n_after;
     }
 
     // The rule is that we don't send empty TPSets, so ensure that
@@ -152,7 +158,7 @@ TPChannelFilter::do_work()
     }
 
   } // while
-  TLOG_DEBUG(2) << "Exiting do_work() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPCF] Exiting do_work() method";
 }
 
 } // namespace trigger

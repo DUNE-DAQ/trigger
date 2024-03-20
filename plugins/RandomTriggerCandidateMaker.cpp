@@ -10,6 +10,7 @@
 #include "RandomTriggerCandidateMaker.hpp"
 
 #include "trigger/Issues.hpp"
+#include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
@@ -31,6 +32,11 @@
 #include <random>
 #include <string>
 #include <vector>
+
+using dunedaq::trigger::logging::TLVL_GENERAL;
+using dunedaq::trigger::logging::TLVL_DEBUG_INFO;
+using dunedaq::trigger::logging::TLVL_DEBUG_LOW;
+using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
 
 namespace dunedaq {
 namespace trigger {
@@ -80,14 +86,14 @@ RandomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
 
   switch (m_conf.timestamp_method) {
     case randomtriggercandidatemaker::timestamp_estimation::kTimeSync:
-      TLOG_DEBUG(0) << "Creating TimestampEstimator";
+      TLOG_DEBUG(TLVL_GENERAL) << "[RTCM] Creating TimestampEstimator";
       m_timestamp_estimator.reset(new utilities::TimestampEstimator(m_run_number, m_conf.clock_frequency_hz));
       m_time_sync_source->add_callback(std::bind(&utilities::TimestampEstimator::timesync_callback<dfmessages::TimeSync>,
                                                  reinterpret_cast<utilities::TimestampEstimator*>(m_timestamp_estimator.get()),
                                                  std::placeholders::_1));
       break;
     case randomtriggercandidatemaker::timestamp_estimation::kSystemClock:
-      TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
+      TLOG_DEBUG(TLVL_GENERAL) << "[RTCM] Creating TimestampEstimatorSystem";
       m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_conf.clock_frequency_hz));
       break;
   }
@@ -132,7 +138,7 @@ RandomTriggerCandidateMaker::get_interval(std::mt19937& gen)
 {
   switch (m_conf.time_distribution) {
     default: // Treat an unknown distribution as kUniform, but warn
-      TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
+      TLOG_DEBUG(TLVL_DEBUG_INFO) << "[RTCM] " << get_name() << " unknown distribution! Using kUniform.";
       // fall through
     case randomtriggercandidatemaker::distribution_type::kUniform:
       return m_conf.trigger_interval_ticks;
@@ -159,7 +165,7 @@ RandomTriggerCandidateMaker::send_trigger_candidates()
   dfmessages::timestamp_t first_interval = get_interval(gen);
   // Round up to the next multiple of trigger_interval_ticks
   dfmessages::timestamp_t next_trigger_timestamp = (initial_timestamp / first_interval + 1) * first_interval;
-  TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp
+  TLOG_DEBUG(TLVL_DEBUG_LOW) << "[RTCM] " << get_name() << " initial timestamp estimate is " << initial_timestamp
                 << ", next_trigger_timestamp is " << next_trigger_timestamp;
 
   while (m_running_flag.load()) {
@@ -170,7 +176,7 @@ RandomTriggerCandidateMaker::send_trigger_candidates()
 
     triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
 
-    TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
+    TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[RTCM] " << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
     m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
     m_tc_sent_count++;
