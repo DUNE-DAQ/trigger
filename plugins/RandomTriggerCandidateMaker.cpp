@@ -36,7 +36,7 @@
 using dunedaq::trigger::logging::TLVL_GENERAL;
 using dunedaq::trigger::logging::TLVL_DEBUG_INFO;
 using dunedaq::trigger::logging::TLVL_DEBUG_LOW;
-using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
+using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 
 namespace dunedaq {
 namespace trigger {
@@ -176,7 +176,7 @@ RandomTriggerCandidateMaker::send_trigger_candidates()
 
     triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
 
-    TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[RTCM] " << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
+    TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[RTCM] " << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
     m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
     m_tc_sent_count++;

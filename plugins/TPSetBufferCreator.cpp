@@ -130,7 +130,7 @@ TPSetBufferCreator::do_stop(const nlohmann::json& /*args*/)
 
   m_tps_buffer->clear_buffer(); // emptying buffer
 
-  TLOG_DEBUG(TLVL_GENERAL) << "[TPSetBufferCreator] " << get_name() << ": Exiting do_stop() method : sent " << sentCount << " incomplete fragments";
+  TLOG(1) << "[TPSetBufferCreator] " << get_name() << ": Exiting do_stop() method : sent " << sentCount << " incomplete fragments";
 }
 
 void
@@ -196,7 +196,7 @@ TPSetBufferCreator::send_out_fragment(std::unique_ptr<daqdataformats::Fragment> 
   // everything we generate, even if running_flag is changed
   // to false between the top of the main loop and here
   do {
-    TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TPSetBufferCreator] " << get_name() << ": Pushing the requested TPSet onto queue " << thisQueueName;
+    TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TPSetBufferCreator] " << get_name() << ": Pushing the requested TPSet onto queue " << thisQueueName;
     try {
       auto the_pair = std::make_pair(std::move(frag_out), data_destination);
       m_output_queue_frag->send(std::move(the_pair), m_queueTimeout);
@@ -324,7 +324,7 @@ TPSetBufferCreator::do_work(std::atomic<bool>& running_flag)
 
       switch (requested_tpset.ds_outcome) {
         case TPSetBuffer::kEmpty:
-          TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TPSetBufferCreator] " << get_name() << ": Requested data (" << input_data_request.request_information.window_begin << ", "
+          TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TPSetBufferCreator] " << get_name() << ": Requested data (" << input_data_request.request_information.window_begin << ", "
                  << input_data_request.request_information.window_end << ") not in buffer, which contains "
                  << m_tps_buffer->get_stored_size() << " TPSets between (" << m_tps_buffer->get_earliest_start_time()
                  << ", " << m_tps_buffer->get_latest_end_time() << "). Returning empty fragment.";
@@ -332,14 +332,14 @@ TPSetBufferCreator::do_work(std::atomic<bool>& running_flag)
           send_out_fragment(std::move(frag_out), input_data_request.data_destination, sentCount, running_flag);
           break;
         case TPSetBuffer::kLate:
-          TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TPSetBufferCreator] " << get_name() << ": Requested data (" << input_data_request.request_information.window_begin << ", "
+          TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TPSetBufferCreator] " << get_name() << ": Requested data (" << input_data_request.request_information.window_begin << ", "
                  << input_data_request.request_information.window_end << ") has not arrived in buffer, which contains "
                  << m_tps_buffer->get_stored_size() << " TPSets between (" << m_tps_buffer->get_earliest_start_time()
                  << ", " << m_tps_buffer->get_latest_end_time() << "). Holding request until more data arrives.";
           m_dr_on_hold.insert(std::make_pair(input_data_request, requested_tpset.txsets_in_window));
           break; // don't send anything yet. Wait for more data to arrived.
         case TPSetBuffer::kSuccess:
-          TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TPSetBufferCreator] " << get_name() << ": Sending requested data (" << input_data_request.request_information.window_begin
+          TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TPSetBufferCreator] " << get_name() << ": Sending requested data (" << input_data_request.request_information.window_begin
                  << ", " << input_data_request.request_information.window_end << "), containing "
                  << requested_tpset.txsets_in_window.size() << " TPSets.";
 
@@ -355,7 +355,7 @@ TPSetBufferCreator::do_work(std::atomic<bool>& running_flag)
     }
   } // end while(running_flag.load())
 
-  TLOG_DEBUG(TLVL_GENERAL) << "[TPSetBufferCreator] " << get_name() << ": Exiting the do_work() method: received " << addedCount << " Sets and " << requestedCount
+  TLOG(1) << "[TPSetBufferCreator] " << get_name() << ": Exiting the do_work() method: received " << addedCount << " Sets and " << requestedCount
          << " data requests. " << addFailedCount << " Sets failed to add. Sent " << sentCount << " fragments";
 
 } // NOLINT Function length

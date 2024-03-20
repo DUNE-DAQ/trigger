@@ -43,7 +43,6 @@ sortbysec(const std::pair<int, dunedaq::dfmessages::timestamp_t>& a,
 }
 
 using dunedaq::trigger::logging::TLVL_GENERAL;
-using dunedaq::trigger::logging::TLVL_DEBUG_INFO;
 using dunedaq::trigger::logging::TLVL_DEBUG_LOW;
 using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
@@ -308,9 +307,9 @@ CustomTriggerCandidateMaker::print_timestamps_vector(std::vector<std::pair<int, 
 void
 CustomTriggerCandidateMaker::print_final_tc_counts(std::map<int, int> counts)
 {
-  TLOG_DEBUG(TLVL_DEBUG_INFO) << "[CTCM] Final counts:";
+  TLOG(1) << "[CTCM] Final counts:";
   for (auto it = m_tc_settings.begin(); it != m_tc_settings.end(); it++) {
-    TLOG_DEBUG(TLVL_DEBUG_INFO) << "[CTCM] TC type: " << it->first << ", interval: " << it->second << ", count: " << counts[it->first];
+    TLOG(1) << "[CTCM] TC type: " << it->first << ", interval: " << it->second << ", count: " << counts[it->first];
   }
   return;
 }

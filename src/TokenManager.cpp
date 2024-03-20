@@ -15,8 +15,8 @@
 #include <memory>
 #include <string>
 
-using dunedaq::trigger::logging::TLVL_GENERAL;
 using dunedaq::trigger::logging::TLVL_DEBUG_INFO;
+using dunedaq::trigger::logging::TLVL_DEBUG_LOW;
 using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 
 namespace dunedaq::trigger {
@@ -59,7 +59,7 @@ TokenManager::~TokenManager()
         }
         o << "]";
       }
-      TLOG_DEBUG(TLVL_GENERAL) << "[TokenManager] " << o.str();
+      TLOG_DEBUG(TLVL_DEBUG_INFO) << "[TokenManager] " << o.str();
     }
   }
 }
@@ -84,13 +84,13 @@ TokenManager::trigger_sent(dfmessages::trigger_number_t trigger_number)
 void
 TokenManager::receive_token(dfmessages::TriggerDecisionToken& token)
 {
-  TLOG_DEBUG(TLVL_GENERAL) << "[TokenManager] Received token with run number " << token.run_number << ", current run number " << m_run_number;
+  TLOG_DEBUG(TLVL_DEBUG_INFO) << "[TokenManager] Received token with run number " << token.run_number << ", current run number " << m_run_number;
   if (token.run_number == m_run_number) {
     if (m_n_tokens.load() == 0) {
       m_livetime_counter->set_state(LivetimeCounter::State::kLive);
     }
     m_n_tokens++;
-    TLOG_DEBUG(TLVL_DEBUG_INFO) << "[TokenManager] There are now " << m_n_tokens.load() << " tokens available";
+    TLOG_DEBUG(TLVL_DEBUG_LOW) << "[TokenManager] There are now " << m_n_tokens.load() << " tokens available";
 
     if (token.trigger_number != dfmessages::TypeDefaults::s_invalid_trigger_number) {
       if (m_open_trigger_decisions.count(token.trigger_number)) {

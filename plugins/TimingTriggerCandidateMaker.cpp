@@ -19,9 +19,7 @@
 #include <string>
 
 using dunedaq::trigger::logging::TLVL_VERY_IMPORTANT;
-using dunedaq::trigger::logging::TLVL_IMPORTANT;
 using dunedaq::trigger::logging::TLVL_GENERAL;
-using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
 using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 
 namespace dunedaq {
@@ -46,7 +44,7 @@ TimingTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEve
   // TODO Trigger Team <dune-daq@github.com> Nov-18-2021: the signal field ia now a signal bit map, rather than unique
   // value -> change logic of below?
   if (m_hsi_passthrough == true) {
-    TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TTCM] HSI passthrough applied, modified readout window is set";
+    TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TTCM] HSI passthrough applied, modified readout window is set";
     candidate.time_start = data.timestamp - m_hsi_pt_before;
     candidate.time_end = data.timestamp + m_hsi_pt_after;
   } else {
@@ -115,7 +113,7 @@ TimingTriggerCandidateMaker::do_start(const nlohmann::json& startobj)
 
   m_hsievent_input->add_callback(std::bind(&TimingTriggerCandidateMaker::receive_hsievent, this, std::placeholders::_1));
   
-  TLOG_DEBUG(TLVL_IMPORTANT) << "[TTCM] " << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TTCM] " << get_name() + " successfully started.";
 }
 
 void
@@ -123,9 +121,9 @@ TimingTriggerCandidateMaker::do_stop(const nlohmann::json&)
 {
   m_hsievent_input->remove_callback();
 
-  TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[TTCM] Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
+  TLOG(1) << "[TTCM] Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
          << " TriggerCandidates";
-  TLOG_DEBUG(TLVL_IMPORTANT) << "[TTCM] " << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TTCM] " << get_name() + " successfully stopped.";
 }
 
 void

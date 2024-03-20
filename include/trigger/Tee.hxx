@@ -15,7 +15,7 @@
 
 #include <string>
 
-using dunedaq::trigger::logging::TLVL_IMPORTANT;
+using dunedaq::trigger::logging::TLVL_GENERAL;
 
 namespace dunedaq {
 namespace trigger {
@@ -52,7 +52,7 @@ template<class T>
 void
 Tee<T>::do_conf(const nlohmann::json&)
 {
-  TLOG_DEBUG(TLVL_IMPORTANT) << "[Tee] " << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[Tee] " << get_name() + " configured.";
 }
 
 template<class T>
@@ -60,7 +60,7 @@ void
 Tee<T>::do_start(const nlohmann::json&)
 {
   m_thread.start_working_thread("tee");
-  TLOG_DEBUG(TLVL_IMPORTANT) << "[Tee] " << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[Tee] " << get_name() + " successfully started.";
 }
 
 template<class T>
@@ -68,7 +68,7 @@ void
 Tee<T>::do_stop(const nlohmann::json&)
 {
   m_thread.stop_working_thread();
-  TLOG_DEBUG(TLVL_IMPORTANT) << "[Tee] " << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[Tee] " << get_name() + " successfully stopped.";
 }
 
 template<class T>
@@ -111,7 +111,7 @@ Tee<T>::do_work(std::atomic<bool>& running_flag)
       ers::warning(dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), "push to output queue 2", timeout_ms));
     }
   }
-  TLOG() << get_name() << ": Exiting do_work() method after receiving " << n_objects << " objects";
+  TLOG(1) << get_name() << ": Exiting do_work() method after receiving " << n_objects << " objects";
 }
 
 } // namespace trigger

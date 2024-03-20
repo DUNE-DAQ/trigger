@@ -32,10 +32,8 @@
 #include <string>
 #include <vector>
 
-using dunedaq::trigger::logging::TLVL_IMPORTANT;
 using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
-using dunedaq::trigger::logging::TLVL_DEBUG_ALL;
 
 namespace dunedaq::trigger {
 
@@ -197,7 +195,7 @@ private:
     // outputs are stale and will cause tardy warnings from the zipper
     // downstream
     worker.drain(true);
-    TLOG_DEBUG(TLVL_IMPORTANT) << "[TGM] " << get_name() << ": Exiting do_work() method for run " << m_run_number << ", received " << m_received_count
+    TLOG(1) << "[TGM] " << get_name() << ": Exiting do_work() method for run " << m_run_number << ", received " << m_received_count
            << " inputs (" << worker.get_low_level_input_count() << " sub-inputs) and successfully sent " << m_sent_count
            << " outputs. ";
     worker.reset();
@@ -414,7 +412,7 @@ public: // NOLINT
       }
       // Only form and send Set<B> if it has a nonzero number of objects
       else if (out.type == Set<B>::Type::kPayload && out.objects.size() != 0) {
-        TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TGM] Output set window ready with start time " << out.start_time << " end time " << out.end_time
+        TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TGM] Output set window ready with start time " << out.start_time << " end time " << out.end_time
                       << " and " << out.objects.size() << " members";
         if (!m_parent.send(std::move(out))) {
           ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
@@ -422,7 +420,7 @@ public: // NOLINT
         }
       }
     }
-    TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TGM] process() done. Advanced output buffer by " << n_output_windows << " output windows";
+    TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TGM] process() done. Advanced output buffer by " << n_output_windows << " output windows";
   }
 
   void drain(bool drop)
@@ -458,7 +456,7 @@ public: // NOLINT
       }
       // Only form and send Set<B> if it has a nonzero number of objects
       else if (out.type == Set<B>::Type::kPayload && out.objects.size() != 0) {
-        TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TGM] Output set window ready with start time " << out.start_time << " end time " << out.end_time
+        TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TGM] Output set window ready with start time " << out.start_time << " end time " << out.end_time
                       << " and " << out.objects.size() << " members";
         if (!drop) {
           if (!m_parent.send(std::move(out))) {
