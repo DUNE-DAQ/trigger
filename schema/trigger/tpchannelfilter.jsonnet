@@ -6,7 +6,7 @@ local types = {
   bool: s.boolean("Boolean"),
   string : s.string("String", moo.re.ident,
     doc="A string field"),
-  ticks: s.number("ticks", dtype="i8"),
+  ticks: s.number("ticks", dtype="u8"),
   
   conf : s.record("Conf", [
     s.field("keep_collection", self.bool,
