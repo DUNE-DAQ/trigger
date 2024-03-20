@@ -50,7 +50,6 @@ private:
   void do_work();
 
   bool channel_should_be_removed(int channel) const;
-  bool remove_if_large_tot(int tot) const;
   dunedaq::utilities::WorkerThread m_thread;
 
   using metric_counter_type = decltype(tpchannelfilterinfo::Info::received_count);
