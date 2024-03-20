@@ -112,6 +112,7 @@ TPChannelFilter::channel_should_be_removed(int channel) const
   return false;
 }
 
+
 void
 TPChannelFilter::do_work()
 {
@@ -137,7 +138,8 @@ TPChannelFilter::do_work()
     if (tpset->type == TPSet::kPayload) {
       size_t n_before = tpset->objects.size();
       auto it = std::remove_if(tpset->objects.begin(), tpset->objects.end(), [this](triggeralgs::TriggerPrimitive p) {
-        return channel_should_be_removed(p.channel);
+        return channel_should_be_removed(p.channel) || 
+               (p.time_over_threshold > m_conf.max_time_over_threshold);
       });
       tpset->objects.erase(it, tpset->objects.end());
       size_t n_after = tpset->objects.size();

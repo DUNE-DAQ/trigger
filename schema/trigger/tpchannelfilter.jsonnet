@@ -6,6 +6,7 @@ local types = {
   bool: s.boolean("Boolean"),
   string : s.string("String", moo.re.ident,
     doc="A string field"),
+  ticks: s.number("ticks", dtype="u8"),
   
   conf : s.record("Conf", [
     s.field("keep_collection", self.bool,
@@ -14,6 +15,8 @@ local types = {
       doc="Whether to keep induction-channel TPs"),
     s.field("channel_map_name", self.string,
       doc="Name of channel map"),    
+    s.field("max_time_over_threshold", self.ticks,
+      doc="Maximum allowed time over threshold per TP in number of ticks"),
   ], doc="FakeTPCreatorHeartbeatMaker configuration parameters."),
 
 };
