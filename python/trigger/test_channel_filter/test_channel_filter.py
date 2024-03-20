@@ -29,7 +29,8 @@ class TestChannelFilterApp(App):
                  SLOWDOWN_FACTOR: float,
                  CHANNEL_MAP_NAME: str,
                  KEEP_COLLECTION: bool,
-                 KEEP_INDUCTION: bool):
+                 KEEP_INDUCTION: bool,
+                 MAX_TIME_OVER_THRESHOLD: int):
 
         clock_frequency_hz = 62_500_000 / SLOWDOWN_FACTOR
         modules = []
@@ -59,7 +60,8 @@ class TestChannelFilterApp(App):
                                      plugin = "TPChannelFilter",
                                      conf = chan_filter.Conf(channel_map_name=CHANNEL_MAP_NAME,
                                                              keep_collection=KEEP_COLLECTION,
-                                                             keep_induction=KEEP_INDUCTION),
+                                                             keep_induction=KEEP_INDUCTION,
+                                                             max_time_over_threshold = MAX_TIME_OVER_THRESHOLD),
                                      connections = {"tpset_sink" : Connection(f"ftpchm{istream}.tpset_source")}))
 
             modules.append(DAQModule(name = f"ftpchm{istream}",
