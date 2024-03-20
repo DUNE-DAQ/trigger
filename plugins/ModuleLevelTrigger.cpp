@@ -852,6 +852,7 @@ ModuleLevelTrigger::create_request_for_link(dfmessages::SourceID link,
   request.window_begin = start;
   request.window_end = end;
 
+  TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[MLT] link: " << link;
   TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[MLT] setting request start: " << request.window_begin;
   TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[MLT] setting request end: " << request.window_end;
 
