@@ -312,7 +312,7 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - run_start_time).count();
   float rate_hz = 1e3 * static_cast<float>(generated_count) / time_ms;
 
-  TLOG(1) << "[TPM] Generated " << generated_count << " TP sets (" << generated_tp_count << " TPs) in " << time_ms << " ms. ("
+  TLOG() << "[TPM] Generated " << generated_count << " TP sets (" << generated_tp_count << " TPs) in " << time_ms << " ms. ("
          << rate_hz << " TPSets/s). " << push_failed_count << " failed to push";
 
   TLOG_DEBUG(TLVL_GENERAL) << "[TPM] " << get_name() << ": Exiting do_work() method";

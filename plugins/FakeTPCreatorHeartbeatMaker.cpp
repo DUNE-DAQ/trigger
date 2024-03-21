@@ -163,7 +163,7 @@ FakeTPCreatorHeartbeatMaker::do_work(std::atomic<bool>& running_flag)
     }
   }
 
-  TLOG(1) << "[FHM] Received " << m_tpset_received_count << " and sent " << m_tpset_sent_count << " real TPSets. Sent "
+  TLOG() << "[FHM] Received " << m_tpset_received_count << " and sent " << m_tpset_sent_count << " real TPSets. Sent "
          << m_heartbeats_sent << " fake heartbeats." << std::endl;
   TLOG_DEBUG(TLVL_GENERAL) << "[FHM] Exiting do_work() method";
 }

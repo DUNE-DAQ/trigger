@@ -106,13 +106,13 @@ TPSetBufferCreator::do_stop(const nlohmann::json& /*args*/)
   size_t sentCount = 0;
   TPSetBuffer::DataRequestOutput requested_tpset;
   if (m_dr_on_hold.size()) { // check if there are still data request on hold
-    TLOG(TLVL_DEBUG_LOW) << "[TPSetBufferCreator] " << get_name() << ": On hold DRs: " << m_dr_on_hold.size();
+    TLOG_DEBUG(TLVL_DEBUG_LOW) << "[TPSetBufferCreator] " << get_name() << ": On hold DRs: " << m_dr_on_hold.size();
     std::map<dfmessages::DataRequest, std::vector<trigger::TPSet>>::iterator it = m_dr_on_hold.begin();
     while (it != m_dr_on_hold.end()) {
 
       requested_tpset.txsets_in_window = it->second;
       std::unique_ptr<daqdataformats::Fragment> frag_out = convert_to_fragment(requested_tpset.txsets_in_window, it->first);
-      TLOG(TLVL_DEBUG_MEDIUM) << "[TPSetBufferCreator] " << get_name() << ": Sending late requested data (" << (it->first).request_information.window_begin << ", "
+      TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TPSetBufferCreator] " << get_name() << ": Sending late requested data (" << (it->first).request_information.window_begin << ", "
              << (it->first).request_information.window_end << "), containing "
              << requested_tpset.txsets_in_window.size() << " TPSets.";
 
@@ -130,7 +130,7 @@ TPSetBufferCreator::do_stop(const nlohmann::json& /*args*/)
 
   m_tps_buffer->clear_buffer(); // emptying buffer
 
-  TLOG(1) << "[TPSetBufferCreator] " << get_name() << ": Exiting do_stop() method : sent " << sentCount << " incomplete fragments";
+  TLOG() << "[TPSetBufferCreator] " << get_name() << ": Exiting do_stop() method : sent " << sentCount << " incomplete fragments";
 }
 
 void
@@ -355,7 +355,7 @@ TPSetBufferCreator::do_work(std::atomic<bool>& running_flag)
     }
   } // end while(running_flag.load())
 
-  TLOG(1) << "[TPSetBufferCreator] " << get_name() << ": Exiting the do_work() method: received " << addedCount << " Sets and " << requestedCount
+  TLOG() << "[TPSetBufferCreator] " << get_name() << ": Exiting the do_work() method: received " << addedCount << " Sets and " << requestedCount
          << " data requests. " << addFailedCount << " Sets failed to add. Sent " << sentCount << " fragments";
 
 } // NOLINT Function length

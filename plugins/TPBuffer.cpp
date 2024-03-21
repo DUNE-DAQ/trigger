@@ -119,7 +119,7 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  TLOG(1) << "[TPB] " << get_name() << " exiting do_work() method. Received " << n_tps_received << " TPs " << " and " << n_requests_received << " data requests";
+  TLOG() << "[TPB] " << get_name() << " exiting do_work() method. Received " << n_tps_received << " TPs " << " and " << n_requests_received << " data requests";
 }
 
 } // namespace trigger

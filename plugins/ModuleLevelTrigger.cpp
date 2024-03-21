@@ -228,7 +228,7 @@ ModuleLevelTrigger::do_pause(const nlohmann::json& /*pauseobj*/)
 
   m_paused.store(true);
   m_livetime_counter->set_state(LivetimeCounter::State::kPaused);
-  TLOG(0) << "[MLT] ******* Triggers PAUSED! in run " << m_run_number << " *********";
+  TLOG() << "[MLT] ******* Triggers PAUSED! in run " << m_run_number << " *********";
   ers::info(TriggerPaused(ERS_HERE));
   TLOG_DEBUG(TLVL_DEBUG_INFO) << "[MLT] TS End: "
                 << std::chrono::duration_cast<std::chrono::microseconds>(
@@ -240,7 +240,7 @@ void
 ModuleLevelTrigger::do_resume(const nlohmann::json& /*resumeobj*/)
 {
   ers::info(TriggerActive(ERS_HERE));
-  TLOG(0) << "[MLT] ******* Triggers RESUMED! in run " << m_run_number << " *********";
+  TLOG() << "[MLT] ******* Triggers RESUMED! in run " << m_run_number << " *********";
   m_livetime_counter->set_state(LivetimeCounter::State::kLive);
   m_paused.store(false);
   TLOG_DEBUG(TLVL_DEBUG_INFO) << "[MLT] TS Start: "
@@ -418,7 +418,7 @@ ModuleLevelTrigger::send_trigger_decisions()
     TLOG_DEBUG(TLVL_DEBUG_ALL) << "[MLT] updated sent tds: " << m_sent_tds.size();
   }
 
-  TLOG(0) << "[MLT] Run " << m_run_number << ": "
+  TLOG() << "[MLT] Run " << m_run_number << ": "
          << "Received " << m_tc_received_count << " TCs. Sent " << m_td_sent_count.load() << " TDs consisting of "
          << m_td_sent_tc_count.load() << " TCs. " << m_td_paused_count.load() << " TDs (" << m_td_paused_tc_count.load()
          << " TCs) were created during pause, and " << m_td_inhibited_count.load() << " TDs ("
@@ -426,10 +426,10 @@ ModuleLevelTrigger::send_trigger_decisions()
          << m_td_dropped_tc_count.load() << " TCs) were dropped. " << m_td_cleared_count.load() << " TDs ("
          << m_td_cleared_tc_count.load() << " TCs) were cleared.";
   if (m_ignoring_tc_types) {
-    TLOG(0) << "Ignored " << m_tc_ignored_count.load() << " TCs.";
+    TLOG() << "Ignored " << m_tc_ignored_count.load() << " TCs.";
   }
   if (m_use_bitwords) {
-    TLOG(0) << "Not triggered (failed bitword check) on " << m_td_not_triggered_count.load() << " TDs consisting of "
+    TLOG() << "Not triggered (failed bitword check) on " << m_td_not_triggered_count.load() << " TDs consisting of "
            << m_td_not_triggered_tc_count.load() << " TCs.";
   }
 
@@ -768,10 +768,10 @@ ModuleLevelTrigger::check_trigger_bitwords()
 {
   bool trigger_check = false;
   for (auto bitword : m_trigger_bitwords) {
-    TLOG(TLVL_DEBUG_ALL) << "[MLT] TD word: " << m_TD_bitword << ", bitword: " << bitword;
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "[MLT] TD word: " << m_TD_bitword << ", bitword: " << bitword;
     trigger_check = ((m_TD_bitword & bitword) == bitword);
-    TLOG(TLVL_DEBUG_ALL) << "[MLT] &: " << (m_TD_bitword & bitword);
-    TLOG(TLVL_DEBUG_ALL) << "[MLT] trigger?: " << trigger_check;
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "[MLT] &: " << (m_TD_bitword & bitword);
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "[MLT] trigger?: " << trigger_check;
     if (trigger_check == true)
       break;
   }

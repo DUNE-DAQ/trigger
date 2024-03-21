@@ -111,7 +111,7 @@ Tee<T>::do_work(std::atomic<bool>& running_flag)
       ers::warning(dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), "push to output queue 2", timeout_ms));
     }
   }
-  TLOG(1) << get_name() << ": Exiting do_work() method after receiving " << n_objects << " objects";
+  TLOG() << get_name() << ": Exiting do_work() method after receiving " << n_objects << " objects";
 }
 
 } // namespace trigger

@@ -168,7 +168,7 @@ public:
     m_thread.join();
     flush();
     m_zm.clear();
-    TLOG(1) << "[Zipper] Received " << m_n_received << " Sets. Sent " << m_n_sent << " Sets. " << m_n_tardy << " were tardy";
+    TLOG() << "[Zipper] Received " << m_n_received << " Sets. Sent " << m_n_sent << " Sets. " << m_n_tardy << " were tardy";
     std::stringstream ss;
     ss << std::endl;
     for (auto& [id, n] : m_tardy_counts) {

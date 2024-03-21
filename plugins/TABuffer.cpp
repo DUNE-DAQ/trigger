@@ -127,7 +127,7 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  TLOG(1) << "[TAB] " << get_name() << " exiting do_work() method. Received " << n_tas_received << " TAs " << " and " << n_requests_received << " data requests";
+  TLOG() << "[TAB] " << get_name() << " exiting do_work() method. Received " << n_tas_received << " TAs " << " and " << n_requests_received << " data requests";
 }
 
 } // namespace trigger

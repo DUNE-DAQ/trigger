@@ -195,7 +195,7 @@ private:
     // outputs are stale and will cause tardy warnings from the zipper
     // downstream
     worker.drain(true);
-    TLOG(1) << "[TGM] " << get_name() << ": Exiting do_work() method for run " << m_run_number << ", received " << m_received_count
+    TLOG() << "[TGM] " << get_name() << ": Exiting do_work() method for run " << m_run_number << ", received " << m_received_count
            << " inputs (" << worker.get_low_level_input_count() << " sub-inputs) and successfully sent " << m_sent_count
            << " outputs. ";
     worker.reset();

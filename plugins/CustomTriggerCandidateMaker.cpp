@@ -307,9 +307,9 @@ CustomTriggerCandidateMaker::print_timestamps_vector(std::vector<std::pair<int, 
 void
 CustomTriggerCandidateMaker::print_final_tc_counts(std::map<int, int> counts)
 {
-  TLOG(1) << "[CTCM] Final counts:";
+  TLOG() << "[CTCM] Final counts:";
   for (auto it = m_tc_settings.begin(); it != m_tc_settings.end(); it++) {
-    TLOG(1) << "[CTCM] TC type: " << it->first << ", interval: " << it->second << ", count: " << counts[it->first];
+    TLOG() << "[CTCM] TC type: " << it->first << ", interval: " << it->second << ", count: " << counts[it->first];
   }
   return;
 }

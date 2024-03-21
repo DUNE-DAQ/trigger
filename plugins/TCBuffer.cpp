@@ -130,7 +130,7 @@ TCBuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  TLOG(1) << "[TCB] " << get_name() << " exiting do_work() method. Received " << n_tcs_received << " TCs " << " and " << n_requests_received << " data requests";
+  TLOG() << "[TCB] " << get_name() << " exiting do_work() method. Received " << n_tcs_received << " TCs " << " and " << n_requests_received << " data requests";
 }
 } // namespace trigger
 } // namespace dunedaq
