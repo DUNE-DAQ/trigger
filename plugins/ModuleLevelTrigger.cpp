@@ -699,7 +699,8 @@ ModuleLevelTrigger::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
     TLOG_DEBUG(18) << "Changing our flag for the DFO busy state from " << m_dfo_is_busy.load() << " to "
                    << inhibit.busy;
     m_dfo_is_busy = inhibit.busy;
-    m_livetime_counter->set_state(LivetimeCounter::State::kDead);
+    LivetimeCounter::State state = (inhibit.busy) ? LivetimeCounter::State::kDead : LivetimeCounter::State::kLive;
+    m_livetime_counter->set_state(state);
   }
 }
 
