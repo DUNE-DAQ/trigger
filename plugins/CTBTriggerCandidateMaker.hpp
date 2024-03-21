@@ -55,11 +55,6 @@ private:
   bool m_prescale_flag;
   int m_prescale;
 
-  // HSI Passthrough changes
-  std::atomic<bool> m_hsi_passthrough;
-  int m_hsi_pt_before;
-  int m_hsi_pt_after;
-
   triggeralgs::TriggerCandidate HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data);
   void receive_hsievent(dfmessages::HSIEvent& data);
 
@@ -69,8 +64,20 @@ private:
 
   std::chrono::milliseconds m_queue_timeout;
 
-  // NOLINTNEXTLINE(build/unsigned)
-  std::map<uint32_t, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> m_detid_offsets_map;
+  // HLT to TC type map
+  std::map<int, trgdataformats::TriggerCandidateData::Type> m_HLT_TC_map =
+  {
+    {0, trgdataformats::TriggerCandidateData::Type::kCTBFakeTrigger},
+    {1, trgdataformats::TriggerCandidateData::Type::kCTBBeam},
+    {2, trgdataformats::TriggerCandidateData::Type::kCTBBeamHiLoPressChkv},
+    {3, trgdataformats::TriggerCandidateData::Type::kCTBBeamLoPressChkv},
+    {4, trgdataformats::TriggerCandidateData::Type::kCTBBeamHiPressChkv},
+    {5, trgdataformats::TriggerCandidateData::Type::kCTBOffSpillCosmic},
+    {6, trgdataformats::TriggerCandidateData::Type::kCTBCosmic},
+    {7, trgdataformats::TriggerCandidateData::Type::kCTBBeamNoChkv},
+    {8, trgdataformats::TriggerCandidateData::Type::kCTBCosmicJura},
+    {9, trgdataformats::TriggerCandidateData::Type::kCTBCosmicSaleve},
+  }; 
 
   // Opmon variables
   using metric_counter_type = decltype(ctbtriggercandidatemakerinfo::Info::tsd_received_count);
