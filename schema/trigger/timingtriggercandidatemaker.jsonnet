@@ -47,6 +47,14 @@ local types = {
 				time_after: 2000000
 			},
 			doc="Example 2"),
+		s.field("s3",
+			self.map_t,
+			{
+				signal_type: 3,
+				time_before: 10000,
+				time_after: 20000
+			},
+			doc="Neutron Source"),
 		s.field("hsi_trigger_type_passthrough", self.hsi_tt_pt, doc="Option to override the trigger type values"),
                 s.field("prescale", self.count_t, default=1, doc="Option to prescale TTCM TCs")
 	], doc="Configuration of the different readout time maps"),

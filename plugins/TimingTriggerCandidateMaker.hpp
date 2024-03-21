@@ -60,6 +60,9 @@ private:
   int m_hsi_pt_before;
   int m_hsi_pt_after;
 
+  // Neutron source signal
+  uint32_t m_neutron_source_signal;
+
   triggeralgs::TriggerCandidate HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data);
   void receive_hsievent(dfmessages::HSIEvent& data);
 

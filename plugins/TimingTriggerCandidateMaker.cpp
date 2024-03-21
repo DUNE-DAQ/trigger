@@ -55,7 +55,13 @@ TimingTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEve
   candidate.time_candidate = data.timestamp;
   // throw away bits 31-16 of header, that's OK for now
   candidate.detid = { static_cast<triggeralgs::detid_t>(data.signal_map) }; // NOLINT(build/unsigned)
-  candidate.type = triggeralgs::TriggerCandidate::Type::kTiming;
+
+  if (data.signal_map == m_neutron_source_signal) {
+    candidate.type = triggeralgs::TriggerCandidate::Type::kNeutronSourceCalib;
+  }
+  else {
+    candidate.type = triggeralgs::TriggerCandidate::Type::kTiming;
+  }
 
   candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
   candidate.inputs = {};
@@ -71,9 +77,11 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   m_detid_offsets_map[params.s0.signal_type] = { params.s0.time_before, params.s0.time_after };
   m_detid_offsets_map[params.s1.signal_type] = { params.s1.time_before, params.s1.time_after };
   m_detid_offsets_map[params.s2.signal_type] = { params.s2.time_before, params.s2.time_after };
+  m_detid_offsets_map[params.s3.signal_type] = { params.s3.time_before, params.s3.time_after };
   m_hsi_passthrough = params.hsi_trigger_type_passthrough;
   m_hsi_pt_before = params.s0.time_before;
   m_hsi_pt_after = params.s0.time_after;
+  m_neutron_source_signal = params.s3.signal_type;
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
   TLOG_DEBUG(2) << get_name() + " configured.";
