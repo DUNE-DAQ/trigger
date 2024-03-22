@@ -16,6 +16,7 @@
 
 #include <regex>
 #include <string>
+#include <bitset>
 
 namespace dunedaq {
 namespace trigger {
@@ -32,24 +33,36 @@ CTBTriggerCandidateMaker::CTBTriggerCandidateMaker(const std::string& name)
   register_command("scrap", &CTBTriggerCandidateMaker::do_scrap);
 }
 
-triggeralgs::TriggerCandidate
+std::vector<triggeralgs::TriggerCandidate>
 CTBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data)
 {
   TLOG_DEBUG(3) << "[CTB] Converting HSI event, signal: " << data.signal_map;
-  TLOG_DEBUG(3) << "[CTB] header: " << data.header;
-  TLOG_DEBUG(3) << "[CTB] TC type: " << static_cast<int>(m_HLT_TC_map[data.signal_map]);
 
-  triggeralgs::TriggerCandidate candidate;
-  candidate.time_candidate = data.timestamp;
-  candidate.time_start = data.timestamp - m_time_before;
-  candidate.time_end = data.timestamp + m_time_after;
-  //candidate.detid = 1;
-  candidate.detid = data.header;
-  candidate.type = m_HLT_TC_map[data.signal_map];
-  candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kCTBToTriggerCandidate;
-  candidate.inputs = {};
+  std::vector<triggeralgs::TriggerCandidate> candidates;
+  std::bitset<32> bits(data.signal_map);
+  TLOG() << "BITS: " << bits;
 
-  return candidate;
+  for (size_t i = 0; i < bits.size(); ++i) {
+    if (bits.test(i)) {
+  
+      TLOG() << "this bit: " << i;
+      TLOG_DEBUG(3) << "[CTB] TC type: " << static_cast<int>(m_HLT_TC_map[i]);
+    
+      triggeralgs::TriggerCandidate candidate;
+      candidate.time_candidate = data.timestamp;
+      candidate.time_start = data.timestamp - m_time_before;
+      candidate.time_end = data.timestamp + m_time_after;
+      //candidate.detid = 1;
+      candidate.detid = data.header;
+      candidate.type = m_HLT_TC_map[i];
+      candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
+      candidate.inputs = {};
+
+      candidates.push_back(candidate);
+    }
+  }
+
+  return candidates;
 }
 
 
@@ -128,30 +141,32 @@ CTBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
     } 
   }
   
-  triggeralgs::TriggerCandidate candidate;
+  std::vector<triggeralgs::TriggerCandidate> candidates;
   try {
-    candidate = HSIEventToTriggerCandidate(data);
+    candidates = HSIEventToTriggerCandidate(data);
   } catch (SignalTypeError& e) {
     m_tc_sig_type_err_count++;
     ers::error(e);
     return;
   }
 
-  bool successfullyWasSent = false;
-  while (!successfullyWasSent) {
-    try {
-        triggeralgs::TriggerCandidate candidate_copy(candidate);
-      m_output_queue->send(std::move(candidate_copy), m_queue_timeout);
-      successfullyWasSent = true;
-      ++m_tc_sent_count;
-    } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
-      std::ostringstream oss_warn;
-      oss_warn << "push to output queue \"" << m_output_queue->get_name() << "\"";
-      ers::warning(
-        dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), oss_warn.str(), m_queue_timeout.count()));
+  for (const auto& candidate : candidates) {
+    bool successfullyWasSent = false;
+    while (!successfullyWasSent) {
+      try {
+          triggeralgs::TriggerCandidate candidate_copy(candidate);
+        m_output_queue->send(std::move(candidate_copy), m_queue_timeout);
+        successfullyWasSent = true;
+        ++m_tc_sent_count;
+      } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
+        std::ostringstream oss_warn;
+        oss_warn << "push to output queue \"" << m_output_queue->get_name() << "\"";
+        ers::warning(
+          dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), oss_warn.str(), m_queue_timeout.count()));
+      }
     }
+    m_tc_total_count++;
   }
-  m_tc_total_count++;
 }
 
 void

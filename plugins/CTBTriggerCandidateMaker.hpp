@@ -59,7 +59,7 @@ private:
   int m_time_before;
   int m_time_after;
 
-  triggeralgs::TriggerCandidate HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data);
+  std::vector<triggeralgs::TriggerCandidate> HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data);
   void receive_hsievent(dfmessages::HSIEvent& data);
 
   using sink_t = dunedaq::iomanager::SenderConcept<triggeralgs::TriggerCandidate>;
