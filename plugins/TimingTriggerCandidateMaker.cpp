@@ -70,25 +70,32 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
 {
   auto params = config.get<dunedaq::trigger::timingtriggercandidatemaker::Conf>();
 
+  // Fill the internal hsi signal map. The map contains signal ID, TC type to
+  // create, and the readout time window.
   for (auto hsi_input : params.hsi_configs) {
     triggeralgs::TriggerCandidate::Type type;
     type = static_cast<triggeralgs::TriggerCandidate::Type>(
         dunedaq::trgdataformats::string_to_fragment_type_value(hsi_input.tc_trigger_type));
     if (type == triggeralgs::TriggerCandidate::Type::kUnknown) {
-      // TODO: throw here
+      throw ConfigurationProblem(ERS_HERE,
+          "Unknown TriggerCandidate supplied to TTCM HSI map");
     }
 
     if (m_detid_offsets_map.count(hsi_input.signal)) {
-      // TODO: throw here
+      throw ConfigurationProblem(ERS_HERE,
+          "Supplied more than one of the same hsi signal ID to TTCM HSI map");
     }
 
     m_detid_offsets_map[hsi_input.signal] = { type,
                                               hsi_input.time_before,
                                               hsi_input.time_after };
+
+    TLOG() << "TTCM will convert HSI signal id: " << hsi_input.signal << " to TC type: " << hsi_input.tc_trigger_type;
   }
 
   if (m_detid_offsets_map.empty()) {
-    // TODO: throw here
+      throw ConfigurationProblem(ERS_HERE,
+          "Created TTCM, but supplied an empty signal map!");
   }
 
   m_hsi_passthrough = params.hsi_trigger_type_passthrough;
