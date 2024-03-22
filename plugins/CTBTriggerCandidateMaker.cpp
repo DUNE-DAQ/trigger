@@ -37,14 +37,15 @@ CTBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
 {
   TLOG_DEBUG(3) << "[CTB] Converting HSI event, signal: " << data.signal_map;
   TLOG_DEBUG(3) << "[CTB] header: " << data.header;
+  TLOG_DEBUG(3) << "[CTB] TC type: " << static_cast<int>(m_HLT_TC_map[data.signal_map]);
 
   triggeralgs::TriggerCandidate candidate;
   candidate.time_candidate = data.timestamp;
-  candidate.time_start = data.timestamp;
-  candidate.time_end = data.timestamp;
+  candidate.time_start = data.timestamp - m_time_before;
+  candidate.time_end = data.timestamp + m_time_after;
   //candidate.detid = 1;
   candidate.detid = data.header;
-  candidate.type = triggeralgs::TriggerCandidate::Type::kCTBFakeTrigger;
+  candidate.type = m_HLT_TC_map[data.signal_map];
   candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kCTBToTriggerCandidate;
   candidate.inputs = {};
 
@@ -56,11 +57,15 @@ void
 CTBTriggerCandidateMaker::do_conf(const nlohmann::json& config)
 {
   auto params = config.get<dunedaq::trigger::ctbtriggercandidatemaker::Conf>();
+  m_time_before = params.time_before; 
+  m_time_after = params.time_after;
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
   TLOG_DEBUG(2) << get_name() + " configured.";
+  TLOG(2) << "[CTB] Time before: " << m_time_before;
+  TLOG(2) << "[CTB] Time after: " << m_time_after;
   if (m_prescale_flag){
-    TLOG(2) << "Running with prescale at: " << m_prescale;
+    TLOG(2) << "[CTB] Running with prescale at: " << m_prescale;
   }
 }
 

@@ -55,6 +55,10 @@ private:
   bool m_prescale_flag;
   int m_prescale;
 
+  // Config
+  int m_time_before;
+  int m_time_after;
+
   triggeralgs::TriggerCandidate HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data);
   void receive_hsievent(dfmessages::HSIEvent& data);
 
