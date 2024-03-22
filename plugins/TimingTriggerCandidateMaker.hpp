@@ -30,6 +30,14 @@
 
 namespace dunedaq {
 namespace trigger {
+
+struct HSISignal
+{
+  triggeralgs::TriggerCandidate::Type type;
+  triggeralgs::timestamp_t time_before;
+  triggeralgs::timestamp_t time_after;
+};
+
 class TimingTriggerCandidateMaker : public dunedaq::appfwk::DAQModule
 {
 public:
@@ -60,9 +68,6 @@ private:
   int m_hsi_pt_before;
   int m_hsi_pt_after;
 
-  // Neutron source signal
-  uint32_t m_neutron_source_signal;
-
   triggeralgs::TriggerCandidate HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data);
   void receive_hsievent(dfmessages::HSIEvent& data);
 
@@ -73,7 +78,7 @@ private:
   std::chrono::milliseconds m_queue_timeout;
 
   // NOLINTNEXTLINE(build/unsigned)
-  std::map<uint32_t, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> m_detid_offsets_map;
+  std::map<uint32_t, HSISignal> m_detid_offsets_map;
 
   // Opmon variables
   using metric_counter_type = decltype(timingtriggercandidatemakerinfo::Info::tsd_received_count);
