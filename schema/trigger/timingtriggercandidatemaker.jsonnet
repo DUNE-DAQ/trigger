@@ -13,7 +13,7 @@ local types = {
 
   hsi_input: s.record("hsi_input", [
     s.field("signal",   self.signal_type_t,   default=0),
-    s.field("tc_trigger_type", self.trigger_type_t,  default="kTiming"),
+    s.field("tc_type_name", self.trigger_type_t,  default="kTiming"),
     s.field("time_before",  self.time_t,          default=10000, doc="Readout time before time stamp"),
     s.field("time_after",   self.time_t,          default=20000, doc="Readout time after time stamp"),
     ]),

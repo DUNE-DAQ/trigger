@@ -75,7 +75,7 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   for (auto hsi_input : params.hsi_configs) {
     triggeralgs::TriggerCandidate::Type type;
     type = static_cast<triggeralgs::TriggerCandidate::Type>(
-        dunedaq::trgdataformats::string_to_fragment_type_value(hsi_input.tc_trigger_type));
+        dunedaq::trgdataformats::string_to_fragment_type_value(hsi_input.tc_type_name));
     if (type == triggeralgs::TriggerCandidate::Type::kUnknown) {
       throw ConfigurationProblem(ERS_HERE,
           "Unknown TriggerCandidate supplied to TTCM HSI map");
@@ -90,7 +90,7 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
                                               hsi_input.time_before,
                                               hsi_input.time_after };
 
-    TLOG() << "TTCM will convert HSI signal id: " << hsi_input.signal << " to TC type: " << hsi_input.tc_trigger_type;
+    TLOG() << "TTCM will convert HSI signal id: " << hsi_input.signal << " to TC type: " << hsi_input.tc_type_name;
   }
 
   if (m_detid_offsets_map.empty()) {
