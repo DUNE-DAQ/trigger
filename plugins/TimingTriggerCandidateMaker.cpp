@@ -16,6 +16,7 @@
 
 #include <regex>
 #include <string>
+#include <limits>
 
 namespace dunedaq {
 namespace trigger {
@@ -32,36 +33,50 @@ TimingTriggerCandidateMaker::TimingTriggerCandidateMaker(const std::string& name
   register_command("scrap", &TimingTriggerCandidateMaker::do_scrap);
 }
 
-triggeralgs::TriggerCandidate
-TimingTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data)
+template<typename T> 
+std::vector<int> 
+TimingTriggerCandidateMaker::GetTriggeredBits(T signal_map)
 {
-  triggeralgs::TriggerCandidate candidate;
-  // TODO Trigger Team <dune-daq@github.com> Nov-18-2021: the signal field ia now a signal bit map, rather than unique
-  // value -> change logic of below?
-  if (m_hsi_passthrough == true) {
-    TLOG_DEBUG(3) << "HSI passthrough applied, modified readout window is set";
-    candidate.time_start = data.timestamp - m_hsi_pt_before;
-    candidate.time_end = data.timestamp + m_hsi_pt_after;
-  } else {
-    if (m_detid_offsets_map.count(data.signal_map)) {
-      // clang-format off
-      candidate.time_start = data.timestamp - m_detid_offsets_map[data.signal_map].time_before;  // time_start
-      candidate.time_end   = data.timestamp + m_detid_offsets_map[data.signal_map].time_after; // time_end,
-      // clang-format on    
-    } else {
-      throw dunedaq::trigger::SignalTypeError(ERS_HERE, get_name(), data.signal_map);
+  std::vector<int> triggered_bits;
+  int nbits = std::numeric_limits<T>::digits;
+  for (int i = 0; i < nbits; ++i) {
+    if ((signal_map >> i) & 1 ) {
+      triggered_bits.push_back(i);
     }
   }
-  candidate.time_candidate = data.timestamp;
-  // throw away bits 31-16 of header, that's OK for now
-  candidate.detid = { static_cast<triggeralgs::detid_t>(data.signal_map) }; // NOLINT(build/unsigned)
+  return triggered_bits;
+}
 
-  candidate.type = m_detid_offsets_map[data.signal_map].type; // type,
+std::vector<triggeralgs::TriggerCandidate>
+TimingTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data)
+{
+  std::vector<triggeralgs::TriggerCandidate> candidates;
+  // TODO Trigger Team <dune-daq@github.com> Nov-18-2021: the signal field ia now a signal bit map, rather than unique
+  // value -> change logic of below?
 
-  candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
-  candidate.inputs = {};
+  std::vector<int> triggered_bits = GetTriggeredBits(data.signal_map);
+  for (int bit_index : triggered_bits) {
+    uint32_t signal = 1 << bit_index;
 
-  return candidate;
+    if (!m_hsisignal_map.count(signal)) {
+      throw dunedaq::trigger::SignalTypeError(ERS_HERE, get_name(), data.signal_map);
+    }
+
+    triggeralgs::TriggerCandidate candidate;
+    candidate.time_start = data.timestamp - m_hsisignal_map[data.signal_map].time_before;  // time_start
+    candidate.time_end   = data.timestamp + m_hsisignal_map[data.signal_map].time_after; // time_end,
+    candidate.time_candidate = data.timestamp;
+    // throw away bits 31-16 of header, that's OK for now
+    candidate.detid = { static_cast<triggeralgs::detid_t>(signal) }; // NOLINT(build/unsigned)
+
+    candidate.type = m_hsisignal_map[signal].type; // type,
+
+    candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
+    candidate.inputs = {};
+    candidates.push_back(candidate);
+  }
+
+  return candidates;
 }
 
 
@@ -81,28 +96,24 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
           "Unknown TriggerCandidate supplied to TTCM HSI map");
     }
 
-    if (m_detid_offsets_map.count(hsi_input.signal)) {
+    if (m_hsisignal_map.count(hsi_input.signal)) {
       throw ConfigurationProblem(ERS_HERE,
           "Supplied more than one of the same hsi signal ID to TTCM HSI map");
     }
 
-    m_detid_offsets_map[hsi_input.signal] = { type,
-                                              hsi_input.time_before,
-                                              hsi_input.time_after };
+    m_hsisignal_map[hsi_input.signal] = { type,
+                                          hsi_input.time_before,
+                                          hsi_input.time_after };
 
     TLOG() << "TTCM will convert HSI signal id: " << hsi_input.signal << " to TC type: " << hsi_input.tc_type_name;
   }
 
-  if (m_detid_offsets_map.empty()) {
+  if (m_hsisignal_map.empty()) {
       throw ConfigurationProblem(ERS_HERE,
           "Created TTCM, but supplied an empty signal map!");
   }
 
-  m_hsi_passthrough = params.hsi_trigger_type_passthrough;
-
-  auto first_entry = *std::begin(m_detid_offsets_map);
-  m_hsi_pt_before = first_entry.second.time_before;
-  m_hsi_pt_after = first_entry.second.time_after;
+  auto first_entry = *std::begin(m_hsisignal_map);
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
   TLOG_DEBUG(2) << get_name() + " configured.";
@@ -170,42 +181,34 @@ TimingTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
     } 
   }
 
-  if (m_hsi_passthrough == true){
-    TLOG_DEBUG(3) << "Signal_map: " << data.signal_map << ", trigger bits: " << (std::bitset<16>)data.signal_map;
-    try {
-      if ((data.signal_map & 0xffffff00) != 0){
-        throw dunedaq::trigger::BadTriggerBitmask(ERS_HERE, get_name(), (std::bitset<16>)data.signal_map);
-      }
-    } catch (BadTriggerBitmask& e) {
-      ers::error(e);
-      return;
-    }
-  }
-
-  triggeralgs::TriggerCandidate candidate;
+  // Retreive all the potential TCs from HSI signal
+  std::vector<triggeralgs::TriggerCandidate> candidates;
   try {
-    candidate = HSIEventToTriggerCandidate(data);
+    candidates = HSIEventToTriggerCandidate(data);
   } catch (SignalTypeError& e) {
     m_tc_sig_type_err_count++;
     ers::error(e);
     return;
   }
 
-  bool successfullyWasSent = false;
-  while (!successfullyWasSent) {
-    try {
+  // Send each TC to the output queue separately
+  for(const triggeralgs::TriggerCandidate& candidate: candidates){
+    bool successfullyWasSent = false;
+    while (!successfullyWasSent) {
+      try {
         triggeralgs::TriggerCandidate candidate_copy(candidate);
-      m_output_queue->send(std::move(candidate_copy), m_queue_timeout);
-      successfullyWasSent = true;
-      ++m_tc_sent_count;
-    } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
-      std::ostringstream oss_warn;
-      oss_warn << "push to output queue \"" << m_output_queue->get_name() << "\"";
-      ers::warning(
-        dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), oss_warn.str(), m_queue_timeout.count()));
+        m_output_queue->send(std::move(candidate_copy), m_queue_timeout);
+        successfullyWasSent = true;
+        ++m_tc_sent_count;
+      } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
+        std::ostringstream oss_warn;
+        oss_warn << "push to output queue \"" << m_output_queue->get_name() << "\"";
+        ers::warning(
+            dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), oss_warn.str(), m_queue_timeout.count()));
+      }
     }
+    m_tc_total_count++;
   }
-  m_tc_total_count++;
 }
 
 void
