@@ -69,19 +69,18 @@ private:
   std::chrono::milliseconds m_queue_timeout;
 
   // HLT to TC type map
-  std::map<int, trgdataformats::TriggerCandidateData::Type> m_HLT_TC_map =
-  {
-    {0, trgdataformats::TriggerCandidateData::Type::kCTBFakeTrigger},
-    {1, trgdataformats::TriggerCandidateData::Type::kCTBBeam},
-    {2, trgdataformats::TriggerCandidateData::Type::kCTBBeamHiLoPressChkv},
-    {3, trgdataformats::TriggerCandidateData::Type::kCTBBeamLoPressChkv},
-    {4, trgdataformats::TriggerCandidateData::Type::kCTBBeamHiPressChkv},
-    {5, trgdataformats::TriggerCandidateData::Type::kCTBOffSpillCosmic},
-    {6, trgdataformats::TriggerCandidateData::Type::kCTBCosmic},
-    {7, trgdataformats::TriggerCandidateData::Type::kCTBBeamNoChkv},
-    {8, trgdataformats::TriggerCandidateData::Type::kCTBCosmicJura},
-    {9, trgdataformats::TriggerCandidateData::Type::kCTBCosmicSaleve},
-  }; 
+  std::map<int, trgdataformats::TriggerCandidateData::Type> m_HLT_TC_map = {
+    { 0, trgdataformats::TriggerCandidateData::Type::kCTBFakeTrigger },
+    { 1, trgdataformats::TriggerCandidateData::Type::kCTBBeam },
+    { 2, trgdataformats::TriggerCandidateData::Type::kCTBBeamHiLoPressChkv },
+    { 3, trgdataformats::TriggerCandidateData::Type::kCTBBeamLoPressChkv },
+    { 4, trgdataformats::TriggerCandidateData::Type::kCTBBeamHiPressChkv },
+    { 5, trgdataformats::TriggerCandidateData::Type::kCTBOffSpillCosmic },
+    { 6, trgdataformats::TriggerCandidateData::Type::kCTBCosmic },
+    { 7, trgdataformats::TriggerCandidateData::Type::kCTBBeamNoChkv },
+    { 8, trgdataformats::TriggerCandidateData::Type::kCTBCosmicJura },
+    { 9, trgdataformats::TriggerCandidateData::Type::kCTBCosmicSaleve },
+  };
 
   // Opmon variables
   using metric_counter_type = decltype(ctbtriggercandidatemakerinfo::Info::tsd_received_count);

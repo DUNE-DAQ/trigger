@@ -10,20 +10,20 @@
 #include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "trgdataformats/Types.hpp"
-#include "trigger/TriggerCandidate_serialization.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
+#include "trgdataformats/Types.hpp"
+#include "trigger/TriggerCandidate_serialization.hpp"
 
+#include <bitset>
 #include <regex>
 #include <string>
-#include <bitset>
 
-using dunedaq::trigger::logging::TLVL_VERY_IMPORTANT;
-using dunedaq::trigger::logging::TLVL_GENERAL;
-using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
-using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
 using dunedaq::trigger::logging::TLVL_DEBUG_ALL;
+using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
+using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
+using dunedaq::trigger::logging::TLVL_GENERAL;
+using dunedaq::trigger::logging::TLVL_VERY_IMPORTANT;
 
 namespace dunedaq {
 namespace trigger {
@@ -51,17 +51,17 @@ CTBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
 
   for (size_t i = 0; i < bits.size(); ++i) {
     if (bits.test(i)) {
-  
+
       TLOG_DEBUG(TLVL_DEBUG_ALL) << "[CTB] this bit: " << i;
 
       if (m_HLT_TC_map.count(i)) {
         TLOG_DEBUG(TLVL_DEBUG_ALL) << "[CTB] TC type: " << static_cast<int>(m_HLT_TC_map[i]);
-    
+
         triggeralgs::TriggerCandidate candidate;
         candidate.time_candidate = data.timestamp;
         candidate.time_start = data.timestamp - m_time_before;
         candidate.time_end = data.timestamp + m_time_after;
-        //candidate.detid = 1;
+        // candidate.detid = 1;
         candidate.detid = data.header;
         candidate.type = m_HLT_TC_map[i];
         candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
@@ -69,7 +69,8 @@ CTBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
 
         candidates.push_back(candidate);
       } else {
-        ers::error(dunedaq::trigger::InvalidCTBSignal(ERS_HERE, get_name(), data.signal_map, bits, m_HLT_TC_map.size()));
+        ers::error(
+          dunedaq::trigger::InvalidCTBSignal(ERS_HERE, get_name(), data.signal_map, bits, m_HLT_TC_map.size()));
       }
     }
   }
@@ -77,19 +78,18 @@ CTBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
   return candidates;
 }
 
-
 void
 CTBTriggerCandidateMaker::do_conf(const nlohmann::json& config)
 {
   auto params = config.get<dunedaq::trigger::ctbtriggercandidatemaker::Conf>();
-  m_time_before = params.time_before; 
+  m_time_before = params.time_before;
   m_time_after = params.time_after;
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
   TLOG_DEBUG(TLVL_GENERAL) << "[CTB] " << get_name() + " configured.";
   TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CTB] Time before: " << m_time_before;
   TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CTB] Time after: " << m_time_after;
-  if (m_prescale_flag){
+  if (m_prescale_flag) {
     TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CTB] Running with prescale at: " << m_prescale;
   }
 }
@@ -98,7 +98,7 @@ void
 CTBTriggerCandidateMaker::init(const nlohmann::json& iniobj)
 {
   try {
-    auto ci = appfwk::connection_index(iniobj, {"output", "hsi_input"});	   
+    auto ci = appfwk::connection_index(iniobj, { "output", "hsi_input" });
     m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(ci["output"]);
     m_hsievent_input = get_iom_receiver<dfmessages::HSIEvent>(ci["hsi_input"]);
   } catch (const ers::Issue& excpt) {
@@ -119,7 +119,7 @@ CTBTriggerCandidateMaker::do_start(const nlohmann::json& startobj)
   m_run_number.store(start_params.run);
 
   m_hsievent_input->add_callback(std::bind(&CTBTriggerCandidateMaker::receive_hsievent, this, std::placeholders::_1));
-  
+
   TLOG_DEBUG(TLVL_GENERAL) << "[CTB] " << get_name() + " successfully started.";
 }
 
@@ -136,23 +136,23 @@ CTBTriggerCandidateMaker::do_stop(const nlohmann::json&)
 void
 CTBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
 {
-  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CTB] Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
-                << ", and run_number " << data.run_number;
+  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CTB] Activity received with timestamp " << data.timestamp << ", sequence_counter "
+                                << data.sequence_counter << ", and run_number " << data.run_number;
 
   if (data.run_number != m_run_number) {
-    ers::error(dunedaq::trigger::InvalidHSIEventRunNumber(ERS_HERE, get_name(), data.run_number, m_run_number,
-                                                          data.timestamp, data.sequence_counter));
+    ers::error(dunedaq::trigger::InvalidHSIEventRunNumber(
+      ERS_HERE, get_name(), data.run_number, m_run_number, data.timestamp, data.sequence_counter));
     return;
   }
 
   ++m_tsd_received_count;
 
   if (m_prescale_flag) {
-    if (m_tsd_received_count % m_prescale != 0){
+    if (m_tsd_received_count % m_prescale != 0) {
       return;
-    } 
+    }
   }
-  
+
   std::vector<triggeralgs::TriggerCandidate> candidates;
   try {
     candidates = HSIEventToTriggerCandidate(data);
@@ -166,15 +166,14 @@ CTBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
     bool successfullyWasSent = false;
     while (!successfullyWasSent) {
       try {
-          triggeralgs::TriggerCandidate candidate_copy(candidate);
+        triggeralgs::TriggerCandidate candidate_copy(candidate);
         m_output_queue->send(std::move(candidate_copy), m_queue_timeout);
         successfullyWasSent = true;
         ++m_tc_sent_count;
       } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
         std::ostringstream oss_warn;
         oss_warn << "push to output queue \"" << m_output_queue->get_name() << "\"";
-        ers::warning(
-          dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), oss_warn.str(), m_queue_timeout.count()));
+        ers::warning(dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), oss_warn.str(), m_queue_timeout.count()));
       }
     }
     m_tc_total_count++;
@@ -183,7 +182,8 @@ CTBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
 
 void
 CTBTriggerCandidateMaker::do_scrap(const nlohmann::json&)
-{}
+{
+}
 
 void
 CTBTriggerCandidateMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
