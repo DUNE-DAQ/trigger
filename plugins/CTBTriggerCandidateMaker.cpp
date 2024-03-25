@@ -7,6 +7,7 @@
  */
 
 #include "CTBTriggerCandidateMaker.hpp"
+#include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "trgdataformats/Types.hpp"
@@ -17,6 +18,12 @@
 #include <regex>
 #include <string>
 #include <bitset>
+
+using dunedaq::trigger::logging::TLVL_VERY_IMPORTANT;
+using dunedaq::trigger::logging::TLVL_GENERAL;
+using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
+using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
+using dunedaq::trigger::logging::TLVL_DEBUG_ALL;
 
 namespace dunedaq {
 namespace trigger {
@@ -36,19 +43,19 @@ CTBTriggerCandidateMaker::CTBTriggerCandidateMaker(const std::string& name)
 std::vector<triggeralgs::TriggerCandidate>
 CTBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data)
 {
-  TLOG_DEBUG(3) << "[CTB] Converting HSI event, signal: " << data.signal_map;
+  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CTB] Converting HSI event, signal: " << data.signal_map;
 
   std::vector<triggeralgs::TriggerCandidate> candidates;
   std::bitset<32> bits(data.signal_map);
-  TLOG() << "BITS: " << bits;
+  TLOG_DEBUG(TLVL_DEBUG_HIGH) << "BITS: " << bits;
 
   for (size_t i = 0; i < bits.size(); ++i) {
     if (bits.test(i)) {
   
-      TLOG() << "this bit: " << i;
+      TLOG_DEBUG(TLVL_DEBUG_ALL) << "this bit: " << i;
 
       if (m_HLT_TC_map.count(i)) {
-        TLOG_DEBUG(3) << "[CTB] TC type: " << static_cast<int>(m_HLT_TC_map[i]);
+        TLOG_DEBUG(TLVL_DEBUG_ALL) << "[CTB] TC type: " << static_cast<int>(m_HLT_TC_map[i]);
     
         triggeralgs::TriggerCandidate candidate;
         candidate.time_candidate = data.timestamp;
@@ -79,11 +86,11 @@ CTBTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   m_time_after = params.time_after;
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
-  TLOG_DEBUG(2) << get_name() + " configured.";
-  TLOG(2) << "[CTB] Time before: " << m_time_before;
-  TLOG(2) << "[CTB] Time after: " << m_time_after;
+  TLOG_DEBUG(TLVL_GENERAL) << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CTB] Time before: " << m_time_before;
+  TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CTB] Time after: " << m_time_after;
   if (m_prescale_flag){
-    TLOG(2) << "[CTB] Running with prescale at: " << m_prescale;
+    TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CTB] Running with prescale at: " << m_prescale;
   }
 }
 
@@ -113,7 +120,7 @@ CTBTriggerCandidateMaker::do_start(const nlohmann::json& startobj)
 
   m_hsievent_input->add_callback(std::bind(&CTBTriggerCandidateMaker::receive_hsievent, this, std::placeholders::_1));
   
-  TLOG_DEBUG(2) << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << get_name() + " successfully started.";
 }
 
 void
@@ -123,13 +130,13 @@ CTBTriggerCandidateMaker::do_stop(const nlohmann::json&)
 
   TLOG() << "Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
          << " TriggerCandidates";
-  TLOG_DEBUG(2) << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << get_name() + " successfully stopped.";
 }
 
 void
 CTBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
 {
-  TLOG_DEBUG(3) << "Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
+  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
                 << ", and run_number " << data.run_number;
 
   if (data.run_number != m_run_number) {
