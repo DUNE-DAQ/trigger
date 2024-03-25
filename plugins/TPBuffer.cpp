@@ -7,11 +7,14 @@
  */
 
 #include "TPBuffer.hpp"
+#include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
 
 #include <string>
+
+using dunedaq::trigger::logging::TLVL_GENERAL;
 
 namespace dunedaq {
 namespace trigger {
@@ -58,7 +61,7 @@ TPBuffer::do_conf(const nlohmann::json& args)
   m_latency_buffer_impl->conf(args);
   m_request_handler_impl->conf(args);
 
-  TLOG_DEBUG(2) << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPB] " << get_name() + " configured.";
 }
 
 void
@@ -66,7 +69,7 @@ TPBuffer::do_start(const nlohmann::json& args)
 {
   m_request_handler_impl->start(args);
   m_thread.start_working_thread("tpbuffer");
-  TLOG_DEBUG(2) << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPB] " << get_name() + " successfully started.";
 }
 
 void
@@ -75,7 +78,7 @@ TPBuffer::do_stop(const nlohmann::json& args)
   m_thread.stop_working_thread();
   m_request_handler_impl->stop(args);
   m_latency_buffer_impl->flush();
-  TLOG_DEBUG(2) << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPB] " << get_name() + " successfully stopped.";
 }
 
 void
@@ -116,7 +119,7 @@ TPBuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  TLOG() << get_name() << " exiting do_work() method. Received " << n_tps_received << " TPs " << " and " << n_requests_received << " data requests";
+  TLOG() << "[TPB] " << get_name() << " exiting do_work() method. Received " << n_tps_received << " TPs " << " and " << n_requests_received << " data requests";
 }
 
 } // namespace trigger

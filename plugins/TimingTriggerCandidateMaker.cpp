@@ -7,6 +7,7 @@
  */
 
 #include "TimingTriggerCandidateMaker.hpp"
+#include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "trgdataformats/Types.hpp"
@@ -17,6 +18,10 @@
 #include <regex>
 #include <string>
 #include <limits>
+
+using dunedaq::trigger::logging::TLVL_VERY_IMPORTANT;
+using dunedaq::trigger::logging::TLVL_GENERAL;
+using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 
 namespace dunedaq {
 namespace trigger {
@@ -105,7 +110,7 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
                                           hsi_input.time_before,
                                           hsi_input.time_after };
 
-    TLOG() << "TTCM will convert HSI signal id: " << hsi_input.signal << " to TC type: " << hsi_input.tc_type_name;
+    TLOG() << "[TTCM] will convert HSI signal id: " << hsi_input.signal << " to TC type: " << hsi_input.tc_type_name;
   }
 
   if (m_hsisignal_map.empty()) {
@@ -116,9 +121,9 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   auto first_entry = *std::begin(m_hsisignal_map);
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
-  TLOG_DEBUG(2) << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TTCM] " << get_name() + " configured.";
   if (m_prescale_flag){
-    TLOG(2) << "Running with prescale at: " << m_prescale;
+    TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[TTCM] Running with prescale at: " << m_prescale;
   }
 }
 
@@ -148,7 +153,7 @@ TimingTriggerCandidateMaker::do_start(const nlohmann::json& startobj)
 
   m_hsievent_input->add_callback(std::bind(&TimingTriggerCandidateMaker::receive_hsievent, this, std::placeholders::_1));
   
-  TLOG_DEBUG(2) << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TTCM] " << get_name() + " successfully started.";
 }
 
 void
@@ -156,15 +161,15 @@ TimingTriggerCandidateMaker::do_stop(const nlohmann::json&)
 {
   m_hsievent_input->remove_callback();
 
-  TLOG() << "Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
+  TLOG() << "[TTCM] Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
          << " TriggerCandidates";
-  TLOG_DEBUG(2) << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TTCM] " << get_name() + " successfully stopped.";
 }
 
 void
 TimingTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
 {
-  TLOG_DEBUG(3) << "Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
+  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TTCM] Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
                 << ", and run_number " << data.run_number;
 
   if (data.run_number != m_run_number) {
