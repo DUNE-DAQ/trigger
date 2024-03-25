@@ -47,12 +47,12 @@ CTBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
 
   std::vector<triggeralgs::TriggerCandidate> candidates;
   std::bitset<32> bits(data.signal_map);
-  TLOG_DEBUG(TLVL_DEBUG_HIGH) << "BITS: " << bits;
+  TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[CTB] BITS: " << bits;
 
   for (size_t i = 0; i < bits.size(); ++i) {
     if (bits.test(i)) {
   
-      TLOG_DEBUG(TLVL_DEBUG_ALL) << "this bit: " << i;
+      TLOG_DEBUG(TLVL_DEBUG_ALL) << "[CTB] this bit: " << i;
 
       if (m_HLT_TC_map.count(i)) {
         TLOG_DEBUG(TLVL_DEBUG_ALL) << "[CTB] TC type: " << static_cast<int>(m_HLT_TC_map[i]);
@@ -86,7 +86,7 @@ CTBTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   m_time_after = params.time_after;
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
-  TLOG_DEBUG(TLVL_GENERAL) << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[CTB] " << get_name() + " configured.";
   TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CTB] Time before: " << m_time_before;
   TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CTB] Time after: " << m_time_after;
   if (m_prescale_flag){
@@ -120,7 +120,7 @@ CTBTriggerCandidateMaker::do_start(const nlohmann::json& startobj)
 
   m_hsievent_input->add_callback(std::bind(&CTBTriggerCandidateMaker::receive_hsievent, this, std::placeholders::_1));
   
-  TLOG_DEBUG(TLVL_GENERAL) << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[CTB] " << get_name() + " successfully started.";
 }
 
 void
@@ -128,15 +128,15 @@ CTBTriggerCandidateMaker::do_stop(const nlohmann::json&)
 {
   m_hsievent_input->remove_callback();
 
-  TLOG() << "Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
+  TLOG() << "[CTB] Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
          << " TriggerCandidates";
-  TLOG_DEBUG(TLVL_GENERAL) << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[CTB] " << get_name() + " successfully stopped.";
 }
 
 void
 CTBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
 {
-  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
+  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CTB] Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
                 << ", and run_number " << data.run_number;
 
   if (data.run_number != m_run_number) {
