@@ -9,6 +9,7 @@
 #include "TriggerPrimitiveMaker.hpp"
 
 #include "trigger/Issues.hpp" // For TLVL_*
+#include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
@@ -24,6 +25,10 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+using dunedaq::trigger::logging::TLVL_GENERAL;
+using dunedaq::trigger::logging::TLVL_DEBUG_INFO;
+using dunedaq::trigger::logging::TLVL_IMPORTANT;
 
 using namespace triggeralgs;
 
@@ -79,7 +84,7 @@ TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
 void
 TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPM] " << get_name() << ": Entering do_start() method";
 
   rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
   m_run_number = start_params.run;
@@ -105,13 +110,13 @@ TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
     name += std::to_string(i);
     pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
   }
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPM] " << get_name() << ": Exiting do_start() method";
 }
 
 void
 TriggerPrimitiveMaker::do_stop(const nlohmann::json& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPM] " << get_name() << ": Entering do_stop() method";
   m_running_flag.store(false);
   for (auto& thr : m_threads) {
     if (thr != nullptr && thr->joinable()) {
@@ -119,15 +124,15 @@ TriggerPrimitiveMaker::do_stop(const nlohmann::json& /*args*/)
     }
   }
   m_threads.clear();
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPM] " << get_name() << ": Exiting do_stop() method";
 }
 
 void
 TriggerPrimitiveMaker::do_scrap(const nlohmann::json& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPM] " << get_name() << ": Entering do_scrap() method";
   m_tp_streams.clear();
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPM] " << get_name() << ": Exiting do_scrap() method";
 }
 
 std::vector<TPSet>
@@ -205,7 +210,7 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
     // We don't send empty TPSets, so there's no point creating them
     tpsets.push_back(tpset);
   }
-  TLOG_DEBUG(0) << "Read " << seqno << " TPs into " << tpsets.size() << " TPSets, from file " << filename;
+  TLOG_DEBUG(TLVL_DEBUG_INFO) << "[TPM] Read " << seqno << " TPs into " << tpsets.size() << " TPSets, from file " << filename;
   return tpsets;
 }
 
@@ -215,7 +220,7 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
                                std::shared_ptr<iomanager::SenderConcept<TPSet>>& tpset_sink,
                                std::chrono::steady_clock::time_point earliest_timestamp_time)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPM] " << get_name() << ": Entering do_work() method";
   uint64_t current_iteration = 0; // NOLINT(build/unsigned)
   size_t generated_count = 0;
   size_t push_failed_count = 0;
@@ -263,7 +268,7 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
       bool break_flag = false;
       while (next_tpset_send_time > next_slice_send_time + slice_period) {
         if (!running_flag.load()) {
-          TLOG() << "while waiting to send next TP, negative running flag detected.";
+          TLOG_DEBUG(TLVL_IMPORTANT) << "[TPM] while waiting to send next TP, negative running flag detected.";
           break_flag = true;
           break;
         }
@@ -307,10 +312,10 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - run_start_time).count();
   float rate_hz = 1e3 * static_cast<float>(generated_count) / time_ms;
 
-  TLOG() << "Generated " << generated_count << " TP sets (" << generated_tp_count << " TPs) in " << time_ms << " ms. ("
+  TLOG() << "[TPM] Generated " << generated_count << " TP sets (" << generated_tp_count << " TPs) in " << time_ms << " ms. ("
          << rate_hz << " TPSets/s). " << push_failed_count << " failed to push";
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TPM] " << get_name() << ": Exiting do_work() method";
 }
 
 } // namespace dunedaq::trigger

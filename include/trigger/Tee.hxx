@@ -11,8 +11,11 @@
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "trigger/Issues.hpp"
+#include "trigger/Logging.hpp"
 
 #include <string>
+
+using dunedaq::trigger::logging::TLVL_GENERAL;
 
 namespace dunedaq {
 namespace trigger {
@@ -49,7 +52,7 @@ template<class T>
 void
 Tee<T>::do_conf(const nlohmann::json&)
 {
-  TLOG_DEBUG(2) << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[Tee] " << get_name() + " configured.";
 }
 
 template<class T>
@@ -57,7 +60,7 @@ void
 Tee<T>::do_start(const nlohmann::json&)
 {
   m_thread.start_working_thread("tee");
-  TLOG_DEBUG(2) << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[Tee] " << get_name() + " successfully started.";
 }
 
 template<class T>
@@ -65,7 +68,7 @@ void
 Tee<T>::do_stop(const nlohmann::json&)
 {
   m_thread.stop_working_thread();
-  TLOG_DEBUG(2) << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[Tee] " << get_name() + " successfully stopped.";
 }
 
 template<class T>

@@ -7,6 +7,7 @@
  */
 
 #include "TimingTriggerCandidateMaker.hpp"
+#include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "trgdataformats/Types.hpp"
@@ -16,6 +17,10 @@
 
 #include <regex>
 #include <string>
+
+using dunedaq::trigger::logging::TLVL_VERY_IMPORTANT;
+using dunedaq::trigger::logging::TLVL_GENERAL;
+using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 
 namespace dunedaq {
 namespace trigger {
@@ -39,7 +44,7 @@ TimingTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEve
   // TODO Trigger Team <dune-daq@github.com> Nov-18-2021: the signal field ia now a signal bit map, rather than unique
   // value -> change logic of below?
   if (m_hsi_passthrough == true) {
-    TLOG_DEBUG(3) << "HSI passthrough applied, modified readout window is set";
+    TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TTCM] HSI passthrough applied, modified readout window is set";
     candidate.time_start = data.timestamp - m_hsi_pt_before;
     candidate.time_end = data.timestamp + m_hsi_pt_after;
   } else {
@@ -76,9 +81,9 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   m_hsi_pt_after = params.s0.time_after;
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
-  TLOG_DEBUG(2) << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TTCM] " << get_name() + " configured.";
   if (m_prescale_flag){
-    TLOG(2) << "Running with prescale at: " << m_prescale;
+    TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[TTCM] Running with prescale at: " << m_prescale;
   }
 }
 
@@ -108,7 +113,7 @@ TimingTriggerCandidateMaker::do_start(const nlohmann::json& startobj)
 
   m_hsievent_input->add_callback(std::bind(&TimingTriggerCandidateMaker::receive_hsievent, this, std::placeholders::_1));
   
-  TLOG_DEBUG(2) << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TTCM] " << get_name() + " successfully started.";
 }
 
 void
@@ -116,15 +121,15 @@ TimingTriggerCandidateMaker::do_stop(const nlohmann::json&)
 {
   m_hsievent_input->remove_callback();
 
-  TLOG() << "Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
+  TLOG() << "[TTCM] Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
          << " TriggerCandidates";
-  TLOG_DEBUG(2) << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TTCM] " << get_name() + " successfully stopped.";
 }
 
 void
 TimingTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
 {
-  TLOG_DEBUG(3) << "Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
+  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TTCM] Activity received with timestamp " << data.timestamp << ", sequence_counter " << data.sequence_counter
                 << ", and run_number " << data.run_number;
 
   if (data.run_number != m_run_number) {
@@ -142,7 +147,7 @@ TimingTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
   }
 
   if (m_hsi_passthrough == true){
-    TLOG_DEBUG(3) << "Signal_map: " << data.signal_map << ", trigger bits: " << (std::bitset<16>)data.signal_map;
+    TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TTCM] Signal_map: " << data.signal_map << ", trigger bits: " << (std::bitset<16>)data.signal_map;
     try {
       if ((data.signal_map & 0xffffff00) != 0){
         throw dunedaq::trigger::BadTriggerBitmask(ERS_HERE, get_name(), (std::bitset<16>)data.signal_map);

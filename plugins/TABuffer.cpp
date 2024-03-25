@@ -7,11 +7,15 @@
  */
 
 #include "TABuffer.hpp"
+#include "trigger/Logging.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
 
 #include <string>
+
+using dunedaq::trigger::logging::TLVL_GENERAL;
+using dunedaq::trigger::logging::TLVL_DEBUG_ALL;
 
 namespace dunedaq {
 namespace trigger {
@@ -58,7 +62,7 @@ TABuffer::do_conf(const nlohmann::json& args)
   m_latency_buffer_impl->conf(args);
   m_request_handler_impl->conf(args);
 
-  TLOG_DEBUG(2) << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TAB] " << get_name() + " configured.";
 }
 
 void
@@ -66,7 +70,7 @@ TABuffer::do_start(const nlohmann::json& args)
 {
   m_request_handler_impl->start(args);
   m_thread.start_working_thread("tabuffer");
-  TLOG_DEBUG(2) << get_name() + " successfully started.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TAB] "  << get_name() + " successfully started.";
 }
 
 void
@@ -75,7 +79,7 @@ TABuffer::do_stop(const nlohmann::json& args)
   m_thread.stop_working_thread();
   m_request_handler_impl->stop(args);
   m_latency_buffer_impl->flush();
-  TLOG_DEBUG(2) << get_name() + " successfully stopped.";
+  TLOG_DEBUG(TLVL_GENERAL) << "[TAB] " << get_name() + " successfully stopped.";
 }
 
 void
@@ -100,22 +104,22 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
       popped_anything = true;
       for (auto const& ta: taset->objects) {
         //uint64_t ta_rec_sys_time  = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-        //TLOG() << "Got TA at the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy(); 
+        //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Got TA at the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy(); 
         m_latency_buffer_impl->write(TAWrapper(ta));
         ++n_tas_received;
-        //TLOG() << "Written TA to the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy();
+        //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Written TA to the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy();
       }
     }
     
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
     if (data_request.has_value()) {
-      //TLOG() << "Received a data request, occupancy is: " << m_latency_buffer_impl->occupancy();
+      //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Received a data request, occupancy is: " << m_latency_buffer_impl->occupancy();
       popped_anything = true;
       //uint64_t dr_rec_sys_time  = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-      //TLOG() << "Got TA data request, with window request datatime starting: " << data_request->trigger_timestamp << " and system time is: " << dr_rec_sys_time;
+      //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Got TA data request, with window request datatime starting: " << data_request->trigger_timestamp << " and system time is: " << dr_rec_sys_time;
       ++n_requests_received;
       m_request_handler_impl->issue_request(*data_request, false);
-      //TLOG() << "Handled data request, occupancy is: " << m_latency_buffer_impl->occupancy();
+      //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Handled data request, occupancy is: " << m_latency_buffer_impl->occupancy();
     }
 
     if (!popped_anything) {
@@ -123,7 +127,7 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
     }
   } // while (running_flag.load())
 
-  TLOG() << get_name() << " exiting do_work() method. Received " << n_tas_received << " TAs " << " and " << n_requests_received << " data requests";
+  TLOG() << "[TAB] " << get_name() << " exiting do_work() method. Received " << n_tas_received << " TAs " << " and " << n_requests_received << " data requests";
 }
 
 } // namespace trigger

@@ -7,6 +7,7 @@
  */
 
 #include "TASetSink.hpp"
+#include "trigger/Logging.hpp"
 
 #include "logging/Logging.hpp"
 
@@ -16,6 +17,9 @@
 #include "triggeralgs/Types.hpp"
 #include <chrono>
 #include <sstream>
+
+using dunedaq::trigger::logging::TLVL_VERY_IMPORTANT;
+using dunedaq::trigger::logging::TLVL_GENERAL;
 
 namespace dunedaq {
 namespace trigger {
@@ -57,7 +61,7 @@ TASetSink::do_conf(const nlohmann::json& obj)
     m_outfile.open(m_conf.output_filename);
   }
   else {
-    TLOG() << "Output filename is null, so not opening an output file";
+    TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "Output filename is null, so not opening an output file";
   }
 }
 
@@ -107,21 +111,21 @@ TASetSink::do_work()
     if (m_conf.do_checks) {
       // Do some checks on the received TASet
       if (last_seqno != 0 && taset.seqno != last_seqno + 1) {
-        TLOG() << "Missed TASets: last_seqno=" << last_seqno << ", current seqno=" << taset.seqno;
+        TLOG() << "[TASetSink] Missed TASets: last_seqno=" << last_seqno << ", current seqno=" << taset.seqno;
       }
 
       if (taset.start_time < last_timestamp) {
-        TLOG_DEBUG(1) << "TASets out of order: last start time " << last_timestamp << ", current start time "
+        TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[TASetSink] TASets out of order: last start time " << last_timestamp << ", current start time "
                       << taset.start_time;
       }
       if (taset.type == TASet::Type::kHeartbeat) {
-        TLOG_DEBUG(1) << "Heartbeat TASet with start time " << taset.start_time;
+        TLOG_DEBUG(TLVL_GENERAL) << "[TASetSink] Heartbeat TASet with start time " << taset.start_time;
       } else if (taset.objects.empty()) {
-        TLOG_DEBUG(1) << "Empty TASet with start time " << taset.start_time;
+        TLOG_DEBUG(TLVL_GENERAL) << "[TASetSink] Empty TASet with start time " << taset.start_time;
       }
       for (auto const& tp : taset.objects) {
         if (tp.time_start < taset.start_time || tp.time_start > taset.end_time) {
-          TLOG() << "TASet with start time " << taset.start_time << ", end time " << taset.end_time
+          TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[TASetSink] TASet with start time " << taset.start_time << ", end time " << taset.end_time
                  << " contains out-of-bounds TP with start time " << tp.time_start;
         }
       }
@@ -140,7 +144,7 @@ TASetSink::do_work()
   float rate_hz = 1e3 * static_cast<float>(n_taset_received) / time_ms;
   float inferred_clock_frequency = 1e3 * (last_timestamp - first_timestamp) / time_ms;
 
-  TLOG() << "Received " << n_taset_received << " TASets in " << time_ms << "ms. " << rate_hz
+  TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[TASetSink] Received " << n_taset_received << " TASets in " << time_ms << "ms. " << rate_hz
          << " TASet/s. Inferred clock frequency " << inferred_clock_frequency << "Hz";
 }
 
