@@ -1,8 +1,12 @@
 #include "trigger/LivetimeCounter.hpp"
+#include "trigger/Logging.hpp"
 
 #include "logging/Logging.hpp"
 
 #include <sstream>
+
+using dunedaq::trigger::logging::TLVL_VERY_IMPORTANT;
+using dunedaq::trigger::logging::TLVL_IMPORTANT;
 
 namespace dunedaq::trigger {
 
@@ -10,7 +14,7 @@ LivetimeCounter::LivetimeCounter(LivetimeCounter::State state)
   : m_state(state)
   , m_last_state_change_time(now())
 {
-  TLOG_DEBUG(1) << "Starting LivetimeCounter in state " << get_state_name(state);
+  TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[Livetime] Starting LivetimeCounter in state " << get_state_name(state);
   m_state_times[State::kLive]=0;
   m_state_times[State::kDead]=0;
   m_state_times[State::kPaused]=0;
@@ -19,7 +23,7 @@ LivetimeCounter::LivetimeCounter(LivetimeCounter::State state)
 LivetimeCounter::~LivetimeCounter()
 {
   std::string report=get_report_string();
-  TLOG() << "LivetimeCounter stopping. Counts: " << report;
+  TLOG() << "[Livetime] LivetimeCounter stopping. Counts: " << report;
 }
 
 void
@@ -38,7 +42,7 @@ LivetimeCounter::set_state(LivetimeCounter::State state)
 {
   std::lock_guard<std::mutex> l(m_mutex);
   update_map(); // Add the time to the old state
-  TLOG_DEBUG(1) << "Changing state from " << get_state_name(m_state) << " to " << get_state_name(state);
+  TLOG_DEBUG(TLVL_IMPORTANT) << "[Livetime] Changing state from " << get_state_name(m_state) << " to " << get_state_name(state);
   m_state=state;
 }
 

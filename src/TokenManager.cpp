@@ -8,11 +8,16 @@
 
 #include "trigger/TokenManager.hpp"
 #include "trigger/LivetimeCounter.hpp"
+#include "trigger/Logging.hpp"
 
 #include "iomanager/IOManager.hpp"
 
 #include <memory>
 #include <string>
+
+using dunedaq::trigger::logging::TLVL_DEBUG_INFO;
+using dunedaq::trigger::logging::TLVL_DEBUG_LOW;
+using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 
 namespace dunedaq::trigger {
 
@@ -54,7 +59,7 @@ TokenManager::~TokenManager()
         }
         o << "]";
       }
-      TLOG_DEBUG(0) << o.str();
+      TLOG_DEBUG(TLVL_DEBUG_INFO) << "[TokenManager] " << o.str();
     }
   }
 }
@@ -79,19 +84,19 @@ TokenManager::trigger_sent(dfmessages::trigger_number_t trigger_number)
 void
 TokenManager::receive_token(dfmessages::TriggerDecisionToken& token)
 {
-  TLOG_DEBUG(1) << "Received token with run number " << token.run_number << ", current run number " << m_run_number;
+  TLOG_DEBUG(TLVL_DEBUG_INFO) << "[TokenManager] Received token with run number " << token.run_number << ", current run number " << m_run_number;
   if (token.run_number == m_run_number) {
     if (m_n_tokens.load() == 0) {
       m_livetime_counter->set_state(LivetimeCounter::State::kLive);
     }
     m_n_tokens++;
-    TLOG_DEBUG(1) << "There are now " << m_n_tokens.load() << " tokens available";
+    TLOG_DEBUG(TLVL_DEBUG_LOW) << "[TokenManager] There are now " << m_n_tokens.load() << " tokens available";
 
     if (token.trigger_number != dfmessages::TypeDefaults::s_invalid_trigger_number) {
       if (m_open_trigger_decisions.count(token.trigger_number)) {
         std::lock_guard<std::mutex> lk(m_open_trigger_decisions_mutex);
         m_open_trigger_decisions.erase(token.trigger_number);
-        TLOG_DEBUG(1) << "Token indicates that trigger decision " << token.trigger_number
+        TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TokenManager] Token indicates that trigger decision " << token.trigger_number
                       << " has been completed. There are now " << m_open_trigger_decisions.size()
                       << " triggers in flight";
       } else {
