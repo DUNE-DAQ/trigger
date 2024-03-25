@@ -46,19 +46,24 @@ CTBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
     if (bits.test(i)) {
   
       TLOG() << "this bit: " << i;
-      TLOG_DEBUG(3) << "[CTB] TC type: " << static_cast<int>(m_HLT_TC_map[i]);
-    
-      triggeralgs::TriggerCandidate candidate;
-      candidate.time_candidate = data.timestamp;
-      candidate.time_start = data.timestamp - m_time_before;
-      candidate.time_end = data.timestamp + m_time_after;
-      //candidate.detid = 1;
-      candidate.detid = data.header;
-      candidate.type = m_HLT_TC_map[i];
-      candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
-      candidate.inputs = {};
 
-      candidates.push_back(candidate);
+      if (m_HLT_TC_map.count(i)) {
+        TLOG_DEBUG(3) << "[CTB] TC type: " << static_cast<int>(m_HLT_TC_map[i]);
+    
+        triggeralgs::TriggerCandidate candidate;
+        candidate.time_candidate = data.timestamp;
+        candidate.time_start = data.timestamp - m_time_before;
+        candidate.time_end = data.timestamp + m_time_after;
+        //candidate.detid = 1;
+        candidate.detid = data.header;
+        candidate.type = m_HLT_TC_map[i];
+        candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
+        candidate.inputs = {};
+
+        candidates.push_back(candidate);
+      } else {
+        ers::error(dunedaq::trigger::InvalidCTBSignal(ERS_HERE, get_name(), data.signal_map, bits, m_HLT_TC_map.size()));
+      }
     }
   }
 
