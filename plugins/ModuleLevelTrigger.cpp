@@ -726,7 +726,7 @@ ModuleLevelTrigger::check_trigger_type_ignore(int tc_type)
   return ignore;
 }
 
-std::bitset<16>
+std::bitset<64>
 ModuleLevelTrigger::get_TD_bitword(const PendingTD& ready_td)
 {
   // get only unique types
@@ -737,7 +737,7 @@ ModuleLevelTrigger::get_TD_bitword(const PendingTD& ready_td)
   tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
 
   // form TD bitword
-  std::bitset<16> td_bitword = 0b0000000000000000;
+  std::bitset<64> td_bitword;
   for (auto tc_type : tc_types) {
     td_bitword.set(tc_type);
   }
@@ -745,7 +745,7 @@ ModuleLevelTrigger::get_TD_bitword(const PendingTD& ready_td)
 }
 
 void
-ModuleLevelTrigger::print_trigger_bitwords(std::vector<std::bitset<16>> trigger_bitwords)
+ModuleLevelTrigger::print_trigger_bitwords(std::vector<std::bitset<64>> trigger_bitwords)
 {
   TLOG_DEBUG(TLVL_DEBUG_INFO) << "[MLT] Configured trigger words:";
   for (auto bitword : trigger_bitwords) {
@@ -783,7 +783,7 @@ void
 ModuleLevelTrigger::set_trigger_bitwords()
 {
   for (auto flag : m_trigger_bitwords_json) {
-    std::bitset<16> temp_bitword = 0b0000000000000000;
+    std::bitset<64> temp_bitword;
     for (auto bit : flag) {
       temp_bitword.set(bit);
     }
