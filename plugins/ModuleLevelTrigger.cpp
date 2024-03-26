@@ -122,7 +122,6 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
 
   // m_trigger_decision_connection = params.dfo_connection;
   // m_inhibit_connection = params.dfo_busy_connection;
-  m_hsi_passthrough = params.hsi_trigger_type_passthrough;
 
   m_configured_flag.store(true);
 
@@ -273,19 +272,9 @@ ModuleLevelTrigger::create_decision(const ModuleLevelTrigger::PendingTD& pending
   decision.trigger_timestamp = pending_td.contributing_tcs[m_earliest_tc_index].time_candidate;
   decision.readout_type = dfmessages::ReadoutType::kLocalized;
 
-  if (m_hsi_passthrough == true) {
-    if (pending_td.contributing_tcs[m_earliest_tc_index].type == triggeralgs::TriggerCandidate::Type::kTiming) {
-      decision.trigger_type = pending_td.contributing_tcs[m_earliest_tc_index].detid & 0xff;
-    } else {
-      m_trigger_type_shifted = (static_cast<int>(pending_td.contributing_tcs[m_earliest_tc_index].type) << 8);
-      decision.trigger_type = m_trigger_type_shifted;
-    }
-  } else {
-    decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
-  }
+  decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
 
-  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[MLT] HSI passthrough: " << m_hsi_passthrough
-                << ", TC detid: " << pending_td.contributing_tcs[m_earliest_tc_index].detid
+  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[MLT] TC detid: " << pending_td.contributing_tcs[m_earliest_tc_index].detid
                 << ", TC type: " << static_cast<int>(pending_td.contributing_tcs[m_earliest_tc_index].type)
                 << ", TC cont number: " << pending_td.contributing_tcs.size()
                 << ", DECISION trigger type: " << decision.trigger_type

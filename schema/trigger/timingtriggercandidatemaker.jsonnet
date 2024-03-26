@@ -22,7 +22,6 @@ local types = {
 
   conf: s.record("Conf", [
     s.field("hsi_configs", self.hsi_inputs, [], doc="List of the input HSI configurations"),
-		s.field("hsi_trigger_type_passthrough", self.hsi_tt_pt, default=false, doc="Option to override the trigger type values"),
     s.field("prescale", self.count_t, default=1, doc="Option to prescale TTCM TCs")
 	], doc="Configuration of the different readout time maps"),
 
