@@ -51,6 +51,7 @@ daq_codegen(
   randomtriggercandidatemaker.jsonnet
   customtriggercandidatemaker.jsonnet
   timingtriggercandidatemaker.jsonnet
+  ctbtriggercandidatemaker.jsonnet
   triggerprimitivemaker.jsonnet
   triggeractivitymaker.jsonnet
   triggercandidatemaker.jsonnet
@@ -69,6 +70,7 @@ daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.
 # Plugins
 
 daq_add_plugin(TimingTriggerCandidateMaker duneDAQModule SCHEMA LINK_LIBRARIES trigger)
+daq_add_plugin(CTBTriggerCandidateMaker duneDAQModule SCHEMA LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerPrimitiveMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)

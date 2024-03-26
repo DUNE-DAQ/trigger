@@ -184,6 +184,16 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((size_t)received)((size_t)expected)((size_t)ts)((size_t)seq))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
+                       InvalidCTBSignal,
+                       appfwk::GeneralDAQModuleIssue,
+                       "An invalid CTB signal was received, signal: " << signal << ", bits: " << bits
+		         << ", configured CTB bits: " << map_size,
+                       ((std::string)name),
+                       ((uint32_t)signal)
+		       ((std::bitset<32>)bits)
+		       ((size_t)map_size))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
                        MissingFactoryItemError,
                        appfwk::GeneralDAQModuleIssue,
                        "Factory could not find requested item " << item << ".",
