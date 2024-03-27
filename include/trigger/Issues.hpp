@@ -170,7 +170,7 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 ERS_DECLARE_ISSUE_BASE(trigger,
                        TCTimestampsSizeError,
                        appfwk::GeneralDAQModuleIssue,
-                       "There are no next timestamps!",
+                       "There are no next timestamps! (size=" << size <<")",
                        ((std::string)name),
 		       ((int)size))
 
@@ -193,20 +193,17 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 		       ((std::bitset<32>)bits)
 		       ((size_t)map_size))
 
-ERS_DECLARE_ISSUE_BASE(trigger,
-                       MissingFactoryItemError,
-                       appfwk::GeneralDAQModuleIssue,
-                       "Factory could not find requested item " << item << ".",
-                       ((std::string)item),
-                       ERS_EMPTY)
+ERS_DECLARE_ISSUE(trigger,
+                  MissingFactoryItemError,
+                  "Factory could not find requested item " << item << ".",
+                  ((std::string)item))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
                        TTCMConfigurationProblem,
                        appfwk::GeneralDAQModuleIssue,
                        "Configuration error: " << item,
                        ((std::string)name),
-                       ((std::string)item),
-                       ERS_EMPTY)
+                       ((std::string)item))
 
 } // namespace dunedaq
 
