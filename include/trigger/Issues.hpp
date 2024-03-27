@@ -201,7 +201,7 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ERS_EMPTY)
 
 ERS_DECLARE_ISSUE_BASE(trigger,
-                       ConfigurationProblem,
+                       TTCMConfigurationProblem,
                        appfwk::GeneralDAQModuleIssue,
                        "Configuration error: " << item,
                        ((std::string)item),

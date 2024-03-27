@@ -97,12 +97,12 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
     type = static_cast<triggeralgs::TriggerCandidate::Type>(
         dunedaq::trgdataformats::string_to_fragment_type_value(hsi_input.tc_type_name));
     if (type == triggeralgs::TriggerCandidate::Type::kUnknown) {
-      throw ConfigurationProblem(ERS_HERE,
+      throw TTCMConfigurationProblem(ERS_HERE,
           "Unknown TriggerCandidate supplied to TTCM HSI map");
     }
 
     if (m_hsisignal_map.count(hsi_input.signal)) {
-      throw ConfigurationProblem(ERS_HERE,
+      throw TTCMConfigurationProblem(ERS_HERE,
           "Supplied more than one of the same hsi signal ID to TTCM HSI map");
     }
 
@@ -114,7 +114,7 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   }
 
   if (m_hsisignal_map.empty()) {
-      throw ConfigurationProblem(ERS_HERE,
+      throw TTCMConfigurationProblem(ERS_HERE,
           "Created TTCM, but supplied an empty signal map!");
   }
 
