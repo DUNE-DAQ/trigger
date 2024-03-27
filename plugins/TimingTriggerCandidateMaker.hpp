@@ -27,9 +27,18 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace dunedaq {
 namespace trigger {
+
+struct HSISignal
+{
+  triggeralgs::TriggerCandidate::Type type;
+  triggeralgs::timestamp_t time_before;
+  triggeralgs::timestamp_t time_after;
+};
+
 class TimingTriggerCandidateMaker : public dunedaq::appfwk::DAQModule
 {
 public:
@@ -49,18 +58,16 @@ private:
   void do_stop(const nlohmann::json& obj);
   void do_scrap(const nlohmann::json& obj);
 
+  template<typename T>
+  std::vector<int> GetTriggeredBits(T signal_map);
+
   std::string m_hsievent_receive_connection;
 
   // Prescale functionality
   bool m_prescale_flag;
   int m_prescale;
 
-  // HSI Passthrough changes
-  std::atomic<bool> m_hsi_passthrough;
-  int m_hsi_pt_before;
-  int m_hsi_pt_after;
-
-  triggeralgs::TriggerCandidate HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data);
+  std::vector<triggeralgs::TriggerCandidate> HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data);
   void receive_hsievent(dfmessages::HSIEvent& data);
 
   using sink_t = dunedaq::iomanager::SenderConcept<triggeralgs::TriggerCandidate>;
@@ -70,7 +77,7 @@ private:
   std::chrono::milliseconds m_queue_timeout;
 
   // NOLINTNEXTLINE(build/unsigned)
-  std::map<uint32_t, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> m_detid_offsets_map;
+  std::map<uint32_t, HSISignal> m_hsisignal_map;
 
   // Opmon variables
   using metric_counter_type = decltype(timingtriggercandidatemakerinfo::Info::tsd_received_count);

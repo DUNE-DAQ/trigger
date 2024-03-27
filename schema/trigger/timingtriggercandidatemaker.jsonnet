@@ -3,52 +3,26 @@ local ns = "dunedaq.trigger.timingtriggercandidatemaker";
 local s = moo.oschema.schema(ns);
 local nc = moo.oschema.numeric_constraints;
 
+
 local types = {
-	time_t : s.number("time_t", "i8", doc="Time"),
-	signal_type_t : s.number("signal_type_t", "u4", doc="Signal type"),
+	time_t : s.number("time_t", "u8", doc="Time"),
+	signal_type_t : s.number("signal_type_t", "u8", doc="Signal type"),
+	trigger_type_t : s.string("trigger_type_t"),
 	hsi_tt_pt : s.boolean("hsi_tt_pt"),
-        count_t : s.number("count_t", "i8", nc(minimum=1), doc="Counter"),
-	map_t : s.record("map_t", [
-			s.field("signal_type",
-				self.signal_type_t,
-				0,
-				doc="Readout time before time stamp"),
-			s.field("time_before",
-				self.time_t,
-				10000,
-				doc="Readout time before time stamp"),
-			s.field("time_after",
-				self.time_t,
-				20000,
-				doc="Readout time after time stamp"),
-			], doc="Map from signal type to readout window"),
-	conf: s.record("Conf", [
-		s.field("s0",
-			self.map_t,
-			{
-				signal_type: 0,
-				time_before: 10000,
-				time_after: 20000
-			} ,
-			doc="Iceberg"),
-		s.field("s1",
-			self.map_t,
-			{
-				signal_type: 1,
-				time_before: 100000,
-				time_after: 200000
-			},
-			doc="Example 1"),
-		s.field("s2",
-			self.map_t,
-			{
-				signal_type: 2,
-				time_before: 1000000,
-				time_after: 2000000
-			},
-			doc="Example 2"),
-		s.field("hsi_trigger_type_passthrough", self.hsi_tt_pt, doc="Option to override the trigger type values"),
-                s.field("prescale", self.count_t, default=1, doc="Option to prescale TTCM TCs")
+  count_t : s.number("count_t", "u8", nc(minimum=1), doc="Counter"),
+
+  hsi_input: s.record("hsi_input", [
+    s.field("signal",   self.signal_type_t,   default=0),
+    s.field("tc_type_name", self.trigger_type_t,  default="kTiming"),
+    s.field("time_before",  self.time_t,          default=10000, doc="Readout time before time stamp"),
+    s.field("time_after",   self.time_t,          default=20000, doc="Readout time after time stamp"),
+    ]),
+
+  hsi_inputs: s.sequence("hsi_inputs", self.hsi_input),
+
+  conf: s.record("Conf", [
+    s.field("hsi_configs", self.hsi_inputs, [], doc="List of the input HSI configurations"),
+    s.field("prescale", self.count_t, default=1, doc="Option to prescale TTCM TCs")
 	], doc="Configuration of the different readout time maps"),
 
 };

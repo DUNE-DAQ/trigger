@@ -199,6 +199,15 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        "Factory could not find requested item " << item << ".",
                        ((std::string)item),
                        ERS_EMPTY)
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       TTCMConfigurationProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Configuration error: " << item,
+                       ((std::string)name),
+                       ((std::string)item),
+                       ERS_EMPTY)
+
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_

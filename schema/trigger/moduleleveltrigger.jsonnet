@@ -52,7 +52,6 @@ local types = {
   conf : s.record("ConfParams", [
       s.field("mandatory_links", self.linkvec, doc="List of link identifiers that will be included in trigger decision"),
       s.field("groups_links", self.grouplinks, doc="List of link identifiers that may be included in trigger decision"),
-      s.field("hsi_trigger_type_passthrough", self.flag, default=false, doc="Option to override the trigger type inside MLT"),
       s.field("merge_overlapping_tcs", self.flag, default=true, doc="Flag to allow(true)/disable(false) merging of overlapping TCs when forming TD"),
       s.field("td_out_of_timeout", self.flag, default=true, doc="Option to send TD if TC comes out of timeout window (late, overlapping already sent TD"),
       s.field("buffer_timeout", self.time_t, 100, doc="Buffering timeout [ms] for new TCs"),
