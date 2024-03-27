@@ -72,7 +72,7 @@ TimingTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEve
     candidate.time_end   = data.timestamp + m_hsisignal_map[data.signal_map].time_after; // time_end,
     candidate.time_candidate = data.timestamp;
     // throw away bits 31-16 of header, that's OK for now
-    candidate.detid = { static_cast<triggeralgs::detid_t>(signal) }; // NOLINT(build/unsigned)
+    candidate.detid = data.header; // NOLINT(build/unsigned)
 
     candidate.type = m_hsisignal_map[signal].type; // type,
 
@@ -97,12 +97,12 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
     type = static_cast<triggeralgs::TriggerCandidate::Type>(
         dunedaq::trgdataformats::string_to_fragment_type_value(hsi_input.tc_type_name));
     if (type == triggeralgs::TriggerCandidate::Type::kUnknown) {
-      throw TTCMConfigurationProblem(ERS_HERE,
+      throw TTCMConfigurationProblem(ERS_HERE, get_name(),
           "Unknown TriggerCandidate supplied to TTCM HSI map");
     }
 
     if (m_hsisignal_map.count(hsi_input.signal)) {
-      throw TTCMConfigurationProblem(ERS_HERE,
+      throw TTCMConfigurationProblem(ERS_HERE, get_name(),
           "Supplied more than one of the same hsi signal ID to TTCM HSI map");
     }
 
@@ -114,7 +114,7 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   }
 
   if (m_hsisignal_map.empty()) {
-      throw TTCMConfigurationProblem(ERS_HERE,
+      throw TTCMConfigurationProblem(ERS_HERE, get_name(),
           "Created TTCM, but supplied an empty signal map!");
   }
 
