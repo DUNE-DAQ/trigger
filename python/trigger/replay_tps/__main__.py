@@ -188,6 +188,8 @@ def trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_i
         tp_infos=tp_infos,
         trigger_data_request_timeout=trigger_data_request_timeout,
         use_hsi_input=False,
+        use_fake_hsi_input=False,
+        use_ctb_input=False,
         DEBUG=debug)
 
     return
