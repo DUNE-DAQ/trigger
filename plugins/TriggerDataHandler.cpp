@@ -20,7 +20,7 @@
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TPProcessor.hpp"
 #include "trigger/TAProcessor.hpp"
-#include "trigger/TCWrapper.hpp"
+#include "trigger/TCProcessor.hpp"
 
 
 #include <memory>
@@ -108,7 +108,7 @@ TriggerDataHandler::create_readout(const appdal::ReadoutModule* modconf, std::at
       TCWrapper,
       rol::DefaultSkipListRequestHandler<trigger::TCWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TCWrapper>,
-      rol::TaskRawDataProcessorModel<trigger::TCWrapper>>>(run_marker);
+      TCProcessor>>(run_marker);
     
     readout_model->init(modconf);
     return readout_model;

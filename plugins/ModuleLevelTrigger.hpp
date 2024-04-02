@@ -73,24 +73,20 @@ public:
 
 private:
   // Commands
-  //void do_configure(const nlohmann::json& obj);
   void do_start(const nlohmann::json& obj);
   void do_stop(const nlohmann::json& obj);
   void do_pause(const nlohmann::json& obj);
   void do_resume(const nlohmann::json& obj);
-  //void do_scrap(const nlohmann::json& obj);
 
-  void send_trigger_decisions();
-  std::thread m_send_trigger_decisions_thread;
-
+  void trigger_decisions_callback(dfmessages::TriggerDecision& decision);
   void dfo_busy_callback(dfmessages::TriggerInhibit& inhibit);
 
   // Queue sources and sinks
-  std::shared_ptr<iomanager::ReceiverConcept<triggeralgs::TriggerCandidate>> m_candidate_input;
+  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerDecision>> m_decision_input;
+  std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerDecision>> m_decision_output;
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerInhibit>> m_inhibit_input;
-  std::string m_td_output_connection;
 
-  // TD requests
+  /* TD requests
   std::vector<daqdataformats::SourceID> m_mandatory_links;
   std::map<int, std::vector<daqdataformats::SourceID>> m_group_links;
   nlohmann::json m_group_links_data;
@@ -105,8 +101,8 @@ private:
                                                                          triggeralgs::timestamp_t end);
   void add_requests_to_decision(dfmessages::TriggerDecision& decision,
                                 std::vector<dfmessages::ComponentRequest> requests);
-
-  // ROI
+  */
+  /* ROI
   bool m_use_roi_readout;
   struct roi_group
   {
@@ -128,12 +124,12 @@ private:
   void roi_readout_make_requests(dfmessages::TriggerDecision& decision);
 
   int m_repeat_trigger_count{ 1 };
-
+  */
   // paused state, in which we don't send triggers
   std::atomic<bool> m_paused;
   std::atomic<bool> m_dfo_is_busy;
-  std::atomic<bool> m_hsi_passthrough;
-  std::atomic<bool> m_tc_merging;
+  //std::atomic<bool> m_hsi_passthrough;
+  //std::atomic<bool> m_tc_merging;
 
   dfmessages::trigger_number_t m_last_trigger_number;
 
@@ -151,7 +147,7 @@ private:
   LivetimeCounter::state_time_t m_lc_kDead_count;
   LivetimeCounter::state_time_t m_lc_deadtime;
 
-  // New buffering
+  /* New buffering
   struct PendingTD
   {
     std::vector<triggeralgs::TriggerCandidate> contributing_tcs;
@@ -178,8 +174,8 @@ private:
   std::atomic<bool> m_send_timed_out_tds;
   int m_earliest_tc_index;
   int get_earliest_tc_index(const PendingTD& pending_td);
-
-  // Bitwords logic
+  */
+  /* Bitwords logic
   bool m_use_bitwords;
   nlohmann::json m_trigger_bitwords_json;
   bool m_bitword_check;
@@ -191,8 +187,8 @@ private:
   void print_bitword_flags(nlohmann::json m_trigger_bitwords_json);
   void set_trigger_bitwords();
   void set_trigger_bitwords(const std::vector<std::string>& _bitwords);
-
-  // Readout map config
+  */
+  /* Readout map config
   bool m_use_readout_map;
   std::vector<const appdal::TCReadoutMap*>  m_readout_window_map_data;
   std::map<trgdataformats::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
@@ -200,16 +196,16 @@ private:
   void parse_readout_map(const std::vector<const appdal::TCReadoutMap*>& data);
   void print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
                                   std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map);
-
-  // Create the next trigger decision
+  */
+  /* Create the next trigger decision
   dfmessages::TriggerDecision create_decision(const PendingTD& pending_td);
   dfmessages::trigger_type_t m_trigger_type_shifted;
-
-  // Optional list of TC types to ignore
+  */
+  /* Optional list of TC types to ignore
   std::vector<unsigned int> m_ignored_tc_types;
   bool m_ignoring_tc_types;
   bool check_trigger_type_ignore(unsigned int tc_type);
-
+  */
   // Opmon variables
   using metric_counter_type = decltype(moduleleveltriggerinfo::Info::tc_received_count);
   std::atomic<metric_counter_type> m_tc_received_count{ 0 };

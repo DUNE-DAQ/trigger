@@ -52,16 +52,13 @@ RandomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> m
   auto mtrg = mcfg->module<appdal::RandomTriggerCandidateMaker>(get_name());
 
   for(auto con: mtrg->get_outputs()){
-    if(con->get_data_type() == datatype_to_string<triggeralgs::TriggerCandidate>()){
-      m_trigger_candidate_sink =
-        get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
-      break;
-    }
+    m_trigger_candidate_sink =
+        get_iom_sender<trigger::TCWrapper>(con->UID());
   }
-
+  for(auto con: mtrg->get_inputs()) {
   // Get the time sync source
-  m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(".*");
-
+     m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(con->UID());
+  }
   m_conf = mtrg->get_configuration();
 }
 
@@ -211,7 +208,8 @@ RandomTriggerCandidateMaker::send_trigger_candidates()
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
-    m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
+    TCWrapper tcw(candidate);
+    m_trigger_candidate_sink->send(std::move(tcw), std::chrono::milliseconds(10));
     m_tc_sent_count++;
 
     next_trigger_timestamp += get_interval(gen);

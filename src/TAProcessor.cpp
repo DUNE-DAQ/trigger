@@ -111,7 +111,6 @@ TAProcessor::get_info(opmonlib::InfoCollector& ci, int level)
 void
 TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerCandidateMaker> tca)
 {
-	
   std::vector<triggeralgs::TriggerCandidate> tcs;
   tca->operator()(ta->activity, tcs);
   for (auto tc : tcs) {

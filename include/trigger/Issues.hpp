@@ -199,6 +199,12 @@ ERS_DECLARE_ISSUE(trigger,
                   TCDropped,
                   "TC timestamp " << time << " for src " << src,
                   ((uint64_t)time) ((uint64_t)src))
+
+ERS_DECLARE_ISSUE(trigger,
+                  TDDropped,
+                  "TD trigger number " << tn << " time stamp  " << ts,
+                  ((uint64_t)tn) ((uint64_t)ts))
+
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_
