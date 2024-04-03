@@ -173,6 +173,7 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
 
     trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
 
+    old_time_start = 0;
     for (size_t i(0); i < num_tps; i++) {
       auto& tp = tp_array[i];
       if (tp.time_start < old_time_start) {
