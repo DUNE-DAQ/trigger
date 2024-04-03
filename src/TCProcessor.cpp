@@ -181,12 +181,12 @@ TCProcessor::make_td(const TCWrapper* tcw)
   auto tc = tcw->candidate;
 
   if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ) {
-    TLOG() << "Got TC of type " << static_cast<int>(tc.type) << ", timestamp " << tc.time_candidate
+    TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc.type) << ", timestamp " << tc.time_candidate
 		  << ", start/end " << tc.time_start << "/" << tc.time_end << ", readout start/end "
 		  << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
 		  << tc.time_candidate + m_readout_window_map[tc.type].second;
   } else {
-    TLOG() << "Got TC of type " << static_cast<int>(tc.type) << ", timestamp " << tc.time_candidate
+    TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc.type) << ", timestamp " << tc.time_candidate
 		  << ", start/end " << tc.time_start << "/" << tc.time_end;
   }
 
@@ -332,7 +332,7 @@ TCProcessor::add_tc(const triggeralgs::TriggerCandidate tc)
                               ? (tc.time_candidate + m_readout_window_map[tc.type].second)
                               : it->readout_end;
         } else {
-          TLOG() << "TC with start/end times " << tc.time_start << "/" << tc.time_end
+          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
                         << " overlaps with pending TD with start/end times " << it->readout_start << "/"
                         << it->readout_end;
           it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
@@ -510,10 +510,10 @@ TCProcessor::check_trigger_bitwords()
 {
   bool trigger_check = false;
   for (auto bitword : m_trigger_bitwords) {
-    TLOG(15) << "TD word: " << m_TD_bitword << ", bitword: " << bitword;
+    TLOG_DEBUG(15) << "TD word: " << m_TD_bitword << ", bitword: " << bitword;
     trigger_check = ((m_TD_bitword & bitword) == bitword);
-    TLOG(15) << "&: " << (m_TD_bitword & bitword);
-    TLOG(15) << "trigger?: " << trigger_check;
+    TLOG_DEBUG(15) << "&: " << (m_TD_bitword & bitword);
+    TLOG_DEBUG(15) << "trigger?: " << trigger_check;
     if (trigger_check == true)
       break;
   }
