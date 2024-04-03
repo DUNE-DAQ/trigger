@@ -157,9 +157,7 @@ TCProcessor::conf(const appdal::ReadoutModule* cfg)
     set_trigger_bitwords(bitwords);
     print_trigger_bitwords(m_trigger_bitwords);
   }
-  TLOG() << "********* Loading TCProcessor post processing";
   inherited::add_postprocess_task(std::bind(&TCProcessor::make_td, this, std::placeholders::_1));
-  TLOG() << "******* Loaded TCProcessor post processing";
 
   inherited::conf(mtrg);
 }
@@ -225,8 +223,8 @@ TCProcessor::create_decision(const PendingTD& pending_td)
   }
 
   dfmessages::TriggerDecision decision;
-  decision.trigger_number = m_last_trigger_number + 1;
-  decision.run_number = m_run_number;
+  decision.trigger_number = 0; // filled by MLT
+  decision.run_number = 0; // filled by MLT
   decision.trigger_timestamp = pending_td.contributing_tcs[m_earliest_tc_index].time_candidate;
   decision.readout_type = dfmessages::ReadoutType::kLocalized;
 
@@ -299,7 +297,7 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
     auto tn = decision.trigger_number;
     auto td_ts = decision.trigger_timestamp;
 
-    if(m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
+    if(!m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
         ers::warning(TDDropped(ERS_HERE, tn, td_ts));
         m_tds_dropped++;
     }

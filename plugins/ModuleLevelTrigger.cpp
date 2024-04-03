@@ -200,12 +200,13 @@ ModuleLevelTrigger::trigger_decisions_callback(dfmessages::TriggerDecision& deci
 {
     auto ts = decision.trigger_timestamp;
     auto tt = decision.trigger_type;
+    decision.run_number = m_run_number;
+    decision.trigger_number = m_last_trigger_number;
 
-    TLOG() << "Received decision " << decision.trigger_number << " timestamp "
+    TLOG() << "Received decision with timestamp "
              << decision.trigger_timestamp ;
     
     if ((!m_paused.load() && !m_dfo_is_busy.load())) {
-      decision.trigger_number = m_last_trigger_number;
       TLOG_DEBUG(1) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
              << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
  	     << " number of links " << decision.components.size();
