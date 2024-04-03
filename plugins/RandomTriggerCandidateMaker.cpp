@@ -32,6 +32,9 @@
 #include <vector>
 
 namespace dunedaq {
+
+DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
+
 namespace trigger {
 
 RandomTriggerCandidateMaker::RandomTriggerCandidateMaker(const std::string& name)
@@ -52,6 +55,7 @@ RandomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> m
   auto mtrg = mcfg->module<appdal::RandomTriggerCandidateMaker>(get_name());
 
   for(auto con: mtrg->get_outputs()){
+    TLOG() << "TC sink is " << con->class_name() << "@" << con->UID();
     m_trigger_candidate_sink =
         get_iom_sender<trigger::TCWrapper>(con->UID());
   }

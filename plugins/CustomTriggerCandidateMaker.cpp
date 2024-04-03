@@ -41,6 +41,8 @@ sortbysec(const std::pair<int, dunedaq::dfmessages::timestamp_t>& a,
 }
 
 namespace dunedaq {
+DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
+
 namespace trigger {
 
 CustomTriggerCandidateMaker::CustomTriggerCandidateMaker(const std::string& name)
