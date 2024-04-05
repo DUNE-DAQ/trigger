@@ -10,8 +10,8 @@
 #define TRIGGER_PLUGINS_CIBTRIGGERCANDIDATEMAKER_HPP_
 
 #include "trigger/Issues.hpp"
-#include "trigger/ctbtriggercandidatemaker/Nljs.hpp"
-#include "trigger/ctbtriggercandidatemakerinfo/InfoNljs.hpp"
+#include "trigger/cibtriggercandidatemaker/Nljs.hpp"
+#include "trigger/cibtriggercandidatemakerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/Types.hpp"

@@ -81,7 +81,7 @@ CIBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
 void
 CIBTriggerCandidateMaker::do_conf(const nlohmann::json& config)
 {
-  auto params = config.get<dunedaq::trigger::ctbtriggercandidatemaker::Conf>();
+  auto params = config.get<dunedaq::trigger::cibtriggercandidatemaker::Conf>();
   m_time_before = params.time_before;
   m_time_after = params.time_after;
   m_prescale = params.prescale;
@@ -188,7 +188,7 @@ CIBTriggerCandidateMaker::do_scrap(const nlohmann::json&)
 void
 CIBTriggerCandidateMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
-  ctbtriggercandidatemakerinfo::Info i;
+  cibtriggercandidatemakerinfo::Info i;
 
   i.tsd_received_count = m_tsd_received_count.load();
   i.tc_sent_count = m_tc_sent_count.load();
