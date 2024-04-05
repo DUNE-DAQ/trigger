@@ -99,7 +99,7 @@ TPProcessor::conf(const appdal::ReadoutModule* conf)
 void
 TPProcessor::get_info(opmonlib::InfoCollector& ci, int level)
 {
-  TLOG() << "Generated TAs = " << m_new_tas << ", dropped TAs = " << m_tas_dropped;
+  //TLOG() << "Generated TAs = " << m_new_tas << ", dropped TAs = " << m_tas_dropped;
   inherited::get_info(ci, level);
   //ci.add(info);
 }

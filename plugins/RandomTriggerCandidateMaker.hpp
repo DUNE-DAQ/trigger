@@ -28,6 +28,7 @@
 #include "iomanager/Sender.hpp"
 #include "utilities/TimestampEstimator.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
+#include "trigger/TCWrapper.hpp"
 
 #include <memory>
 #include <random>
@@ -82,7 +83,7 @@ private:
 
   // Queue sources and sinks
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
-  std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
+  std::shared_ptr<iomanager::SenderConcept<trigger::TCWrapper>> m_trigger_candidate_sink;
 
   //randomtriggercandidatemaker::Conf m_conf;
   const appdal::RandomTriggerCandidateMakerConf* m_conf;
