@@ -71,7 +71,9 @@ private:
   // HLT to TC type map
   std::map<int, trgdataformats::TriggerCandidateData::Type> m_CIB_TC_map = {
     { 0, trgdataformats::TriggerCandidateData::Type::kCIBFakeTrigger },
-    { 1, trgdataformats::TriggerCandidateData::Type::kCIBLaserCalib },
+    { 1, trgdataformats::TriggerCandidateData::Type::kCIBLaserTriggerP1 },
+    { 2, trgdataformats::TriggerCandidateData::Type::kCIBLaserTriggerP2 },
+    { 3, trgdataformats::TriggerCandidateData::Type::kCIBLaserTriggerP3 },
   };
 
   // Opmon variables
