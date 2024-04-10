@@ -193,6 +193,16 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 		       ((std::bitset<32>)bits)
 		       ((size_t)map_size))
 
+ERS_DECLARE_ISSUE_BASE(trigger,
+                      InvalidCIBSignal,
+                      appfwk::GeneralDAQModuleIssue,
+                      "An invalid CIB signal was received, signal: " << signal << ", bits: " << bits
+            << ", configured CIB bits: " << map_size,
+                      ((std::string)name),
+                      ((uint32_t)signal)
+          ((std::bitset<32>)bits)
+          ((size_t)map_size))
+
 ERS_DECLARE_ISSUE(trigger,
                   MissingFactoryItemError,
                   "Factory could not find requested item " << item << ".",
