@@ -91,13 +91,13 @@ TCProcessor::conf(const appdal::ReadoutModule* cfg)
     m_mandatory_links.push_back(
         dfmessages::SourceID{
         daqdataformats::SourceID::string_to_subsystem(link->get_subsystem()),
-        link->get_id()});
+        link->get_sid()});
   }  
   for(auto const& link : mtrg->get_enabled_source_ids()){
     m_mandatory_links.push_back(
         dfmessages::SourceID{
         daqdataformats::SourceID::string_to_subsystem(link->get_subsystem()),
-        link->get_id()});
+        link->get_sid()});
   }
 
 
