@@ -94,7 +94,7 @@ private:
     static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerPrimitive;
     // No idea what this should really be set to
-    static const constexpr uint64_t expected_tick_difference = 1; // NOLINT(build/unsigned)
+    static const constexpr uint64_t expected_tick_difference = 0; // NOLINT(build/unsigned)
 };
 
   void do_conf(const nlohmann::json& config);
