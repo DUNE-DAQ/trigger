@@ -190,6 +190,7 @@ def trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_i
         use_hsi_input=False,
         use_fake_hsi_input=False,
         use_ctb_input=False,
+        use_cib_input=False,
         fake_hsi_to_ctb=False,
         DEBUG=debug)
 
