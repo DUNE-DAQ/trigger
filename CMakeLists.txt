@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(trigger VERSION 1.8.0)
+project(trigger VERSION 1.8.2)
 
 find_package(daq-cmake REQUIRED)
 
@@ -60,6 +60,7 @@ daq_codegen(
   tpsetbuffercreator.jsonnet
   tasetsink.jsonnet
   tpchannelfilter.jsonnet
+  cibtriggercandidatemaker.jsonnet
   TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 
 daq_codegen(
@@ -71,6 +72,7 @@ daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.
 
 daq_add_plugin(TimingTriggerCandidateMaker duneDAQModule SCHEMA LINK_LIBRARIES trigger)
 daq_add_plugin(CTBTriggerCandidateMaker duneDAQModule SCHEMA LINK_LIBRARIES trigger)
+daq_add_plugin(CIBTriggerCandidateMaker duneDAQModule SCHEMA LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerPrimitiveMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerActivityMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)

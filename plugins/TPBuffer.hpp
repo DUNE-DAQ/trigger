@@ -56,7 +56,7 @@ private:
     // comparable based on first timestamp
     bool operator<(const TPWrapper& other) const
     {
-      return this->primitive.time_start < other.primitive.time_start;
+      return std::tie(this->primitive.time_start, this->primitive.channel) < std::tie(other.primitive.time_start, other.primitive.channel);
     }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
@@ -74,28 +74,27 @@ private:
       return primitive.time_start;
     }
 
-
     size_t get_payload_size() { return sizeof(triggeralgs::TriggerPrimitive); }
 
     size_t get_num_frames() { return 1; }
 
     size_t get_frame_size() { return get_payload_size(); }
 
-    triggeralgs::TriggerPrimitive* begin()
+    TPWrapper* begin()
     {
-      return &primitive;
+      return this;
     }
     
-    triggeralgs::TriggerPrimitive* end()
+    TPWrapper* end()
     {
-      return &primitive + 1;
+      return (this + 1);
     }
 
     //static const constexpr size_t fixed_payload_size = 5568;
     static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerPrimitive;
     // No idea what this should really be set to
-    static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
+    static const constexpr uint64_t expected_tick_difference = 1; // NOLINT(build/unsigned)
 };
 
   void do_conf(const nlohmann::json& config);
