@@ -224,6 +224,8 @@ private:
   std::atomic<metric_counter_type> m_lc_kLive{ 0 };
   std::atomic<metric_counter_type> m_lc_kPaused{ 0 };
   std::atomic<metric_counter_type> m_lc_kDead{ 0 };
+  std::atomic<uint64_t>            m_td_made_vs_readout_window;
+  std::atomic<uint64_t>            m_td_send_vs_readout_window;
 };
 } // namespace trigger
 } // namespace dunedaq

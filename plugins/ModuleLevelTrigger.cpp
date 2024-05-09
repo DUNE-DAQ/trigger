@@ -94,6 +94,10 @@ ModuleLevelTrigger::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   i.td_total_count = m_td_total_count.load();
   i.new_td_total_count = m_new_td_total_count.exchange(0);
 
+  // latency
+  i.td_made_vs_readout_window = m_td_made_vs_readout_window.load();
+  i.td_send_vs_readout_window = m_td_send_vs_readout_window.load();
+
   if (m_livetime_counter.get() != nullptr) {
     i.lc_kLive = m_livetime_counter->get_time(LivetimeCounter::State::kLive);
     i.lc_kPaused = m_livetime_counter->get_time(LivetimeCounter::State::kPaused);
@@ -194,6 +198,9 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
 
   m_bitword_check = false;
+
+  m_td_made_vs_readout_window = 0;
+  m_td_send_vs_readout_window = 0;
 }
 
 void
@@ -375,6 +382,11 @@ ModuleLevelTrigger::send_trigger_decisions()
                    << ", sent tds: " << m_sent_tds.size();
 
     for (std::vector<PendingTD>::iterator it = ready_tds.begin(); it != ready_tds.end();) {
+
+      // block to update latency TD made vs readout time window start
+      uint64_t system_time = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
+      m_td_made_vs_readout_window.store( system_time - it->readout_start*16e-6 );
+
       if (m_tc_merging) {
         if (check_overlap_td(*it)) {
           m_earliest_tc_index = get_earliest_tc_index(*it);
@@ -457,11 +469,16 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
              << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
                   pending_td.contributing_tcs[m_earliest_tc_index].type);
 
-      using namespace std::chrono;
+      // using namespace std::chrono;
       // uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
       try {
         auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_td_output_connection);
         td_sender->send(std::move(decision), std::chrono::milliseconds(1));
+
+        // block to update latency TD send vs readout time window start
+        uint64_t system_time_now = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
+        m_td_send_vs_readout_window.store( system_time_now - decision.components.front().window_begin*16e-6 );
+
         m_td_sent_count++;
         m_new_td_sent_count++;
         m_td_sent_tc_count += pending_td.contributing_tcs.size();

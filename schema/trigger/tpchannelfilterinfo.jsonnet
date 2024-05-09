@@ -11,7 +11,8 @@ local info = {
 
    info: s.record("Info", [
        s.field("received_count",                  self.uint8, 0, doc="Number of inputs received."), 
-       s.field("sent_count",                      self.uint8, 0, doc="Number of results added to queue."), 
+       s.field("sent_count",                      self.uint8, 0, doc="Number of results added to queue."),
+       s.field("system_vs_data_time",             self.uint8, 0, doc="doc here.") 
    ], doc="Trigger Generic Maker information")
 };
 

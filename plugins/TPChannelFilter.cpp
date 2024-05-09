@@ -17,6 +17,7 @@
 
 using dunedaq::trigger::logging::TLVL_GENERAL;
 using dunedaq::trigger::logging::TLVL_IMPORTANT;
+using dunedaq::trigger::logging::TLVL_DEBUG_ALL;
 using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
 using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 
@@ -45,6 +46,7 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
+  m_system_vs_data_time = 0;
 }
 
 void 
@@ -54,6 +56,7 @@ TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 
   i.received_count = m_received_count.load();
   i.sent_count = m_sent_count.load();
+  i.system_vs_data_time = m_system_vs_data_time.load();
 
   ci.add(i);
 }
@@ -136,6 +139,12 @@ TPChannelFilter::do_work()
 
     // Actually do the removal for payload TPSets. Leave heartbeat TPSets unmolested
     if (tpset->type == TPSet::kPayload) {
+
+      // block to report latency to opmon
+      uint64_t system_time = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
+      m_system_vs_data_time.store( system_time - (tpset->objects.begin()->time_start*(16e-6)) );        // Convert 62.5 MHz ticks to ms
+      TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TPCHF] " << (system_time - (tpset->objects.begin()->time_start*16e-6));
+
       size_t n_before = tpset->objects.size();
       auto it = std::remove_if(tpset->objects.begin(), tpset->objects.end(), [this](triggeralgs::TriggerPrimitive p) {
         return channel_should_be_removed(p.channel) || 
