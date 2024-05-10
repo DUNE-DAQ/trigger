@@ -91,9 +91,14 @@ public:
 
     i.received_count = m_received_count.load();
     i.sent_count = m_sent_count.load();
-    if (m_maker) { i.data_vs_system_ms = m_maker->m_data_vs_system_time; }
-    else i.data_vs_system_ms = 0;    
-
+    if (m_maker) { 
+        i.data_vs_system_in_ms  = m_maker->m_data_vs_system_time_in; 
+	i.data_vs_system_out_ms = m_maker->m_data_vs_system_time_out;
+    }
+    else {
+        i.data_vs_system_in_ms  = 0;
+	i.data_vs_system_out_ms = 0;
+    }
     ci.add(i);
   }
   

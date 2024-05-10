@@ -46,7 +46,8 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
-  m_system_vs_data_time = 0;
+  m_data_vs_system_time = 0;
+  m_first_tp = true;
 }
 
 void 
@@ -56,7 +57,7 @@ TPChannelFilter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 
   i.received_count = m_received_count.load();
   i.sent_count = m_sent_count.load();
-  i.system_vs_data_time = m_system_vs_data_time.load();
+  i.data_vs_system_time_ms = m_data_vs_system_time.load();
 
   ci.add(i);
 }
@@ -140,10 +141,15 @@ TPChannelFilter::do_work()
     // Actually do the removal for payload TPSets. Leave heartbeat TPSets unmolested
     if (tpset->type == TPSet::kPayload) {
 
+      if (m_first_tp) {
+        m_initial_offset = (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) - (tpset->objects.begin()->time_start*(16*1e-6));
+        m_first_tp = false;
+      }
+
       // block to report latency to opmon
       uint64_t system_time = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
-      m_system_vs_data_time.store( system_time - (tpset->objects.begin()->time_start*(16e-6)) );        // Convert 62.5 MHz ticks to ms
-      TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TPCHF] " << (system_time - (tpset->objects.begin()->time_start*16e-6));
+      m_data_vs_system_time.store( fabs( system_time - (tpset->objects.begin()->time_start*(16*1e-6)) - m_initial_offset ) ); // Convert 62.5 MHz ticks to ms
+      TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TPCHF] " << (system_time - (tpset->objects.begin()->time_start*(16*1e-6)));
 
       size_t n_before = tpset->objects.size();
       auto it = std::remove_if(tpset->objects.begin(), tpset->objects.end(), [this](triggeralgs::TriggerPrimitive p) {

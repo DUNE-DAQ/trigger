@@ -55,7 +55,9 @@ private:
   using metric_counter_type = decltype(tpchannelfilterinfo::Info::received_count);
   std::atomic<metric_counter_type> m_received_count;
   std::atomic<metric_counter_type> m_sent_count;
-  std::atomic<uint64_t>            m_system_vs_data_time;
+  std::atomic<uint64_t>            m_data_vs_system_time;
+  std::atomic<uint64_t>            m_initial_offset;
+  std::atomic<bool>                m_first_tp;
 
   using source_t = dunedaq::iomanager::ReceiverConcept<TPSet>;
   std::shared_ptr<source_t> m_input_queue;
