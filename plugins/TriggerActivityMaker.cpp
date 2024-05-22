@@ -24,6 +24,7 @@ TriggerActivityMaker::make_maker(const nlohmann::json& obj)
   set_windowing(params.window_time, params.buffer_time);
   std::unique_ptr<triggeralgs::TriggerActivityMaker> maker = make_ta_maker(params.activity_maker);
   maker->configure(params.activity_maker_config);
+  maker->use_latency(params.use_latency_offset);
   TLOG() << "Made a TAMaker - data_vs_system_time_in param: "  << maker->m_data_vs_system_time_in << "\n";
   TLOG() << "Made a TAMaker - data_vs_system_time_out param: " << maker->m_data_vs_system_time_out << "\n";
 

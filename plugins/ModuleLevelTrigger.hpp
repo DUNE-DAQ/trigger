@@ -226,11 +226,14 @@ private:
   std::atomic<metric_counter_type> m_lc_kDead{ 0 };
   std::atomic<uint64_t>            m_tc_data_vs_system;
   std::atomic<uint64_t>            m_td_made_vs_ro;
-  std::atomic<uint64_t>            m_td_send_vs_ro;
+  std::atomic<uint64_t>            m_td_send_vs_ro_start;
+  std::atomic<uint64_t>            m_td_send_vs_ro_end;
 
   // Latency
+  std::atomic<double>              m_clock_ticks_to_ms;
   std::atomic<bool>                m_first_tc;
   std::atomic<uint64_t>            m_initial_offset;
+  std::atomic<bool>                m_use_offset;
 };
 } // namespace trigger
 } // namespace dunedaq

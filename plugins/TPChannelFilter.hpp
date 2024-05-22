@@ -58,6 +58,7 @@ private:
   std::atomic<uint64_t>            m_data_vs_system_time;
   std::atomic<uint64_t>            m_initial_offset;
   std::atomic<bool>                m_first_tp;
+  std::atomic<double>              m_clock_ticks_to_ms;
 
   using source_t = dunedaq::iomanager::ReceiverConcept<TPSet>;
   std::shared_ptr<source_t> m_input_queue;

@@ -99,7 +99,8 @@ ModuleLevelTrigger::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   // latency
   i.tc_data_vs_system_ms    = m_tc_data_vs_system.load();
   i.td_made_vs_ro_window_ms = m_td_made_vs_ro.load();
-  i.td_send_vs_ro_window_ms = m_td_send_vs_ro.load();
+  i.td_send_vs_ro_start_ms  = m_td_send_vs_ro_start.load();
+  i.td_send_vs_ro_end_ms    = m_td_send_vs_ro_end.load();
 
   if (m_livetime_counter.get() != nullptr) {
     i.lc_kLive = m_livetime_counter->get_time(LivetimeCounter::State::kLive);
@@ -141,11 +142,13 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
   m_use_readout_map = params.use_readout_map;
   m_use_roi_readout = params.use_roi_readout;
   m_use_bitwords = params.use_bitwords;
+  m_use_offset = params.use_latency_offset;
   TLOG_DEBUG(TLVL_DEBUG_INFO) << "[MLT] Allow merging: " << m_tc_merging;
   TLOG_DEBUG(TLVL_DEBUG_INFO) << "[MLT] Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(TLVL_DEBUG_INFO) << "[MLT] Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(TLVL_DEBUG_INFO) << "[MLT] TD readout limit: " << m_td_readout_limit;
   TLOG_DEBUG(TLVL_DEBUG_INFO) << "[MLT] Use ROI readout?: " << m_use_roi_readout;
+  TLOG_DEBUG(TLVL_DEBUG_INFO) << "[MLT] Use latency offset?: " << m_use_offset;
 
   // ROI map
   if (m_use_roi_readout) {
@@ -187,6 +190,16 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 {
   m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
+  m_bitword_check = false;
+  m_tc_data_vs_system = 0;
+  m_td_made_vs_ro = 0;
+  m_td_send_vs_ro_start = 0;
+  m_td_send_vs_ro_end = 0;
+  m_first_tc = true;
+  m_initial_offset = 0;
+  // to convert 62.5MHz clock ticks to ms: 1/62500000 = 0.000000016 <- seconds per tick; 0.000016 <- ms per tick; 16*1e-6 <- sci notation
+  m_clock_ticks_to_ms = 16*1e-6;
+
   m_paused.store(true);
   m_running_flag.store(true);
   m_dfo_is_busy.store(false);
@@ -199,14 +212,6 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-trig-dec");
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
-
-  m_bitword_check = false;
-
-  m_tc_data_vs_system = 0;
-  m_td_made_vs_ro = 0;
-  m_td_send_vs_ro = 0;
-  m_first_tc = true;
-  m_initial_offset = 0;
 
 }
 
@@ -346,13 +351,15 @@ ModuleLevelTrigger::send_trigger_decisions()
     if (tc.has_value()) {
 
       if (m_first_tc) {
-        m_initial_offset = (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) - (tc->time_start*(16*1e-6));
+	if (m_use_offset) {
+          m_initial_offset = (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) - (tc->time_start*m_clock_ticks_to_ms);
+	}
         m_first_tc = false;
       }
 
       // Update OpMon Variable(s)
       uint64_t system_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-      m_tc_data_vs_system.store(fabs(system_time - tc->time_start*(16*1e-6) - m_initial_offset));
+      m_tc_data_vs_system.store(fabs(system_time - tc->time_start*m_clock_ticks_to_ms - m_initial_offset));
 
       if ( (m_use_readout_map) && (m_readout_window_map.count(tc->type)) ) {
         TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[MLT] Got TC of type " << static_cast<int>(tc->type) << ", timestamp " << tc->time_candidate
@@ -485,11 +492,13 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
       // uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
       try {
         auto td_sender = get_iom_sender<dfmessages::TriggerDecision>(m_td_output_connection);
-        td_sender->send(std::move(decision), std::chrono::milliseconds(1));
 
-        // block to update latency TD send vs readout time window start
+	// block to update latency TD send vs readout time window start
         uint64_t system_time = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
-        m_td_send_vs_ro.store( system_time - decision.components.front().window_begin*(16*1e-6) - m_initial_offset );
+        m_td_send_vs_ro_start.store( system_time - decision.components.front().window_begin*m_clock_ticks_to_ms - m_initial_offset );
+	m_td_send_vs_ro_end.store( system_time - decision.components.front().window_end*m_clock_ticks_to_ms - m_initial_offset );
+        
+	td_sender->send(std::move(decision), std::chrono::milliseconds(1));
 
         m_td_sent_count++;
         m_new_td_sent_count++;
@@ -578,7 +587,7 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
 
     // block to update latency TD made vs readout time window start
     uint64_t system_time = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
-    m_td_made_vs_ro.store( system_time - td_candidate.readout_start*(16*1e-6) - m_initial_offset );
+    m_td_made_vs_ro.store( system_time - td_candidate.readout_start*m_clock_ticks_to_ms - m_initial_offset );
   }
   return;
 }
