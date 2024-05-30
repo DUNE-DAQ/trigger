@@ -534,7 +534,7 @@ TCProcessor::set_trigger_bitwords()
 }
 
 void
-TCProcessor::set_trigger_bitwords(const std::vector<std::string>& _bitwords)
+TCProcessor::set_trigger_bitwords(const std::vector<std::string>& /*_bitwords*/)
 {
   TLOG_DEBUG() << "Warning, bitwords not implemented with OKS (for now) and won't be used!";
   m_use_bitwords = false;

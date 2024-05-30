@@ -108,7 +108,7 @@ CustomTriggerCandidateMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/
 }
 
 void
-CustomTriggerCandidateMaker::do_configure(const nlohmann::json& obj)
+CustomTriggerCandidateMaker::do_configure(const nlohmann::json& /*obj*/)
 {
   //m_conf = obj.get<customtriggercandidatemaker::Conf>();
 
