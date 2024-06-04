@@ -55,8 +55,6 @@ private:
   using metric_counter_type = decltype(tpchannelfilterinfo::Info::received_count);
   std::atomic<metric_counter_type> m_received_count;
   std::atomic<metric_counter_type> m_sent_count;
-  std::atomic<uint64_t>            m_data_vs_system_time;
-  std::atomic<uint64_t>            m_initial_offset;
   std::atomic<bool>                m_first_tp;
   std::atomic<double>              m_clock_ticks_to_ms;
 
@@ -69,6 +67,13 @@ private:
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
 
   dunedaq::trigger::tpchannelfilter::Conf m_conf;
+
+  // Latency
+  std::atomic<bool>     m_use_latency_monit;
+  std::atomic<bool>     m_use_latency_offset;
+  std::atomic<uint64_t> m_data_vs_system_time;
+  std::atomic<uint64_t> m_initial_offset;
+  std::atomic<uint64_t> m_system_time;
 
   // Are we in the RUNNING state?
   std::atomic<bool> m_running_flag{ false };

@@ -46,11 +46,14 @@ TPChannelFilter::init(const nlohmann::json& iniobj)
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
+
+  // Latency
   m_data_vs_system_time = 0;
   // to convert 62.5MHz clock ticks to ms: 1/62500000 = 0.000000016 <- seconds per tick; 0.000016 <- ms per tick; 16*1e-6 <- sci notation
   m_clock_ticks_to_ms = 16*1e-6;
   m_first_tp = true;
   m_initial_offset = 0;
+  m_system_time = 0;
 }
 
 void 
@@ -70,6 +73,8 @@ TPChannelFilter::do_conf(const nlohmann::json& conf_arg)
 {
   m_conf = conf_arg.get<dunedaq::trigger::tpchannelfilter::Conf>();
   m_channel_map = dunedaq::detchannelmaps::make_map(m_conf.channel_map_name);
+  m_use_latency_monit = m_conf.enable_latency_monit;
+  m_use_latency_offset = m_conf.use_latency_offset;
   TLOG_DEBUG(TLVL_GENERAL) << "[TPCF] Configured the TPChannelFilter!";
 }
 
@@ -145,16 +150,18 @@ TPChannelFilter::do_work()
     if (tpset->type == TPSet::kPayload) {
 
       if (m_first_tp) {
-	if (m_conf.use_latency_offset) {
+	if (m_use_latency_monit && m_use_latency_offset){
           m_initial_offset = (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) - (tpset->objects.begin()->time_start*m_clock_ticks_to_ms);
 	}
         m_first_tp = false;
       }
 
-      // block to report latency to opmon
-      uint64_t system_time = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
-      m_data_vs_system_time.store( fabs( system_time - (tpset->objects.begin()->time_start*m_clock_ticks_to_ms) - m_initial_offset ) );
-      TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TPCHF] " << (system_time - (tpset->objects.begin()->time_start*m_clock_ticks_to_ms));
+      if (m_use_latency_monit){
+        // block to report latency to opmon
+        m_system_time = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
+        m_data_vs_system_time.store( fabs( m_system_time - (tpset->start_time*m_clock_ticks_to_ms) - m_initial_offset ) );
+        TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TPCF] " << fabs( (m_system_time - (tpset->start_time*m_clock_ticks_to_ms) - m_initial_offset) );
+      }
 
       size_t n_before = tpset->objects.size();
       auto it = std::remove_if(tpset->objects.begin(), tpset->objects.end(), [this](triggeralgs::TriggerPrimitive p) {

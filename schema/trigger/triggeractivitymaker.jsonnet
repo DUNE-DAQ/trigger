@@ -18,6 +18,8 @@ local types = {
       doc="The with of windows for TASets. Windows start at a multiple of this value"),
     s.field("buffer_time", self.time,
       doc="The time to buffer past a window before emitting a TASet for that window in ticks"),
+    s.field("enable_latency_monit", self.bool,
+      doc="Should latency be reported to opmon"),
     s.field("use_latency_offset", self.bool, 
       doc="Maximum allowed time over threshold per TP in number of ticks"),
     s.field("activity_maker_config", self.any,

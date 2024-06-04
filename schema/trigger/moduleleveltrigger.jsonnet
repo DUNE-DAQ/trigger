@@ -63,6 +63,7 @@ local types = {
       s.field("roi_conf", self.roi_conf_map, default=[self.roi_group_conf], doc="The configuration (table) for ROI readout"),
       s.field("use_readout_map", self.flag, default=false, doc="Option to use defalt readout windows (tc.time_start and tc.time_end) or a custom readout map from daqconf"),
       s.field("td_readout_map", self.tc_readout_map, default=[self.tc_readout], doc="A map holding readout pre/post depending on TC type"),
+      s.field("enable_latency_monit", self.flag, default=false, doc="Should latency be reported to opmon"),
       s.field("use_latency_offset", self.flag, default=false, doc="Should an offset be applied to latency measurements (opmon)"),
   ], doc="ModuleLevelTrigger configuration parameters"),
   

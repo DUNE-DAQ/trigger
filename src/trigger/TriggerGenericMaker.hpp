@@ -28,12 +28,16 @@
 #include "utilities/WorkerThread.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <string>
 #include <vector>
 
 using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
 using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
+using dunedaq::trigger::logging::TLVL_DEBUG_ALL;
+
+using namespace std::chrono;
 
 namespace dunedaq::trigger {
 
@@ -91,17 +95,29 @@ public:
 
     i.received_count = m_received_count.load();
     i.sent_count = m_sent_count.load();
-    if (m_maker) { 
-        i.data_vs_system_in_ms  = m_maker->m_data_vs_system_time_in; 
-	i.data_vs_system_out_ms = m_maker->m_data_vs_system_time_out;
-    }
-    else {
-        i.data_vs_system_in_ms  = 0;
-	i.data_vs_system_out_ms = 0;
-    }
+    i.data_vs_system_in_ms  = m_data_vs_system_time_in.load(); 
+    i.data_vs_system_out_ms = m_data_vs_system_time_out.load();
     ci.add(i);
   }
   
+  std::atomic<uint64_t> get_current_system_time()
+  {
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  }
+
+  void update_latency_in(uint64_t timestamp)
+  {
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "TGM IN: " << timestamp;
+    m_data_vs_system_time_in.store( fabs(get_current_system_time() - (timestamp * m_clock_ticks_to_ms) - m_initial_offset) );
+    return;
+  }
+  void update_latency_out(uint64_t timestamp)
+  {
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "TGM OUT: " << timestamp;
+    m_data_vs_system_time_out.store( fabs(get_current_system_time() - (timestamp * m_clock_ticks_to_ms) - m_initial_offset) );
+    return;
+  }
+
 protected:
   void set_algorithm_name(const std::string& name) { m_algorithm_name = name; }
 
@@ -143,7 +159,16 @@ private:
 
   std::unique_ptr<MAKER> m_maker;
   nlohmann::json m_maker_conf;
-  
+
+  // Latency
+  std::atomic<bool>     m_use_latency_monit;
+  std::atomic<bool>     m_use_latency_offset;
+  std::atomic<bool>     m_first_object;
+  std::atomic<uint64_t> m_data_vs_system_time_in;
+  std::atomic<uint64_t> m_data_vs_system_time_out;
+  std::atomic<uint64_t> m_initial_offset;
+  std::atomic<double>   m_clock_ticks_to_ms;
+
   TriggerGenericWorker<IN, OUT, MAKER> worker;
 
   // This should return a unique_ptr to the MAKER created from conf command arguments.
@@ -154,6 +179,13 @@ private:
   {
     m_received_count = 0;
     m_sent_count = 0;
+    m_data_vs_system_time_in = 0;
+    m_data_vs_system_time_out = 0;
+    m_initial_offset = 0;
+    m_first_object = true;
+    // to convert 62.5MHz clock ticks to ms: 1/62500000 = 0.000000016 <- seconds per tick; 0.000016 <- ms per tick; 16*1e-6 <- sci notation
+    m_clock_ticks_to_ms = 16*1e-6;
+
     m_maker = make_maker(m_maker_conf);
     worker.reconfigure();
     m_thread.start_working_thread(get_name());
@@ -173,7 +205,11 @@ private:
     // persist between runs and hold onto its state from the previous
     // run
     m_maker_conf = obj;
-   
+
+    // Set latency from objects config (hack for now)
+    m_use_latency_monit = obj.value("enable_latency_monit", false);
+    m_use_latency_offset = obj.value("use_latency_offset", false);
+
     // worker should be notified that configuration potentially changed
     worker.reconfigure();
   }
@@ -336,6 +372,7 @@ public: // NOLINT
     std::vector<B> elems; // Bs to buffer for the next window
     switch (in.type) {
       case Set<A>::Type::kPayload: {
+
         if (m_prev_start_time != 0 && in.start_time < m_prev_start_time) {
           ers::warning(OutOfOrderSets(ERS_HERE, m_parent.get_name(), m_prev_start_time, in.start_time));
         }
@@ -345,6 +382,13 @@ public: // NOLINT
         if (!m_in_buffer.buffer(in, time_slice, start_time, end_time)) {
           return; // no complete time slice yet (`in` was part of buffered slice)
         }
+
+        if (m_parent.m_use_latency_monit && m_parent.m_use_latency_offset && m_parent.m_first_object) {
+          m_parent.m_initial_offset = (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) - (time_slice.front().time_start * m_parent.m_clock_ticks_to_ms);
+	  m_parent.m_first_object = false;
+        }
+	if (m_parent.m_use_latency_monit) { m_parent.update_latency_in(time_slice.front().time_start); }
+
         m_low_level_input_count += time_slice.size();
         process_slice(time_slice, elems);
       } break;
@@ -419,7 +463,9 @@ public: // NOLINT
       else if (out.type == Set<B>::Type::kPayload && out.objects.size() != 0) {
         TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TGM] Output set window ready with start time " << out.start_time << " end time " << out.end_time
                       << " and " << out.objects.size() << " members";
-        if (!m_parent.send(std::move(out))) {
+	if (m_parent.m_use_latency_monit) { m_parent.update_latency_out(out.objects.front().time_start); } // we could use set.start_time here (faster) but would be losing precision (set.start_time is rounded)...
+        
+	if (!m_parent.send(std::move(out))) {
           ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
           // out is dropped
         }
@@ -524,6 +570,13 @@ public: // NOLINT
         if (!m_in_buffer.buffer(in, time_slice, start_time, end_time)) {
           return; // no complete time slice yet (`in` was part of buffered slice)
         }
+
+        if (m_parent.m_use_latency_monit && m_parent.m_use_latency_offset && m_parent.m_first_object) {
+          m_parent.m_initial_offset = (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) - (time_slice.front().time_start * m_parent.m_clock_ticks_to_ms);
+          m_parent.m_first_object = false;
+        }
+	if (m_parent.m_use_latency_monit) { m_parent.update_latency_in(time_slice.front().time_start); }
+
         m_low_level_input_count += time_slice.size();
         process_slice(time_slice, out_vec);
       } break;
@@ -557,6 +610,7 @@ public: // NOLINT
         break;
     }
 
+    if (m_parent.m_use_latency_monit) { m_parent.update_latency_out(out_vec.front().time_start); }
     while (out_vec.size()) {
       if (!m_parent.send(std::move(out_vec.back()))) {
         ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));

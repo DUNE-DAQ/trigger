@@ -147,6 +147,8 @@ public:
       auto& hb = m_heartbeat_buffer.top();
       TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TimeSliceOutputBuffer] Flushing heartbeat with start time " << hb.start_time;
       out_set.start_time = hb.start_time;
+      TLOG() << "HB: " << hb.start_time;
+      TLOG() << "set: " << out_set.start_time;
       out_set.end_time = hb.end_time;
       out_set.origin = hb.origin;
       out_set.type = Set<T>::Type::kHeartbeat;

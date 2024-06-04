@@ -13,6 +13,8 @@ local types = {
       doc="Name of the candidate maker implementation to be used via plugin"),
     s.field("candidate_maker_config", self.any,
       doc="Configuration for the candidate maker implementation"),
+    s.field("enable_latency_monit", self.bool,
+      doc="Should latency be reported to opmon"),
     s.field("use_latency_offset", self.bool, 
       doc="Maximum allowed time over threshold per TP in number of ticks"),
     ], doc="TriggerCandidateMaker configuration"),
