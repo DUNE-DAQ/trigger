@@ -55,8 +55,6 @@ private:
   using metric_counter_type = decltype(tpchannelfilterinfo::Info::received_count);
   std::atomic<metric_counter_type> m_received_count;
   std::atomic<metric_counter_type> m_sent_count;
-  std::atomic<bool>                m_first_tp;
-  std::atomic<double>              m_clock_ticks_to_ms;
 
   using source_t = dunedaq::iomanager::ReceiverConcept<TPSet>;
   std::shared_ptr<source_t> m_input_queue;
@@ -74,6 +72,8 @@ private:
   std::atomic<uint64_t> m_data_vs_system_time;
   std::atomic<uint64_t> m_initial_offset;
   std::atomic<uint64_t> m_system_time;
+  std::atomic<bool>     m_first_tp;
+  std::atomic<double>   m_clock_ticks_to_ms;
 
   // Are we in the RUNNING state?
   std::atomic<bool> m_running_flag{ false };
