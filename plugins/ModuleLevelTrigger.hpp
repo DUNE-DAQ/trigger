@@ -224,18 +224,18 @@ private:
   std::atomic<metric_counter_type> m_lc_kLive{ 0 };
   std::atomic<metric_counter_type> m_lc_kPaused{ 0 };
   std::atomic<metric_counter_type> m_lc_kDead{ 0 };
-  std::atomic<uint64_t>            m_tc_data_vs_system;
-  std::atomic<uint64_t>            m_td_made_vs_ro;
-  std::atomic<uint64_t>            m_td_send_vs_ro_start;
-  std::atomic<uint64_t>            m_td_send_vs_ro_end;
+  std::atomic<uint64_t> m_tc_data_vs_system;
+  std::atomic<uint64_t> m_td_made_vs_ro;
+  std::atomic<uint64_t> m_td_send_vs_ro_start;
+  std::atomic<uint64_t> m_td_send_vs_ro_end;
 
   // Latency
-  std::atomic<double>              m_clock_ticks_to_ms;
-  std::atomic<bool>                m_first_tc;
-  std::atomic<bool>                m_use_latency_monit;
-  std::atomic<uint64_t>            m_initial_offset;
-  std::atomic<bool>                m_use_latency_offset;
-  std::atomic<uint64_t>            m_system_time;
+  std::atomic<double> m_clock_ticks_to_ms;
+  std::atomic<bool> m_first_tc;
+  std::atomic<bool> m_use_latency_monit;
+  std::atomic<uint64_t> m_initial_offset;
+  std::atomic<bool> m_use_latency_offset;
+  std::atomic<uint64_t> m_system_time;
 };
 } // namespace trigger
 } // namespace dunedaq
