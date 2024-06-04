@@ -22,7 +22,6 @@ TriggerCandidateMaker::make_maker(const nlohmann::json& obj)
   set_algorithm_name(params.candidate_maker);
   std::unique_ptr<triggeralgs::TriggerCandidateMaker> maker = make_tc_maker(params.candidate_maker);
   maker->configure(params.candidate_maker_config);
-  maker->use_latency(params.use_latency_offset);
   return maker;
 }
 

@@ -490,7 +490,7 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
     if ((!m_paused.load() && !m_dfo_is_busy.load())) {
 
       TLOG_DEBUG(TLVL_DEBUG_LOW) << "[MLT] Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
-             << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
+             << decision.trigger_timestamp << " start " << decision.components.back().window_begin << " end " << decision.components.back().window_end
  	     << " number of links " << decision.components.size()
              << " based on TC of type "
              << static_cast<std::underlying_type_t<decltype(pending_td.contributing_tcs[m_earliest_tc_index].type)>>(
@@ -502,8 +502,8 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
 	if (m_use_latency_monit){
 	  // block to update latency TD send vs readout time window start
           m_system_time = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
-          m_td_send_vs_ro_start.store( m_system_time - decision.components.front().window_begin*m_clock_ticks_to_ms - m_initial_offset );
-	  m_td_send_vs_ro_end.store( m_system_time - decision.components.front().window_end*m_clock_ticks_to_ms - m_initial_offset );
+          m_td_send_vs_ro_start.store( m_system_time - decision.components.back().window_begin*m_clock_ticks_to_ms - m_initial_offset );
+	  m_td_send_vs_ro_end.store( m_system_time - decision.components.back().window_end*m_clock_ticks_to_ms - m_initial_offset );
 	}
         
 	td_sender->send(std::move(decision), std::chrono::milliseconds(1));
