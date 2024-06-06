@@ -21,7 +21,7 @@
 #include "triggeralgs/Types.hpp"
 #include "triggeralgs/TriggerActivityMaker.hpp"
 
-#include "appdal/ReadoutModule.hpp"
+#include "appmodel/ReadoutModule.hpp"
 
 namespace dunedaq {
 namespace trigger {
@@ -43,7 +43,7 @@ public:
 
   void stop(const nlohmann::json& args) override;
 
-  void conf(const appdal::ReadoutModule* conf) override;
+  void conf(const appmodel::ReadoutModule* conf) override;
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 

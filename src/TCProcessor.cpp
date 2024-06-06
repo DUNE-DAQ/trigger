@@ -19,8 +19,8 @@
 #include "trigger/TCWrapper.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
-#include "appdal/TCDataProcessor.hpp"
-#include "appdal/TriggerDataHandler.hpp"
+#include "appmodel/TCDataProcessor.hpp"
+#include "appmodel/TriggerDataHandler.hpp"
 
 using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
@@ -67,9 +67,9 @@ TCProcessor::stop(const nlohmann::json& args)
 }
 
 void
-TCProcessor::conf(const appdal::ReadoutModule* cfg)
+TCProcessor::conf(const appmodel::ReadoutModule* cfg)
 {
-  auto mtrg = cfg->cast<appdal::TriggerDataHandler>();	
+  auto mtrg = cfg->cast<appmodel::TriggerDataHandler>();	
   if (mtrg == nullptr) {
     throw(InvalidConfiguration(ERS_HERE));
   }
@@ -84,7 +84,7 @@ TCProcessor::conf(const appdal::ReadoutModule* cfg)
   }
 
   auto dp = mtrg->get_module_configuration()->get_data_processor();
-  auto proc_conf = dp->cast<appdal::TCDataProcessor>();
+  auto proc_conf = dp->cast<appmodel::TCDataProcessor>();
 
   // Add all Source IDs to mandatoy links for now...
   for(auto const& link : mtrg->get_mandatory_source_ids()){
@@ -541,7 +541,7 @@ TCProcessor::set_trigger_bitwords(const std::vector<std::string>& _bitwords)
 }
 
 void
-TCProcessor::parse_readout_map(const std::vector<const appdal::TCReadoutMap*>& data)
+TCProcessor::parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>& data)
 {
   for (auto readout_type : data) {
     m_readout_window_map[static_cast<trgdataformats::TriggerCandidateData::Type>(readout_type->get_candidate_type())] = {
@@ -627,7 +627,7 @@ TCProcessor::add_requests_to_decision(dfmessages::TriggerDecision& decision,
 }
 
 void
-TCProcessor::parse_roi_conf(const std::vector<const appdal::ROIGroupConf*>& data)
+TCProcessor::parse_roi_conf(const std::vector<const appmodel::ROIGroupConf*>& data)
 {
   int counter = 0;
   float run_sum = 0;

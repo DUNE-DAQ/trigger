@@ -67,7 +67,7 @@ TriggerDataHandler::get_info(opmonlib::InfoCollector& ci, int level)
 }
 
 std::unique_ptr<readoutlibs::ReadoutConcept>
-TriggerDataHandler::create_readout(const appdal::ReadoutModule* modconf, std::atomic<bool>& run_marker)
+TriggerDataHandler::create_readout(const appmodel::ReadoutModule* modconf, std::atomic<bool>& run_marker)
 {
   namespace rol = dunedaq::readoutlibs;
 
