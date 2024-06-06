@@ -12,7 +12,7 @@
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
 
-#include "appdal/ReadoutModule.hpp"
+#include "appmodel/ReadoutModule.hpp"
 
 #include "readoutlibs/ReadoutLogging.hpp"
 #include "readoutlibs/utils/ReusableThread.hpp"
@@ -60,7 +60,7 @@ public:
     TLOG_DEBUG(TLVL_WORK_STEPS) << "TPRequestHandler created...";
   }
  
-  void conf(const appdal::ReadoutModule* conf) override;
+  void conf(const appmodel::ReadoutModule* conf) override;
   void start(const nlohmann::json& args) override;
   void periodic_data_transmission() override;
   

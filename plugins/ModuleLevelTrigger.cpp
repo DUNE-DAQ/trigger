@@ -47,7 +47,7 @@ ModuleLevelTrigger::ModuleLevelTrigger(const std::string& name)
 void
 ModuleLevelTrigger::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  auto mtrg = mcfg->module<appdal::ModuleLevelTrigger>(get_name());
+  auto mtrg = mcfg->module<appmodel::ModuleLevelTrigger>(get_name());
 
   // Get the inputs
   std::string candidate_input;

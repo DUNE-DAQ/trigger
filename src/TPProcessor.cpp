@@ -23,8 +23,8 @@
 #include "trigger/AlgorithmPlugins.hpp"
 #include "triggeralgs/TriggerActivityMaker.hpp"
 
-#include "appdal/TPDataProcessor.hpp"
-#include "appdal/TAAlgorithm.hpp"
+#include "appmodel/TPDataProcessor.hpp"
+#include "appmodel/TAAlgorithm.hpp"
 
 using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
@@ -60,7 +60,7 @@ TPProcessor::stop(const nlohmann::json& args)
 }
 
 void
-TPProcessor::conf(const appdal::ReadoutModule* conf)
+TPProcessor::conf(const appmodel::ReadoutModule* conf)
 {
   for (auto output : conf->get_outputs()) {
    try {
@@ -75,9 +75,9 @@ TPProcessor::conf(const appdal::ReadoutModule* conf)
   m_sourceid.id = conf->get_source_id();
   m_sourceid.subsystem = TriggerPrimitiveTypeAdapter::subsystem;
   
-  std::vector<const appdal::TAAlgorithm*> ta_algorithms;
+  std::vector<const appmodel::TAAlgorithm*> ta_algorithms;
   auto dp = conf->get_module_configuration()->get_data_processor();
-  auto proc_conf = dp->cast<appdal::TPDataProcessor>();
+  auto proc_conf = dp->cast<appmodel::TPDataProcessor>();
   if (proc_conf != nullptr && proc_conf->get_mask_processing() == false) {
     ta_algorithms = proc_conf->get_algorithms();
     }

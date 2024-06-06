@@ -60,7 +60,7 @@ void
 CustomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
 
-  auto mtrg = mcfg->module<appdal::CustomTriggerCandidateMaker>(get_name());
+  auto mtrg = mcfg->module<appmodel::CustomTriggerCandidateMaker>(get_name());
   try {
     // Get the outputs
     for(auto con: mtrg->get_outputs()){
