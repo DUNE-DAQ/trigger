@@ -389,7 +389,7 @@ public: // NOLINT
                                       (time_slice.front().time_start * m_parent.m_clock_ticks_to_ms);
           m_parent.m_first_object = false;
         }
-        if (m_parent.m_use_latency_monit) {
+        if (m_parent.m_use_latency_monit && !time_slice.empty()) {
           m_parent.update_latency_in(time_slice.front().time_start);
         }
 
@@ -465,7 +465,7 @@ public: // NOLINT
       else if (out.type == Set<B>::Type::kPayload && out.objects.size() != 0) {
         TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TGM] Output set window ready with start time " << out.start_time
                                       << " end time " << out.end_time << " and " << out.objects.size() << " members";
-        if (m_parent.m_use_latency_monit) {
+        if (m_parent.m_use_latency_monit && !out.objects.empty()) {
           m_parent.update_latency_out(out.objects.front().time_start);
         } // we could use set.start_time here (faster) but would be losing precision (set.start_time is rounded)...
 
@@ -579,7 +579,7 @@ public: // NOLINT
                                       (time_slice.front().time_start * m_parent.m_clock_ticks_to_ms);
           m_parent.m_first_object = false;
         }
-        if (m_parent.m_use_latency_monit) {
+        if (m_parent.m_use_latency_monit && !time_slice.empty()) {
           m_parent.update_latency_in(time_slice.front().time_start);
         }
 
@@ -616,7 +616,7 @@ public: // NOLINT
         break;
     }
 
-    if (m_parent.m_use_latency_monit) {
+    if (m_parent.m_use_latency_monit && !out_vec.empty()) {
       m_parent.update_latency_out(out_vec.front().time_start);
     }
     while (out_vec.size()) {
