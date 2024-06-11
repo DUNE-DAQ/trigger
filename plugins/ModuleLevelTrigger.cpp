@@ -509,10 +509,10 @@ ModuleLevelTrigger::call_tc_decision(const ModuleLevelTrigger::PendingTD& pendin
           // block to update latency TD send vs readout time window start
           m_system_time =
             std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
-          m_td_send_vs_ro_start.store(m_system_time - decision.components.back().window_begin * m_clock_ticks_to_ms -
-                                      m_initial_offset);
-          m_td_send_vs_ro_end.store(m_system_time - decision.components.back().window_end * m_clock_ticks_to_ms -
-                                    m_initial_offset);
+          m_td_send_vs_ro_start.store(
+            fabs(m_system_time - decision.components.back().window_begin * m_clock_ticks_to_ms - m_initial_offset));
+          m_td_send_vs_ro_end.store(
+            fabs(m_system_time - decision.components.back().window_end * m_clock_ticks_to_ms - m_initial_offset));
         }
 
         td_sender->send(std::move(decision), std::chrono::milliseconds(1));
@@ -608,7 +608,7 @@ ModuleLevelTrigger::add_tc(const triggeralgs::TriggerCandidate& tc)
       // block to update latency TD made vs readout time window start
       m_system_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
-      m_td_made_vs_ro.store(m_system_time - td_candidate.readout_start * m_clock_ticks_to_ms - m_initial_offset);
+      m_td_made_vs_ro.store(fabs(m_system_time - td_candidate.readout_start * m_clock_ticks_to_ms - m_initial_offset));
     }
   }
   return;
