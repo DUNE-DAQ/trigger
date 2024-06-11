@@ -12,7 +12,8 @@ local info = {
    info: s.record("Info", [
        s.field("received_count",                  self.uint8, 0, doc="Number of inputs received."), 
        s.field("sent_count",                      self.uint8, 0, doc="Number of results added to queue."), 
-       s.field("data_vs_system_ms",               self.uint8, 0, doc="Difference between data time and system time (ms)")
+       s.field("data_vs_system_in_ms",            self.uint8, 0, doc="Difference between data time and system time when entering maker (ms)"),
+       s.field("data_vs_system_out_ms",           self.uint8, 0, doc="Difference between data time and system time when exiting maker (ms)")
    ], doc="Trigger Generic Maker information")
 };
 
