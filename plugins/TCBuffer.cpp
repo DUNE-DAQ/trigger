@@ -19,6 +19,7 @@
 
 using dunedaq::trigger::logging::TLVL_GENERAL;
 using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
+using dunedaq::trigger::logging::TLVL_DEBUG_LOW;
 
 namespace dunedaq {
 namespace trigger {
@@ -53,8 +54,19 @@ TCBuffer::init(const nlohmann::json& init_data)
 }
 
 void
-TCBuffer::get_info(opmonlib::InfoCollector& /* ci */, int /*level*/)
+TCBuffer::get_info(opmonlib::InfoCollector& ci, int level)
 {
+  txbufferinfo::Info ri;
+
+  // Get opmon from this daqmodule
+  ri.num_buffer_elements = m_latency_buffer_impl->occupancy();
+  ri.num_payloads = m_num_payloads.exchange(0);
+  ri.num_payloads_overwritten = m_num_payloads_overwritten.exchange(0);
+  ri.num_requests = m_num_requests.exchange(0);
+  ci.add(ri);
+
+  // Get opmon from the latencybuffer request handler too
+  m_request_handler_impl->get_info(ci, level);
 }
 
 void
@@ -107,12 +119,17 @@ TCBuffer::do_work(std::atomic<bool>& running_flag)
     if (tc.has_value()) {  
       TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TCB] Got TC with start time " << tc->time_start;
       popped_anything = true;
-      m_latency_buffer_impl->write(TCWrapper(*tc));
+      ++m_num_payloads;
+      if (!m_latency_buffer_impl->write(TCWrapper(*tc))) {
+         ++m_num_payloads_overwritten;
+         TLOG_DEBUG(TLVL_DEBUG_LOW) << "[TCBuffer] Latency buffer full and data was being overwritten!";
+      }
       ++n_tcs_received;
     }
 
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
     if (data_request.has_value()) {
+      ++m_num_requests;
       auto& info = data_request->request_information;
       TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TCB] Got data request with component " << info.component << ", window_begin " << info.window_begin
                     << ", window_end " << info.window_end << ", trig/seq_number "
