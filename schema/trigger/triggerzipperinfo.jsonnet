@@ -12,7 +12,9 @@ local info = {
    info: s.record("Info", [
        s.field("n_received",                  self.uint8, 0, doc="Number of inputs received."), 
        s.field("n_sent",                      self.uint8, 0, doc="Number of results added to queue."), 
-       s.field("n_tardy",                     self.uint8, 0, doc="Number of Tarfy added to queue."), 
+       s.field("n_tardy",                     self.uint8, 0, doc="Number of Tardy added to queue."),
+       s.field("n_cache_occupancy",           self.uint8, 0, doc="Occupancy of the TXZipper cache."),
+       s.field("n_zipper_occupancy",          self.uint8, 0, doc="Occupancy of the TXZipper buffer."),
    ], doc="Trigger Generic Maker information")
 };
 
