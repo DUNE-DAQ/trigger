@@ -77,7 +77,7 @@ RandomTriggerCandidateMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/
 }
 
 void
-RandomTriggerCandidateMaker::do_configure(const nlohmann::json& obj)
+RandomTriggerCandidateMaker::do_configure(const nlohmann::json& /*obj*/)
 {
   //m_conf = obj.get<randomtriggercandidatemaker::Conf>();
 }
