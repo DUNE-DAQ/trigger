@@ -70,7 +70,7 @@ FakeTPCreatorHeartbeatMaker::do_start(const nlohmann::json& args)
   rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
   m_run_number = start_params.run;
 
-  m_thread.start_working_thread("heartbeater");
+  m_thread.start_working_thread(get_name());
   TLOG_DEBUG(TLVL_GENERAL) << "[FHM] " << get_name() + " successfully started.";
 }
 

@@ -189,7 +189,7 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
   m_inhibit_input->add_callback(std::bind(&ModuleLevelTrigger::dfo_busy_callback, this, std::placeholders::_1));
 
   m_send_trigger_decisions_thread = std::thread(&ModuleLevelTrigger::send_trigger_decisions, this);
-  pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-trig-dec");
+  pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), get_name());
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
 

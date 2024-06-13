@@ -43,7 +43,7 @@ TASetSink::do_start(const nlohmann::json& /*obj*/)
 {
   m_running_flag.store(true);
   m_thread = std::thread(&TASetSink::do_work, this);
-  pthread_setname_np(m_thread.native_handle(), "tasink");
+  pthread_setname_np(m_thread.native_handle(), get_name());
 }
 
 void
