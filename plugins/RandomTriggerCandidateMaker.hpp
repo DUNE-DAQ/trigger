@@ -13,10 +13,10 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/ModuleConfiguration.hpp"
-#include "coredal/Connection.hpp"
+#include "confmodel/Connection.hpp"
 
-#include "appdal/RandomTriggerCandidateMakerConf.hpp"
-#include "appdal/RandomTriggerCandidateMaker.hpp"
+#include "appmodel/RandomTriggerCandidateMakerConf.hpp"
+#include "appmodel/RandomTriggerCandidateMaker.hpp"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TimeSync.hpp"
@@ -86,7 +86,7 @@ private:
   std::shared_ptr<iomanager::SenderConcept<trigger::TCWrapper>> m_trigger_candidate_sink;
 
   //randomtriggercandidatemaker::Conf m_conf;
-  const appdal::RandomTriggerCandidateMakerConf* m_conf;
+  const appmodel::RandomTriggerCandidateMakerConf* m_conf;
 
   int get_interval(std::mt19937& gen);
 

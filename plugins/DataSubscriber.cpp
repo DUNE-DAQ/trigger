@@ -15,7 +15,7 @@
 #include "trigger/TPSetSourceModel.hpp"
 #include "trigger/TriggerSourceModel.hpp"
 
-#include "appdal/DataSubscriber.hpp"
+#include "appmodel/DataSubscriber.hpp"
 
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TAWrapper.hpp"
@@ -48,7 +48,7 @@ void
 DataSubscriber::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto ini = cfg->module<coredal::DaqModule>(get_name());
+  auto ini = cfg->module<confmodel::DaqModule>(get_name());
   if (ini->get_outputs().size() != 1) {
     throw readoutlibs::InitializationError(ERS_HERE, "Only 1 output supported for subscribers");
   }
@@ -78,7 +78,7 @@ DataSubscriber::get_info(opmonlib::InfoCollector& ci, int level)
 
 
 std::unique_ptr<readoutlibs::SourceConcept>
-DataSubscriber::create_data_subscriber(const coredal::DaqModule* cfg)
+DataSubscriber::create_data_subscriber(const confmodel::DaqModule* cfg)
 {
  
   auto datatypes = cfg->get_outputs()[0]->get_data_type();

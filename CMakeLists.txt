@@ -21,13 +21,13 @@ find_package(detchannelmaps REQUIRED)
 find_package(hdf5libs REQUIRED)
 find_package(readoutlibs REQUIRED)
 find_package(readoutmodules REQUIRED)
-find_package(appdal REQUIRED)
+find_package(appmodel REQUIRED)
 find_package(CLI11 REQUIRED)
 
 ##############################################################################
 # Main library 
 set(TRIGGER_DEPENDENCIES
-  appdal::appdal
+  appmodel::appmodel
   appfwk::appfwk
   logging::logging
   dfmessages::dfmessages

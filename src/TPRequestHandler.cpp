@@ -1,6 +1,6 @@
 #include "trigger/TPRequestHandler.hpp"
-#include "appdal/ReadoutModuleConf.hpp"
-#include "appdal/RequestHandler.hpp"
+#include "appmodel/ReadoutModuleConf.hpp"
+#include "appmodel/RequestHandler.hpp"
 
 #include "rcif/cmd/Nljs.hpp"
 
@@ -8,7 +8,7 @@ namespace dunedaq {
 namespace trigger {
 
 void
-TPRequestHandler::conf(const appdal::ReadoutModule* conf) {
+TPRequestHandler::conf(const appmodel::ReadoutModule* conf) {
 
    for (auto output : conf->get_outputs()) {
       if (output->get_data_type() == "TPSet") {

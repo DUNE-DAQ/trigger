@@ -52,7 +52,7 @@ RandomTriggerCandidateMaker::RandomTriggerCandidateMaker(const std::string& name
 void
 RandomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  auto mtrg = mcfg->module<appdal::RandomTriggerCandidateMaker>(get_name());
+  auto mtrg = mcfg->module<appmodel::RandomTriggerCandidateMaker>(get_name());
 
   for(auto con: mtrg->get_outputs()){
     TLOG() << "TC sink is " << con->class_name() << "@" << con->UID();

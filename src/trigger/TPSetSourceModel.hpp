@@ -20,13 +20,13 @@
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
 #include "logging/Logging.hpp"
-#include "coredal/DaqModule.hpp"
-#include "appdal/DataSubscriber.hpp"
+#include "confmodel/DaqModule.hpp"
+#include "appmodel/DataSubscriber.hpp"
 #include "trigger/TPSet.hpp"
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 
-//#include "appdal/HSI2TCTranslatorConf.hpp" 
-//#include "appdal/HSISignalWindow.hpp" 
+//#include "appmodel/HSI2TCTranslatorConf.hpp" 
+//#include "appmodel/HSISignalWindow.hpp" 
 
 namespace dunedaq::trigger {
 
@@ -44,7 +44,7 @@ public:
   TPSetSourceModel(): readoutlibs::SourceConcept() {}
   ~TPSetSourceModel() {}
 
-  void init(const coredal::DaqModule* cfg) override {
+  void init(const confmodel::DaqModule* cfg) override {
     if (cfg->get_outputs().size() != 1) {
       throw readoutlibs::InitializationError(ERS_HERE, "Only 1 output supported for subscribers");
     }
@@ -55,11 +55,11 @@ public:
     }
     m_data_receiver = get_iom_receiver<trigger::TPSet>(cfg->get_inputs()[0]->UID());
 /*
-    auto data_reader = cfg->cast<appdal::DataSubscriber>();
+    auto data_reader = cfg->cast<appmodel::DataSubscriber>();
     if (data_reader == nullptr) {
        throw readoutlibs::InitializationError(ERS_HERE, "DAQ module is not a DataReader");
     }
-    auto hsi_conf = data_reader->get_configuration()->cast<appdal::HSI2TCTranslatorConf>();
+    auto hsi_conf = data_reader->get_configuration()->cast<appmodel::HSI2TCTranslatorConf>();
     if (hsi_conf == nullptr) {
 	throw readoutlibs::InitializationError(ERS_HERE, "Missing HSI2TCTranslatorConf");
     }

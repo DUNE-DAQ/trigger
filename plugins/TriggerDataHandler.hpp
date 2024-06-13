@@ -38,7 +38,7 @@ public:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   std::unique_ptr<readoutlibs::ReadoutConcept>
-  create_readout(const appdal::ReadoutModule* modconf, std::atomic<bool>& run_marker) override;
+  create_readout(const appmodel::ReadoutModule* modconf, std::atomic<bool>& run_marker) override;
 
 };
 

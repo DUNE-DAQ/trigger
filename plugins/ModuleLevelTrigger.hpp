@@ -21,13 +21,13 @@
 
 #include "appfwk/DAQModule.hpp"
 
-#include "appdal/ModuleLevelTrigger.hpp"
-#include "appdal/ModuleLevelTriggerConf.hpp"
-#include "appdal/TCReadoutMap.hpp"
-#include "appdal/ROIGroupConf.hpp"
-#include "appdal/SourceIDConf.hpp"
+#include "appmodel/ModuleLevelTrigger.hpp"
+#include "appmodel/ModuleLevelTriggerConf.hpp"
+#include "appmodel/TCReadoutMap.hpp"
+#include "appmodel/ROIGroupConf.hpp"
+#include "appmodel/SourceIDConf.hpp"
 
-#include "coredal/Connection.hpp"
+#include "confmodel/Connection.hpp"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -112,8 +112,8 @@ private:
     std::string mode;
   };
   std::map<int, roi_group> m_roi_conf;
-  std::vector<const appdal::ROIGroupConf*> m_roi_conf_data;
-  void parse_roi_conf(const std::vector<const appdal::ROIGroupConf*>& data);
+  std::vector<const appmodel::ROIGroupConf*> m_roi_conf_data;
+  void parse_roi_conf(const std::vector<const appmodel::ROIGroupConf*>& data);
   void print_roi_conf(std::map<int, roi_group> roi_conf);
   std::vector<int> m_roi_conf_ids;
   std::vector<float> m_roi_conf_probs;
@@ -190,10 +190,10 @@ private:
   */
   /* Readout map config
   bool m_use_readout_map;
-  std::vector<const appdal::TCReadoutMap*>  m_readout_window_map_data;
+  std::vector<const appmodel::TCReadoutMap*>  m_readout_window_map_data;
   std::map<trgdataformats::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
     m_readout_window_map;
-  void parse_readout_map(const std::vector<const appdal::TCReadoutMap*>& data);
+  void parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>& data);
   void print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
                                   std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map);
   */

@@ -12,7 +12,7 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 
-#include "appdal/ReadoutModule.hpp"
+#include "appmodel/ReadoutModule.hpp"
 
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
@@ -43,7 +43,7 @@ public:
 
   void stop(const nlohmann::json& args) override;
 
-  void conf(const appdal::ReadoutModule* conf) override;
+  void conf(const appmodel::ReadoutModule* conf) override;
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
