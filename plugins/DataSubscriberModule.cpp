@@ -1,11 +1,11 @@
 /**
- * @file DataSubscriber.cpp DataSubscriber class implementation
+ * @file DataSubscriberModule.cpp DataSubscriberModule class implementation
  *
  * This is part of the DUNE DAQ , copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#include "DataSubscriber.hpp"
+#include "DataSubscriberModule.hpp"
 #include "logging/Logging.hpp"
 
 #include "readoutlibs/ReadoutLogging.hpp"
@@ -15,7 +15,7 @@
 #include "trigger/TPSetSourceModel.hpp"
 #include "trigger/TriggerSourceModel.hpp"
 
-#include "appmodel/DataSubscriber.hpp"
+#include "appmodel/DataSubscriberModule.hpp"
 
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TAWrapper.hpp"
@@ -36,16 +36,16 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 
 namespace trigger {
 
-DataSubscriber::DataSubscriber(const std::string& name)
+DataSubscriberModule::DataSubscriberModule(const std::string& name)
   : DAQModule(name), m_source_concept(nullptr)
 {
 
-  inherited_mod::register_command("start", &DataSubscriber::do_start);
-  inherited_mod::register_command("drain_dataflow", &DataSubscriber::do_stop);
+  inherited_mod::register_command("start", &DataSubscriberModule::do_start);
+  inherited_mod::register_command("drain_dataflow", &DataSubscriberModule::do_stop);
 }
 
 void
-DataSubscriber::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
+DataSubscriberModule::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto ini = cfg->module<confmodel::DaqModule>(get_name());
@@ -61,24 +61,24 @@ DataSubscriber::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
 }
 
 void
-DataSubscriber::do_start(const nlohmann::json& /*args*/) {
+DataSubscriberModule::do_start(const nlohmann::json& /*args*/) {
   m_source_concept->start();
 }
 
 void
-DataSubscriber::do_stop(const nlohmann::json& /*args*/) {
+DataSubscriberModule::do_stop(const nlohmann::json& /*args*/) {
   m_source_concept->stop();
 }
 
 void
-DataSubscriber::get_info(opmonlib::InfoCollector& ci, int level)
+DataSubscriberModule::get_info(opmonlib::InfoCollector& ci, int level)
 {
   m_source_concept->get_info(ci, level);
 }
 
 
 std::unique_ptr<readoutlibs::SourceConcept>
-DataSubscriber::create_data_subscriber(const confmodel::DaqModule* cfg)
+DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
 {
  
   auto datatypes = cfg->get_outputs()[0]->get_data_type();
@@ -117,4 +117,4 @@ DataSubscriber::create_data_subscriber(const confmodel::DaqModule* cfg)
 } // namespace trigger
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::DataSubscriber)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::DataSubscriberModule)

@@ -21,7 +21,7 @@ local types = {
     s.field("time_distribution", self.distribution_type, "kUniform",
       doc="Type of distribution used for random timestamps"),
     
-  ], doc="RandomTriggerCandidateMaker configuration parameters"),
+  ], doc="RandomTCMakerModule configuration parameters"),
 
 };
 

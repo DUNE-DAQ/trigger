@@ -1,5 +1,5 @@
 /**
- * @file ModuleLevelTrigger.cpp ModuleLevelTrigger class
+ * @file MLTModule.cpp MLTModule class
  * implementation
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
@@ -12,7 +12,7 @@
  * TODO: get_mandatory_links
  */
 
-#include "ModuleLevelTrigger.hpp"
+#include "MLTModule.hpp"
 
 #include "trigger/Issues.hpp"
 #include "trigger/LivetimeCounter.hpp"
@@ -29,25 +29,25 @@
 namespace dunedaq {
 namespace trigger {
 
-ModuleLevelTrigger::ModuleLevelTrigger(const std::string& name)
+MLTModule::MLTModule(const std::string& name)
   : DAQModule(name)
   , m_last_trigger_number(0)
   , m_run_number(0)
 {
   // clang-format off
-  //register_command("conf",   &ModuleLevelTrigger::do_configure);
-  register_command("start",  &ModuleLevelTrigger::do_start);
-  register_command("stop",   &ModuleLevelTrigger::do_stop);
-  register_command("disable_triggers",  &ModuleLevelTrigger::do_pause);
-  register_command("enable_triggers", &ModuleLevelTrigger::do_resume);
-//  register_command("scrap",  &ModuleLevelTrigger::do_scrap);
+  //register_command("conf",   &MLTModule::do_configure);
+  register_command("start",  &MLTModule::do_start);
+  register_command("stop",   &MLTModule::do_stop);
+  register_command("disable_triggers",  &MLTModule::do_pause);
+  register_command("enable_triggers", &MLTModule::do_resume);
+//  register_command("scrap",  &MLTModule::do_scrap);
   // clang-format on
 }
 
 void
-ModuleLevelTrigger::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  auto mtrg = mcfg->module<appmodel::ModuleLevelTrigger>(get_name());
+  auto mtrg = mcfg->module<appmodel::MLTModule>(get_name());
 
   // Get the inputs
   std::string candidate_input;
@@ -71,7 +71,7 @@ ModuleLevelTrigger::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 }
 
 void
-ModuleLevelTrigger::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+MLTModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   moduleleveltriggerinfo::Info i;
 
@@ -104,7 +104,7 @@ ModuleLevelTrigger::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
+MLTModule::do_start(const nlohmann::json& startobj)
 {
   m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
   // We get here at start of run, so reset the trigger number
@@ -136,9 +136,9 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 
   m_livetime_counter.reset(new LivetimeCounter(LivetimeCounter::State::kPaused));
 
-  m_inhibit_input->add_callback(std::bind(&ModuleLevelTrigger::dfo_busy_callback, this, std::placeholders::_1));
-  m_decision_input->add_callback(std::bind(&ModuleLevelTrigger::trigger_decisions_callback, this, std::placeholders::_1));
-  //m_send_trigger_decisions_thread = std::thread(&ModuleLevelTrigger::send_trigger_decisions, this);
+  m_inhibit_input->add_callback(std::bind(&MLTModule::dfo_busy_callback, this, std::placeholders::_1));
+  m_decision_input->add_callback(std::bind(&MLTModule::trigger_decisions_callback, this, std::placeholders::_1));
+  //m_send_trigger_decisions_thread = std::thread(&MLTModule::send_trigger_decisions, this);
   //pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-dec"); // TODO: originally mlt-trig-dec
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
@@ -146,7 +146,7 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
 }
 
 void
-ModuleLevelTrigger::do_stop(const nlohmann::json& /*stopobj*/)
+MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
 {
   m_running_flag.store(false);
   m_decision_input->remove_callback();
@@ -169,7 +169,7 @@ ModuleLevelTrigger::do_stop(const nlohmann::json& /*stopobj*/)
 }
 
 void
-ModuleLevelTrigger::do_pause(const nlohmann::json& /*pauseobj*/)
+MLTModule::do_pause(const nlohmann::json& /*pauseobj*/)
 {
 
   m_paused.store(true);
@@ -183,7 +183,7 @@ ModuleLevelTrigger::do_pause(const nlohmann::json& /*pauseobj*/)
 }
 
 void
-ModuleLevelTrigger::do_resume(const nlohmann::json& /*resumeobj*/)
+MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
 {
   ers::info(TriggerActive(ERS_HERE));
   TLOG() << "******* Triggers RESUMED! in run " << m_run_number << " *********";
@@ -196,7 +196,7 @@ ModuleLevelTrigger::do_resume(const nlohmann::json& /*resumeobj*/)
 }
 
 void
-ModuleLevelTrigger::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
+MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 {
     auto ts = decision.trigger_timestamp;
     auto tt = decision.trigger_type;
@@ -247,7 +247,7 @@ ModuleLevelTrigger::trigger_decisions_callback(dfmessages::TriggerDecision& deci
 }
 
 void
-ModuleLevelTrigger::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
+MLTModule::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
 {
   TLOG_DEBUG(17) << "Received inhibit message with busy status " << inhibit.busy << " and run number "
                  << inhibit.run_number;
@@ -263,7 +263,7 @@ ModuleLevelTrigger::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
 } // namespace trigger
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::ModuleLevelTrigger)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::MLTModule)
 
 // Local Variables:
 // c-basic-offset: 2

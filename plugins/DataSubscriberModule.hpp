@@ -1,5 +1,5 @@
 /**
- * @file DataSubscriber.hpp FarDetector Data Reader
+ * @file DataSubscriberModule.hpp FarDetector Data Reader
  *
  * This is part of the DUNE DAQ , copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -22,20 +22,20 @@
 namespace dunedaq {
 namespace trigger {
 
-class DataSubscriber : public dunedaq::appfwk::DAQModule
+class DataSubscriberModule : public dunedaq::appfwk::DAQModule
 {
 public:
   using inherited_mod = dunedaq::appfwk::DAQModule;
   /**
-   * @brief DataSubscriber Constructor
-   * @param name Instance name for this DataSubscriber instance
+   * @brief DataSubscriberModule Constructor
+   * @param name Instance name for this DataSubscriberModule instance
    */
-  explicit DataSubscriber(const std::string& name);
+  explicit DataSubscriberModule(const std::string& name);
 
-  DataSubscriber(const DataSubscriber&) = delete;            ///< DataSubscriber is not copy-constructible
-  DataSubscriber& operator=(const DataSubscriber&) = delete; ///< DataSubscriber is not copy-assignable
-  DataSubscriber(DataSubscriber&&) = delete;                 ///< DataSubscriber is not move-constructible
-  DataSubscriber& operator=(DataSubscriber&&) = delete;      ///< DataSubscriber is not move-assignable
+  DataSubscriberModule(const DataSubscriberModule&) = delete;            ///< DataSubscriberModule is not copy-constructible
+  DataSubscriberModule& operator=(const DataSubscriberModule&) = delete; ///< DataSubscriberModule is not copy-assignable
+  DataSubscriberModule(DataSubscriberModule&&) = delete;                 ///< DataSubscriberModule is not move-constructible
+  DataSubscriberModule& operator=(DataSubscriberModule&&) = delete;      ///< DataSubscriberModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> cfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;

@@ -1,5 +1,5 @@
 /**
- * @file RandomTriggerCandidateMaker.cpp RandomTriggerCandidateMaker class
+ * @file RandomTCMakerModule.cpp RandomTCMakerModule class
  * implementation
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
@@ -7,7 +7,7 @@
  * received with this code.
  */
 
-#include "RandomTriggerCandidateMaker.hpp"
+#include "RandomTCMakerModule.hpp"
 
 #include "trigger/Issues.hpp"
 
@@ -37,22 +37,22 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 
 namespace trigger {
 
-RandomTriggerCandidateMaker::RandomTriggerCandidateMaker(const std::string& name)
+RandomTCMakerModule::RandomTCMakerModule(const std::string& name)
   : DAQModule(name)
   , m_time_sync_source(nullptr)
   , m_trigger_candidate_sink(nullptr)
   , m_run_number(0)
 {
-  register_command("conf", &RandomTriggerCandidateMaker::do_configure);
-  register_command("start", &RandomTriggerCandidateMaker::do_start);
-  register_command("stop", &RandomTriggerCandidateMaker::do_stop);
-  register_command("scrap", &RandomTriggerCandidateMaker::do_scrap);
+  register_command("conf", &RandomTCMakerModule::do_configure);
+  register_command("start", &RandomTCMakerModule::do_start);
+  register_command("stop", &RandomTCMakerModule::do_stop);
+  register_command("scrap", &RandomTCMakerModule::do_scrap);
 }
 
 void
-RandomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  auto mtrg = mcfg->module<appmodel::RandomTriggerCandidateMaker>(get_name());
+  auto mtrg = mcfg->module<appmodel::RandomTCMakerModule>(get_name());
 
   for(auto con: mtrg->get_outputs()){
     TLOG() << "TC sink is " << con->class_name() << "@" << con->UID();
@@ -67,7 +67,7 @@ RandomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> m
 }
 
 void
-RandomTriggerCandidateMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+RandomTCMakerModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   randomtriggercandidatemakerinfo::Info i;
 
@@ -77,13 +77,13 @@ RandomTriggerCandidateMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/
 }
 
 void
-RandomTriggerCandidateMaker::do_configure(const nlohmann::json& /*obj*/)
+RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
 {
   //m_conf = obj.get<randomtriggercandidatemaker::Conf>();
 }
 
 void
-RandomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
+RandomTCMakerModule::do_start(const nlohmann::json& obj)
 {
   m_run_number = obj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
@@ -118,12 +118,12 @@ RandomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
   //    break;
   //}
 
-  m_send_trigger_candidates_thread = std::thread(&RandomTriggerCandidateMaker::send_trigger_candidates, this);
+  m_send_trigger_candidates_thread = std::thread(&RandomTCMakerModule::send_trigger_candidates, this);
   pthread_setname_np(m_send_trigger_candidates_thread.native_handle(), "random-tc-maker");
 }
 
 void
-RandomTriggerCandidateMaker::do_stop(const nlohmann::json& /*obj*/)
+RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 {
   m_running_flag.store(false);
 
@@ -134,13 +134,13 @@ RandomTriggerCandidateMaker::do_stop(const nlohmann::json& /*obj*/)
 }
 
 void
-RandomTriggerCandidateMaker::do_scrap(const nlohmann::json& /*obj*/)
+RandomTCMakerModule::do_scrap(const nlohmann::json& /*obj*/)
 {
   m_configured_flag.store(false);
 }
 
 triggeralgs::TriggerCandidate
-RandomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp)
+RandomTCMakerModule::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
   candidate.time_start = (timestamp - 1000);
@@ -155,7 +155,7 @@ RandomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp)
 }
 
 int
-RandomTriggerCandidateMaker::get_interval(std::mt19937& gen)
+RandomTCMakerModule::get_interval(std::mt19937& gen)
 {
   std::string time_distribution = m_conf->get_time_distribution();
 
@@ -183,7 +183,7 @@ RandomTriggerCandidateMaker::get_interval(std::mt19937& gen)
 }
 
 void
-RandomTriggerCandidateMaker::send_trigger_candidates()
+RandomTCMakerModule::send_trigger_candidates()
 {
   // OpMon.
   m_tc_sent_count.store(0);
@@ -223,7 +223,7 @@ RandomTriggerCandidateMaker::send_trigger_candidates()
 } // namespace trigger
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::RandomTriggerCandidateMaker)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::RandomTCMakerModule)
 
 // Local Variables:
 // c-basic-offset: 2

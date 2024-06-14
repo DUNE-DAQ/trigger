@@ -15,8 +15,8 @@
 #include "appfwk/ModuleConfiguration.hpp"
 #include "confmodel/Connection.hpp"
 
-#include "appmodel/RandomTriggerCandidateMakerConf.hpp"
-#include "appmodel/RandomTriggerCandidateMaker.hpp"
+#include "appmodel/RandomTCMakerConf.hpp"
+#include "appmodel/RandomTCMakerModule.hpp"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TimeSync.hpp"
@@ -41,27 +41,27 @@ namespace dunedaq {
 namespace trigger {
 
 /**
- * @brief RandomTriggerCandidateMaker creates TriggerCandidates at regular or
+ * @brief RandomTCMakerModule creates TriggerCandidates at regular or
  * Poisson random intervals, based on input from a TimeSync queue or the system
  * clock. The TCs can be fed directly into the MLT.
  */
-class RandomTriggerCandidateMaker : public dunedaq::appfwk::DAQModule
+class RandomTCMakerModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief RandomTriggerCandidateMaker Constructor
-   * @param name Instance name for this RandomTriggerCandidateMaker instance
+   * @brief RandomTCMakerModule Constructor
+   * @param name Instance name for this RandomTCMakerModule instance
    */
-  explicit RandomTriggerCandidateMaker(const std::string& name);
+  explicit RandomTCMakerModule(const std::string& name);
 
-  RandomTriggerCandidateMaker(const RandomTriggerCandidateMaker&) =
-    delete; ///< RandomTriggerCandidateMaker is not copy-constructible
-  RandomTriggerCandidateMaker& operator=(const RandomTriggerCandidateMaker&) =
-    delete; ///< RandomTriggerCandidateMaker is not copy-assignable
-  RandomTriggerCandidateMaker(RandomTriggerCandidateMaker&&) =
-    delete; ///< RandomTriggerCandidateMaker is not move-constructible
-  RandomTriggerCandidateMaker& operator=(RandomTriggerCandidateMaker&&) =
-    delete; ///< RandomTriggerCandidateMaker is not move-assignable
+  RandomTCMakerModule(const RandomTCMakerModule&) =
+    delete; ///< RandomTCMakerModule is not copy-constructible
+  RandomTCMakerModule& operator=(const RandomTCMakerModule&) =
+    delete; ///< RandomTCMakerModule is not copy-assignable
+  RandomTCMakerModule(RandomTCMakerModule&&) =
+    delete; ///< RandomTCMakerModule is not move-constructible
+  RandomTCMakerModule& operator=(RandomTCMakerModule&&) =
+    delete; ///< RandomTCMakerModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
@@ -86,7 +86,7 @@ private:
   std::shared_ptr<iomanager::SenderConcept<trigger::TCWrapper>> m_trigger_candidate_sink;
 
   //randomtriggercandidatemaker::Conf m_conf;
-  const appmodel::RandomTriggerCandidateMakerConf* m_conf;
+  const appmodel::RandomTCMakerConf* m_conf;
 
   int get_interval(std::mt19937& gen);
 

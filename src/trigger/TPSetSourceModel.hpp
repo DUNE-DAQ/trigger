@@ -21,7 +21,7 @@
 #include "iomanager/Receiver.hpp"
 #include "logging/Logging.hpp"
 #include "confmodel/DaqModule.hpp"
-#include "appmodel/DataSubscriber.hpp"
+#include "appmodel/DataSubscriberModule.hpp"
 #include "trigger/TPSet.hpp"
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 
@@ -55,7 +55,7 @@ public:
     }
     m_data_receiver = get_iom_receiver<trigger::TPSet>(cfg->get_inputs()[0]->UID());
 /*
-    auto data_reader = cfg->cast<appmodel::DataSubscriber>();
+    auto data_reader = cfg->cast<appmodel::DataSubscriberModule>();
     if (data_reader == nullptr) {
        throw readoutlibs::InitializationError(ERS_HERE, "DAQ module is not a DataReader");
     }

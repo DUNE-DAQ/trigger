@@ -75,12 +75,12 @@ daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.
 ##############################################################################
 # Plugins
 
-daq_add_plugin(DataSubscriber duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerDataHandler duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(DataSubscriberModule duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerDataHandlerModule duneDAQModule LINK_LIBRARIES trigger)
 #daq_add_plugin(TimingTriggerCandidateMaker duneDAQModule SCHEMA LINK_LIBRARIES trigger)
-daq_add_plugin(RandomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(CustomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(ModuleLevelTrigger duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(RandomTCMakerModule duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(CustomTCMaker duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(MLTModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerPrimitiveMaker duneDAQModule LINK_LIBRARIES trigger)
 #daq_add_plugin(TriggerActivityMaker duneDAQModule LINK_LIBRARIES trigger)
 #daq_add_plugin(TriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
