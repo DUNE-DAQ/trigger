@@ -24,7 +24,7 @@ local types = {
     s.field("trigger_intervals", self.tc_intervals, [],
       doc="List of TC intervals (in clock ticks) for provided TC types"),
 
-  ], doc="CustomTriggerCandidateMaker configuration parameters"),
+  ], doc="CustomTCMaker configuration parameters"),
 
 };
 

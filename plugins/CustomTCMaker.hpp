@@ -11,8 +11,8 @@
 //#include "trigger/customtriggercandidatemaker/Nljs.hpp"
 #include "trigger/customtriggercandidatemakerinfo/InfoNljs.hpp"
 
-#include "appmodel/CustomTriggerCandidateMaker.hpp"
-#include "appmodel/CustomTriggerCandidateMakerConf.hpp"
+#include "appmodel/CustomTCMaker.hpp"
+#include "appmodel/CustomTCMakerConf.hpp"
 #include "confmodel/Connection.hpp"
 
 #include "appfwk/ModuleConfiguration.hpp"
@@ -40,26 +40,26 @@ namespace dunedaq {
 namespace trigger {
 
 /**
- * @brief CustomTriggerCandidateMaker creates TriggerCandidates of specified types at configurable intervals, based on
+ * @brief CustomTCMaker creates TriggerCandidates of specified types at configurable intervals, based on
  * input from a TimeSync queue or the system clock. The TCs can be fed directly into the MLT.
  */
-class CustomTriggerCandidateMaker : public dunedaq::appfwk::DAQModule
+class CustomTCMaker : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief CustomTriggerCandidateMaker Constructor
-   * @param name Instance name for this CustomTriggerCandidateMaker instance
+   * @brief CustomTCMaker Constructor
+   * @param name Instance name for this CustomTCMaker instance
    */
-  explicit CustomTriggerCandidateMaker(const std::string& name);
+  explicit CustomTCMaker(const std::string& name);
 
-  CustomTriggerCandidateMaker(const CustomTriggerCandidateMaker&) =
-    delete; ///< CustomTriggerCandidateMaker is not copy-constructible
-  CustomTriggerCandidateMaker& operator=(const CustomTriggerCandidateMaker&) =
-    delete; ///< CustomTriggerCandidateMaker is not copy-assignable
-  CustomTriggerCandidateMaker(CustomTriggerCandidateMaker&&) =
-    delete; ///< CustomTriggerCandidateMaker is not move-constructible
-  CustomTriggerCandidateMaker& operator=(CustomTriggerCandidateMaker&&) =
-    delete; ///< CustomTriggerCandidateMaker is not move-assignable
+  CustomTCMaker(const CustomTCMaker&) =
+    delete; ///< CustomTCMaker is not copy-constructible
+  CustomTCMaker& operator=(const CustomTCMaker&) =
+    delete; ///< CustomTCMaker is not copy-assignable
+  CustomTCMaker(CustomTCMaker&&) =
+    delete; ///< CustomTCMaker is not move-constructible
+  CustomTCMaker& operator=(CustomTCMaker&&) =
+    delete; ///< CustomTCMaker is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
@@ -84,7 +84,7 @@ private:
   std::shared_ptr<iomanager::SenderConcept<trigger::TCWrapper>> m_trigger_candidate_sink;
 
   // Config parameters
-  const appmodel::CustomTriggerCandidateMakerConf* m_conf;
+  const appmodel::CustomTCMakerConf* m_conf;
   std::vector<std::pair<int, long int>> m_tc_settings;
   void print_config();
 

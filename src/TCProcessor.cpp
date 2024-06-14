@@ -20,7 +20,7 @@
 #include "triggeralgs/TriggerCandidate.hpp"
 
 #include "appmodel/TCDataProcessor.hpp"
-#include "appmodel/TriggerDataHandler.hpp"
+#include "appmodel/TriggerDataHandlerModule.hpp"
 
 using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
@@ -67,9 +67,9 @@ TCProcessor::stop(const nlohmann::json& args)
 }
 
 void
-TCProcessor::conf(const appmodel::ReadoutModule* cfg)
+TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 {
-  auto mtrg = cfg->cast<appmodel::TriggerDataHandler>();	
+  auto mtrg = cfg->cast<appmodel::TriggerDataHandlerModule>();	
   if (mtrg == nullptr) {
     throw(InvalidConfiguration(ERS_HERE));
   }

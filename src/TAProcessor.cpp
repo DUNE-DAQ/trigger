@@ -64,7 +64,7 @@ TAProcessor::stop(const nlohmann::json& args)
 }
 
 void
-TAProcessor::conf(const appmodel::ReadoutModule* conf)
+TAProcessor::conf(const appmodel::DataHandlerModule* conf)
 {
   for (auto output : conf->get_outputs()) {
    try {

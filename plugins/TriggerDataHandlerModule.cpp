@@ -1,11 +1,11 @@
 /**
- * @file TriggerDataHandler.cpp TriggerDataHandler class implementation
+ * @file TriggerDataHandlerModule.cpp TriggerDataHandlerModule class implementation
  *
  * This is part of the DUNE DAQ , copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#include "TriggerDataHandler.hpp"
+#include "TriggerDataHandlerModule.hpp"
 
 #include "logging/Logging.hpp"
 #include "iomanager/IOManager.hpp"
@@ -38,7 +38,7 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 
 namespace trigger {
 
-TriggerDataHandler::TriggerDataHandler(const std::string& name)
+TriggerDataHandlerModule::TriggerDataHandlerModule(const std::string& name)
   : DAQModule(name)
   , DataLinkHandlerBase(name)
 { 
@@ -52,7 +52,7 @@ TriggerDataHandler::TriggerDataHandler(const std::string& name)
 }
 
 void
-TriggerDataHandler::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
+TriggerDataHandlerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
 {
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
@@ -61,13 +61,13 @@ TriggerDataHandler::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
 }
 
 void
-TriggerDataHandler::get_info(opmonlib::InfoCollector& ci, int level)
+TriggerDataHandlerModule::get_info(opmonlib::InfoCollector& ci, int level)
 {
   inherited_dlh::get_info(ci, level);
 }
 
 std::unique_ptr<readoutlibs::ReadoutConcept>
-TriggerDataHandler::create_readout(const appmodel::ReadoutModule* modconf, std::atomic<bool>& run_marker)
+TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modconf, std::atomic<bool>& run_marker)
 {
   namespace rol = dunedaq::readoutlibs;
 
@@ -120,4 +120,4 @@ TriggerDataHandler::create_readout(const appmodel::ReadoutModule* modconf, std::
 } // namespace trigger
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::TriggerDataHandler)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::TriggerDataHandlerModule)

@@ -60,7 +60,7 @@ TPProcessor::stop(const nlohmann::json& args)
 }
 
 void
-TPProcessor::conf(const appmodel::ReadoutModule* conf)
+TPProcessor::conf(const appmodel::DataHandlerModule* conf)
 {
   for (auto output : conf->get_outputs()) {
    try {

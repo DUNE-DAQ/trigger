@@ -12,7 +12,7 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 
-#include "appmodel/ReadoutModule.hpp"
+#include "appmodel/DataHandlerModule.hpp"
 #include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
@@ -48,7 +48,7 @@ public:
 
   void stop(const nlohmann::json& args) override;
 
-  void conf(const appmodel::ReadoutModule* conf) override;
+  void conf(const appmodel::DataHandlerModule* conf) override;
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 

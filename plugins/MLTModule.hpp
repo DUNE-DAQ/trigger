@@ -1,7 +1,7 @@
 /**
- * @file ModuleLevelTrigger.hpp
+ * @file MLTModule.hpp
  *
- * ModuleLevelTrigger is a DAQModule that generates trigger decisions
+ * MLTModule is a DAQModule that generates trigger decisions
  * for standalone tests. It receives information on the current time and the
  * availability of the DF to absorb data and forms decisions at a configurable
  * rate and with configurable size.
@@ -21,8 +21,8 @@
 
 #include "appfwk/DAQModule.hpp"
 
-#include "appmodel/ModuleLevelTrigger.hpp"
-#include "appmodel/ModuleLevelTriggerConf.hpp"
+#include "appmodel/MLTModule.hpp"
+#include "appmodel/MLTConf.hpp"
 #include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
@@ -50,23 +50,23 @@ namespace dunedaq {
 namespace trigger {
 
 /**
- * @brief ModuleLevelTrigger is the last level of the data selection
+ * @brief MLTModule is the last level of the data selection
  * system, which reads in trigger candidates and sends trigger
  * decisions, subject to availability of TriggerDecisionTokens
  */
-class ModuleLevelTrigger : public dunedaq::appfwk::DAQModule
+class MLTModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief ModuleLevelTrigger Constructor
-   * @param name Instance name for this ModuleLevelTrigger instance
+   * @brief MLTModule Constructor
+   * @param name Instance name for this MLTModule instance
    */
-  explicit ModuleLevelTrigger(const std::string& name);
+  explicit MLTModule(const std::string& name);
 
-  ModuleLevelTrigger(const ModuleLevelTrigger&) = delete;            ///< ModuleLevelTrigger is not copy-constructible
-  ModuleLevelTrigger& operator=(const ModuleLevelTrigger&) = delete; ///< ModuleLevelTrigger is not copy-assignable
-  ModuleLevelTrigger(ModuleLevelTrigger&&) = delete;                 ///< ModuleLevelTrigger is not move-constructible
-  ModuleLevelTrigger& operator=(ModuleLevelTrigger&&) = delete;      ///< ModuleLevelTrigger is not move-assignable
+  MLTModule(const MLTModule&) = delete;            ///< MLTModule is not copy-constructible
+  MLTModule& operator=(const MLTModule&) = delete; ///< MLTModule is not copy-assignable
+  MLTModule(MLTModule&&) = delete;                 ///< MLTModule is not move-constructible
+  MLTModule& operator=(MLTModule&&) = delete;      ///< MLTModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;

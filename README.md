@@ -120,7 +120,7 @@ The general numbers are:
 * **TPBuffer**: 1 per TPSetTee
 * **TABuffer**: 1 per TASetTee
 * **TCBuffer**: 1 
-* **ModuleLevelTrigger**: 1 per application
+* **MLTModule**: 1 per application
 * (optional)**TimmingTriggerCandidateMaker**: 1
 
 ## Links to other repositories
@@ -128,7 +128,7 @@ The general numbers are:
 ### Triggeralgs ([link](https://github.com/DUNE-DAQ/triggeralgs)) <a name="triggeralgs"></a>
 The triggeralgs package contains implementations of the algorithms that produce TAs from TPs and TCs from TAs. The idea of keeping these in their own package (instead of trigger) is to allow the algorithms to be used in the offline software to simulate the effect of the trigger system, where probably the only things they care about are efficiency at very low energies and whatever we do about not reading out the whole detector for every event, which will certainly involve not reading out all APAs/CRPs, and may also include more aggressive ROI finding. Keeping triggeralgs separate from trigger means that the former package doesn’t need to depend on anything from the DAQ software, and so could just be built as part of the offline software.
 Loading triggeralgs algorithms dynamically as plugins in the DAQ is done in a complicated way: triggeralgs doesn’t depend on any plugin library, so instead we manually make plugins in the trigger package for each of the algorithms in triggeralgs, like this:
-[TriggerActivityMakerPrescalePlugin.cpp](https://github.com/DUNE-DAQ/trigger/blob/develop/plugins/TriggerActivityMakerPrescalePlugin.cpp).
+[TAMakerPrescaleAlgorithm.cpp](https://github.com/DUNE-DAQ/trigger/blob/develop/plugins/TAMakerPrescaleAlgorithm.cpp).
 
 
 ### Trgdataformats ([link](https://github.com/DUNE-DAQ/trgdataformats)) <a name="trgdataformats"></a>
@@ -178,7 +178,7 @@ Few example files are available at `/nfs/rscratch/trigger/tp_files` at CERN:
 
 Example command:
 ```
-python -m trigger.replay_tp_to_chain -s 10 --trigger-activity-plugin TriggerActivityMakerHorizontalMuonPlugin --trigger-activity-config ‘dict(adjacency_threshold=100, window_length=10000, adj_tolerance=20)‘ --trigger-candidate-plugin TriggerCandidateMakerHorizontalMuonPlugin --trigger-activity-config ‘dict(adjacency_threshold=100, window_length=10000, adj_tolerance=20)‘ -l 1 --input-file $TPDATA/tp_dataset_run020472_2s.txt json
+python -m trigger.replay_tp_to_chain -s 10 --trigger-activity-plugin TAMakerHorizontalMuonAlgorithm --trigger-activity-config ‘dict(adjacency_threshold=100, window_length=10000, adj_tolerance=20)‘ --trigger-candidate-plugin TCMakerHorizontalMuonAlgorithm --trigger-activity-config ‘dict(adjacency_threshold=100, window_length=10000, adj_tolerance=20)‘ -l 1 --input-file $TPDATA/tp_dataset_run020472_2s.txt json
 ```
 
 ## Development

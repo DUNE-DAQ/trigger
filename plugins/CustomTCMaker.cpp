@@ -1,5 +1,5 @@
 /**
- * @file CustomTriggerCandidateMaker.cpp CustomTriggerCandidateMaker class
+ * @file CustomTCMaker.cpp CustomTCMaker class
  * implementation
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
@@ -7,7 +7,7 @@
  * received with this code.
  */
 
-#include "CustomTriggerCandidateMaker.hpp"
+#include "CustomTCMaker.hpp"
 
 #include "trigger/Issues.hpp"
 
@@ -45,22 +45,22 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 
 namespace trigger {
 
-CustomTriggerCandidateMaker::CustomTriggerCandidateMaker(const std::string& name)
+CustomTCMaker::CustomTCMaker(const std::string& name)
   : DAQModule(name)
   , m_time_sync_source(nullptr)
   , m_trigger_candidate_sink(nullptr)
 {
-  register_command("conf", &CustomTriggerCandidateMaker::do_configure);
-  register_command("start", &CustomTriggerCandidateMaker::do_start);
-  register_command("stop", &CustomTriggerCandidateMaker::do_stop);
-  register_command("scrap", &CustomTriggerCandidateMaker::do_scrap);
+  register_command("conf", &CustomTCMaker::do_configure);
+  register_command("start", &CustomTCMaker::do_start);
+  register_command("stop", &CustomTCMaker::do_stop);
+  register_command("scrap", &CustomTCMaker::do_scrap);
 }
 
 void
-CustomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+CustomTCMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
 
-  auto mtrg = mcfg->module<appmodel::CustomTriggerCandidateMaker>(get_name());
+  auto mtrg = mcfg->module<appmodel::CustomTCMaker>(get_name());
   try {
     // Get the outputs
     for(auto con: mtrg->get_outputs()){
@@ -89,7 +89,7 @@ CustomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> m
 }
 
 //void
-//CustomTriggerCandidateMaker::init(const nlohmann::json& obj)
+//CustomTCMaker::init(const nlohmann::json& obj)
 //{
 //  // TODO: delete, reimplement as oks
 //  //m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(".*");
@@ -98,7 +98,7 @@ CustomTriggerCandidateMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> m
 //}
 
 void
-CustomTriggerCandidateMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+CustomTCMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   customtriggercandidatemakerinfo::Info i;
 
@@ -108,7 +108,7 @@ CustomTriggerCandidateMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/
 }
 
 void
-CustomTriggerCandidateMaker::do_configure(const nlohmann::json& /*obj*/)
+CustomTCMaker::do_configure(const nlohmann::json& /*obj*/)
 {
   //m_conf = obj.get<customtriggercandidatemaker::Conf>();
 
@@ -126,7 +126,7 @@ CustomTriggerCandidateMaker::do_configure(const nlohmann::json& /*obj*/)
 }
 
 void
-CustomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
+CustomTCMaker::do_start(const nlohmann::json& obj)
 {
   m_running_flag.store(true);
 
@@ -162,12 +162,12 @@ CustomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
   //    break;
   //}
 
-  m_send_trigger_candidates_thread = std::thread(&CustomTriggerCandidateMaker::send_trigger_candidates, this);
+  m_send_trigger_candidates_thread = std::thread(&CustomTCMaker::send_trigger_candidates, this);
   pthread_setname_np(m_send_trigger_candidates_thread.native_handle(), "custom-tc-maker");
 }
 
 void
-CustomTriggerCandidateMaker::do_stop(const nlohmann::json& /*obj*/)
+CustomTCMaker::do_stop(const nlohmann::json& /*obj*/)
 {
   m_running_flag.store(false);
 
@@ -181,7 +181,7 @@ CustomTriggerCandidateMaker::do_stop(const nlohmann::json& /*obj*/)
 }
 
 void
-CustomTriggerCandidateMaker::do_scrap(const nlohmann::json& /*obj*/)
+CustomTCMaker::do_scrap(const nlohmann::json& /*obj*/)
 {
   m_configured_flag.store(false);
 }
@@ -190,7 +190,7 @@ CustomTriggerCandidateMaker::do_scrap(const nlohmann::json& /*obj*/)
 // The algo used is kCustom
 // Other parameters are default
 triggeralgs::TriggerCandidate
-CustomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp, int tc_type)
+CustomTCMaker::create_candidate(dfmessages::timestamp_t timestamp, int tc_type)
 {
   triggeralgs::TriggerCandidate candidate;
   candidate.time_start = (timestamp - 1000);
@@ -204,7 +204,7 @@ CustomTriggerCandidateMaker::create_candidate(dfmessages::timestamp_t timestamp,
 }
 
 void
-CustomTriggerCandidateMaker::send_trigger_candidates()
+CustomTCMaker::send_trigger_candidates()
 {
   // OpMon.
   m_tc_sent_count.store(0);
@@ -272,7 +272,7 @@ CustomTriggerCandidateMaker::send_trigger_candidates()
 // Also rounds up to the next multiple of the interval ticks
 // The returning vector is sorted by TS
 std::vector<std::pair<int, dfmessages::timestamp_t>>
-CustomTriggerCandidateMaker::get_initial_timestamps(dfmessages::timestamp_t initial_timestamp)
+CustomTCMaker::get_initial_timestamps(dfmessages::timestamp_t initial_timestamp)
 {
   TLOG_DEBUG(3) << "GIT, init ts: " << initial_timestamp;
   std::vector<std::pair<int, dfmessages::timestamp_t>> initial_timestamps;
@@ -292,7 +292,7 @@ CustomTriggerCandidateMaker::get_initial_timestamps(dfmessages::timestamp_t init
 // This function generates next {m_sorting_size_limit} timestamps for each TC type
 // Then merges to final vector and sorts it by value
 std::vector<std::pair<int, dfmessages::timestamp_t>>
-CustomTriggerCandidateMaker::get_next_timestamps(std::map<int, dfmessages::timestamp_t> last_timestamps)
+CustomTCMaker::get_next_timestamps(std::map<int, dfmessages::timestamp_t> last_timestamps)
 {
   std::vector<std::pair<int, dfmessages::timestamp_t>> next_timestamps;
   for (auto it = m_tc_settings.begin(); it != m_tc_settings.end(); it++) {
@@ -310,7 +310,7 @@ CustomTriggerCandidateMaker::get_next_timestamps(std::map<int, dfmessages::times
 // This function calculates next {m_sorting_size_limit} TS for a given TC type
 // Uses the configurable interval and the last TS of this type as base
 std::vector<std::pair<int, dfmessages::timestamp_t>>
-CustomTriggerCandidateMaker::get_next_ts_of_type(int tc_type,
+CustomTCMaker::get_next_ts_of_type(int tc_type,
                                                  long int tc_interval,
                                                  dfmessages::timestamp_t last_ts_of_type)
 {
@@ -329,7 +329,7 @@ CustomTriggerCandidateMaker::get_next_ts_of_type(int tc_type,
 }
 
 void
-CustomTriggerCandidateMaker::print_config()
+CustomTCMaker::print_config()
 {
   TLOG_DEBUG(3) << "CTCM Trigger types and intervals to use: ";
   for (auto it = m_tc_settings.begin(); it != m_tc_settings.end(); it++) {
@@ -339,7 +339,7 @@ CustomTriggerCandidateMaker::print_config()
 }
 
 void
-CustomTriggerCandidateMaker::print_timestamps_vector(std::vector<std::pair<int, dfmessages::timestamp_t>> timestamps)
+CustomTCMaker::print_timestamps_vector(std::vector<std::pair<int, dfmessages::timestamp_t>> timestamps)
 {
   TLOG_DEBUG(3) << "Next timestamps:";
   for (auto it = timestamps.begin(); it != timestamps.end(); it++) {
@@ -349,7 +349,7 @@ CustomTriggerCandidateMaker::print_timestamps_vector(std::vector<std::pair<int, 
 }
 
 void
-CustomTriggerCandidateMaker::print_final_tc_counts(std::map<int, int> counts)
+CustomTCMaker::print_final_tc_counts(std::map<int, int> counts)
 {
   TLOG_DEBUG(3) << "CTCM final counts:";
   for (auto it = m_tc_settings.begin(); it != m_tc_settings.end(); it++) {
@@ -361,7 +361,7 @@ CustomTriggerCandidateMaker::print_final_tc_counts(std::map<int, int> counts)
 } // namespace trigger
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::CustomTriggerCandidateMaker)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::CustomTCMaker)
 
 // Local Variables:
 // c-basic-offset: 2
