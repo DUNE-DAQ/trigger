@@ -43,7 +43,7 @@ TPSetSink::do_start(const nlohmann::json& /*obj*/)
 {
   m_running_flag.store(true);
   m_thread = std::thread(&TPSetSink::do_work, this);
-  pthread_setname_np(m_thread.native_handle(), get_name());
+  pthread_setname_np(m_thread.native_handle(), get_name().c_str());
 }
 
 void

@@ -120,7 +120,7 @@ CustomTriggerCandidateMaker::do_start(const nlohmann::json& obj)
   }
 
   m_send_trigger_candidates_thread = std::thread(&CustomTriggerCandidateMaker::send_trigger_candidates, this);
-  pthread_setname_np(m_send_trigger_candidates_thread.native_handle(), get_name());
+  pthread_setname_np(m_send_trigger_candidates_thread.native_handle(), get_name().c_str());
 }
 
 void
