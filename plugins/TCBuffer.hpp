@@ -69,7 +69,7 @@ private:
     // comparable based on first timestamp
     bool operator<(const TCWrapper& other) const
     {
-      return this->candidate.time_start < other.candidate.time_start;
+      return std::tie(this->candidate.time_start, this->candidate.type) < std::tie(other.candidate.time_start, other.candidate.type);
     }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
@@ -102,7 +102,7 @@ private:
     static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerCandidate;
     // No idea what this should really be set to
-    static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
+    static const constexpr uint64_t expected_tick_difference = 1; // NOLINT(build/unsigned)
 
 };
 
