@@ -81,7 +81,7 @@ void
 TABuffer::do_start(const nlohmann::json& args)
 {
   m_request_handler_impl->start(args);
-  m_thread.start_working_thread("tabuffer");
+  m_thread.start_working_thread(get_name());
   TLOG_DEBUG(TLVL_GENERAL) << "[TAB] "  << get_name() + " successfully started.";
 }
 

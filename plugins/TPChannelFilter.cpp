@@ -72,7 +72,7 @@ TPChannelFilter::do_start(const nlohmann::json&)
   m_running_flag.store(true);
   m_received_count.store(0);
   m_sent_count.store(0);
-  m_thread.start_working_thread("channelfilter");
+  m_thread.start_working_thread(get_name());
   TLOG_DEBUG(TLVL_GENERAL) << "[TPCF] " << get_name() + " successfully started.";
 }
 

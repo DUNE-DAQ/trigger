@@ -165,7 +165,7 @@ public:
     m_tardy_counts.clear();
     m_running.store(true);
     m_thread = std::thread(&TriggerZipper::worker, this);
-    pthread_setname_np(m_thread.native_handle(), "zipper");
+    pthread_setname_np(m_thread.native_handle(), get_name().c_str());
   }
 
   void do_stop(const nlohmann::json& /*stopobj*/)
