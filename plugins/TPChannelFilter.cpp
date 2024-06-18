@@ -165,8 +165,7 @@ TPChannelFilter::do_work()
           std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
         m_data_vs_system_time.store(fabs(m_system_time - (tpset->start_time * m_clock_ticks_to_ms) - m_initial_offset));
         TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TPCF] "
-                                   << fabs(
-                                        (m_system_time - (tpset->start_time * m_clock_ticks_to_ms) - m_initial_offset));
+                                   << fabs((m_system_time - (tpset->start_time * m_clock_ticks_to_ms) - m_initial_offset));
       }
 
       size_t n_before = tpset->objects.size();
