@@ -133,7 +133,6 @@ TPChannelFilter::do_work()
   while (m_running_flag.load()) {
 
     std::optional<TPSet> tpset = m_input_queue->try_receive(m_queue_timeout);
-    ;
     using namespace std::chrono;
 
     if (!tpset.has_value()) {
