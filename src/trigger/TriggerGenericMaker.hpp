@@ -20,20 +20,24 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/Types.hpp"
-#include "trgdataformats/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
+#include "trgdataformats/Types.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <string>
 #include <vector>
 
-using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
+using dunedaq::trigger::logging::TLVL_DEBUG_ALL;
 using dunedaq::trigger::logging::TLVL_DEBUG_HIGH;
+using dunedaq::trigger::logging::TLVL_DEBUG_MEDIUM;
+
+using namespace std::chrono;
 
 namespace dunedaq::trigger {
 
@@ -91,12 +95,31 @@ public:
 
     i.received_count = m_received_count.load();
     i.sent_count = m_sent_count.load();
-    if (m_maker) { i.data_vs_system_ms = m_maker->m_data_vs_system_time; }
-    else i.data_vs_system_ms = 0;    
-
+    i.data_vs_system_in_ms = m_data_vs_system_time_in.load();
+    i.data_vs_system_out_ms = m_data_vs_system_time_out.load();
     ci.add(i);
   }
-  
+
+  std::atomic<uint64_t> get_current_system_time()
+  {
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  }
+
+  void update_latency_in(uint64_t timestamp)
+  {
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TGM] IN: " << timestamp;
+    m_data_vs_system_time_in.store(
+      fabs(get_current_system_time() - (timestamp * m_clock_ticks_to_ms) - m_initial_offset));
+    return;
+  }
+  void update_latency_out(uint64_t timestamp)
+  {
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TGM] OUT: " << timestamp;
+    m_data_vs_system_time_out.store(
+      fabs(get_current_system_time() - (timestamp * m_clock_ticks_to_ms) - m_initial_offset));
+    return;
+  }
+
 protected:
   void set_algorithm_name(const std::string& name) { m_algorithm_name = name; }
 
@@ -138,7 +161,16 @@ private:
 
   std::unique_ptr<MAKER> m_maker;
   nlohmann::json m_maker_conf;
-  
+
+  // Latency
+  std::atomic<bool> m_use_latency_monit;
+  std::atomic<bool> m_use_latency_offset;
+  std::atomic<bool> m_first_object;
+  std::atomic<uint64_t> m_data_vs_system_time_in;
+  std::atomic<uint64_t> m_data_vs_system_time_out;
+  std::atomic<uint64_t> m_initial_offset;
+  std::atomic<double> m_clock_ticks_to_ms;
+
   TriggerGenericWorker<IN, OUT, MAKER> worker;
 
   // This should return a unique_ptr to the MAKER created from conf command arguments.
@@ -149,16 +181,21 @@ private:
   {
     m_received_count = 0;
     m_sent_count = 0;
+    m_data_vs_system_time_in = 0;
+    m_data_vs_system_time_out = 0;
+    m_initial_offset = 0;
+    m_first_object = true;
+    // to convert 62.5MHz clock ticks to ms: 1/62500000 = 0.000000016 <- seconds per tick; 0.000016 <- ms per tick;
+    // 16*1e-6 <- sci notation
+    m_clock_ticks_to_ms = 16 * 1e-6;
+
     m_maker = make_maker(m_maker_conf);
     worker.reconfigure();
     m_thread.start_working_thread(get_name());
     m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
   }
 
-  void do_stop(const nlohmann::json& /*obj*/)
-  {
-    m_thread.stop_working_thread();
-  }
+  void do_stop(const nlohmann::json& /*obj*/) { m_thread.stop_working_thread(); }
 
   void do_configure(const nlohmann::json& obj)
   {
@@ -168,7 +205,11 @@ private:
     // persist between runs and hold onto its state from the previous
     // run
     m_maker_conf = obj;
-   
+
+    // Set latency from objects config (hack for now)
+    m_use_latency_monit = obj.value("enable_latency_monit", false);
+    m_use_latency_offset = obj.value("use_latency_offset", false);
+
     // worker should be notified that configuration potentially changed
     worker.reconfigure();
   }
@@ -182,8 +223,8 @@ private:
       IN in;
       while (receive(in)) {
         if (m_running_flag.load()) {
-	  worker.process(in); 
-	}
+          worker.process(in);
+        }
       }
     }
     // P. Rodrigues 2022-06-01. The argument here is whether to drop
@@ -195,9 +236,9 @@ private:
     // outputs are stale and will cause tardy warnings from the zipper
     // downstream
     worker.drain(true);
-    TLOG() << "[TGM] " << get_name() << ": Exiting do_work() method for run " << m_run_number << ", received " << m_received_count
-           << " inputs (" << worker.get_low_level_input_count() << " sub-inputs) and successfully sent " << m_sent_count
-           << " outputs. ";
+    TLOG() << "[TGM] " << get_name() << ": Exiting do_work() method for run " << m_run_number << ", received "
+           << m_received_count << " inputs (" << worker.get_low_level_input_count()
+           << " sub-inputs) and successfully sent " << m_sent_count << " outputs. ";
     worker.reset();
   }
 
@@ -240,16 +281,16 @@ class TriggerGenericWorker
 {
 public:
   explicit TriggerGenericWorker(TriggerGenericMaker<IN, OUT, MAKER>& parent)
-    : m_parent(parent), m_low_level_input_count(0)
-  {}
+    : m_parent(parent)
+    , m_low_level_input_count(0)
+  {
+  }
 
   TriggerGenericMaker<IN, OUT, MAKER>& m_parent;
 
   void reconfigure() {}
 
-  void reset() {
-    m_low_level_input_count = 0;
-  }
+  void reset() { m_low_level_input_count = 0; }
 
   void process(IN& in)
   {
@@ -274,7 +315,7 @@ public:
 
   void drain(bool) {}
 
-  size_t get_low_level_input_count() {return m_low_level_input_count;}
+  size_t get_low_level_input_count() { return m_low_level_input_count; }
   size_t m_low_level_input_count;
 };
 
@@ -289,7 +330,8 @@ public: // NOLINT
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
     , m_out_buffer(parent.get_name(), parent.m_algorithm_name, parent.m_buffer_time)
     , m_low_level_input_count(0)
-  {}
+  {
+  }
 
   TriggerGenericMaker<Set<A>, Set<B>, MAKER>& m_parent;
 
@@ -331,6 +373,7 @@ public: // NOLINT
     std::vector<B> elems; // Bs to buffer for the next window
     switch (in.type) {
       case Set<A>::Type::kPayload: {
+
         if (m_prev_start_time != 0 && in.start_time < m_prev_start_time) {
           ers::warning(OutOfOrderSets(ERS_HERE, m_parent.get_name(), m_prev_start_time, in.start_time));
         }
@@ -340,6 +383,16 @@ public: // NOLINT
         if (!m_in_buffer.buffer(in, time_slice, start_time, end_time)) {
           return; // no complete time slice yet (`in` was part of buffered slice)
         }
+
+        if (m_parent.m_use_latency_monit && m_parent.m_use_latency_offset && m_parent.m_first_object) {
+          m_parent.m_initial_offset = (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) -
+                                      (time_slice.front().time_start * m_parent.m_clock_ticks_to_ms);
+          m_parent.m_first_object = false;
+        }
+        if (m_parent.m_use_latency_monit && !time_slice.empty()) {
+          m_parent.update_latency_in(time_slice.front().time_start);
+        }
+
         m_low_level_input_count += time_slice.size();
         process_slice(time_slice, elems);
       } break;
@@ -366,8 +419,7 @@ public: // NOLINT
         heartbeat.type = Set<B>::Type::kHeartbeat;
         heartbeat.start_time = in.start_time;
         heartbeat.end_time = in.end_time;
-        heartbeat.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+        heartbeat.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
         TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TGM] Buffering heartbeat with start time " << heartbeat.start_time;
         m_out_buffer.buffer_heartbeat(heartbeat);
@@ -393,15 +445,14 @@ public: // NOLINT
       m_out_buffer.buffer(elems);
     }
 
-    size_t n_output_windows=0;
+    size_t n_output_windows = 0;
     // emit completed windows
     while (m_out_buffer.ready()) {
       ++n_output_windows;
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
-      out.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+      out.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
         TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TGM] Sending heartbeat with start time " << out.start_time;
@@ -412,15 +463,20 @@ public: // NOLINT
       }
       // Only form and send Set<B> if it has a nonzero number of objects
       else if (out.type == Set<B>::Type::kPayload && out.objects.size() != 0) {
-        TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TGM] Output set window ready with start time " << out.start_time << " end time " << out.end_time
-                      << " and " << out.objects.size() << " members";
+        TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TGM] Output set window ready with start time " << out.start_time
+                                      << " end time " << out.end_time << " and " << out.objects.size() << " members";
+        if (m_parent.m_use_latency_monit && !out.objects.empty()) {
+          m_parent.update_latency_out(out.objects.front().time_start);
+        } // we could use set.start_time here (faster) but would be losing precision (set.start_time is rounded)...
+
         if (!m_parent.send(std::move(out))) {
           ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
           // out is dropped
         }
       }
     }
-    TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TGM] process() done. Advanced output buffer by " << n_output_windows << " output windows";
+    TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[TGM] process() done. Advanced output buffer by " << n_output_windows
+                                << " output windows";
   }
 
   void drain(bool drop)
@@ -443,11 +499,10 @@ public: // NOLINT
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
-      out.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+      out.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
-        if(!drop) {
+        if (!drop) {
           if (!m_parent.send(std::move(out))) {
             ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
             // out is dropped
@@ -456,8 +511,8 @@ public: // NOLINT
       }
       // Only form and send Set<B> if it has a nonzero number of objects
       else if (out.type == Set<B>::Type::kPayload && out.objects.size() != 0) {
-        TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TGM] Output set window ready with start time " << out.start_time << " end time " << out.end_time
-                      << " and " << out.objects.size() << " members";
+        TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[TGM] Output set window ready with start time " << out.start_time
+                                      << " end time " << out.end_time << " and " << out.objects.size() << " members";
         if (!drop) {
           if (!m_parent.send(std::move(out))) {
             ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
@@ -468,7 +523,7 @@ public: // NOLINT
     }
   }
 
-  size_t get_low_level_input_count() {return m_low_level_input_count;}
+  size_t get_low_level_input_count() { return m_low_level_input_count; }
   size_t m_low_level_input_count;
 };
 
@@ -482,7 +537,8 @@ public: // NOLINT
     : m_parent(parent)
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
     , m_low_level_input_count(0)
-  {}
+  {
+  }
 
   TriggerGenericMaker<Set<A>, OUT, MAKER>& m_parent;
 
@@ -490,9 +546,7 @@ public: // NOLINT
 
   void reconfigure() {}
 
-  void reset() {
-    m_low_level_input_count = 0;
-  }
+  void reset() { m_low_level_input_count = 0; }
 
   void process_slice(const std::vector<A>& time_slice, std::vector<OUT>& out_vec)
   {
@@ -519,6 +573,16 @@ public: // NOLINT
         if (!m_in_buffer.buffer(in, time_slice, start_time, end_time)) {
           return; // no complete time slice yet (`in` was part of buffered slice)
         }
+
+        if (m_parent.m_use_latency_monit && m_parent.m_use_latency_offset && m_parent.m_first_object) {
+          m_parent.m_initial_offset = (duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) -
+                                      (time_slice.front().time_start * m_parent.m_clock_ticks_to_ms);
+          m_parent.m_first_object = false;
+        }
+        if (m_parent.m_use_latency_monit && !time_slice.empty()) {
+          m_parent.update_latency_in(time_slice.front().time_start);
+        }
+
         m_low_level_input_count += time_slice.size();
         process_slice(time_slice, out_vec);
       } break;
@@ -552,6 +616,9 @@ public: // NOLINT
         break;
     }
 
+    if (m_parent.m_use_latency_monit && !out_vec.empty()) {
+      m_parent.update_latency_out(out_vec.front().time_start);
+    }
     while (out_vec.size()) {
       if (!m_parent.send(std::move(out_vec.back()))) {
         ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
@@ -578,12 +645,12 @@ public: // NOLINT
             // out.back() is dropped
           }
         }
-	out_vec.pop_back();
+        out_vec.pop_back();
       }
     }
   }
 
-  size_t get_low_level_input_count() {return m_low_level_input_count;}
+  size_t get_low_level_input_count() { return m_low_level_input_count; }
   size_t m_low_level_input_count;
 };
 
