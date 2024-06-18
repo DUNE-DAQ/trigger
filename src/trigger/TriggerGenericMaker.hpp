@@ -107,7 +107,7 @@ public:
 
   void update_latency_in(uint64_t timestamp)
   {
-    TLOG_DEBUG(TLVL_DEBUG_ALL) << "TGM IN: " << timestamp;
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TGM] IN: " << timestamp;
     m_data_vs_system_time_in.store(
       fabs(get_current_system_time() - (timestamp * m_clock_ticks_to_ms) - m_initial_offset));
     return;
