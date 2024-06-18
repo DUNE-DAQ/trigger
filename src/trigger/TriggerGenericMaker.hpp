@@ -114,7 +114,7 @@ public:
   }
   void update_latency_out(uint64_t timestamp)
   {
-    TLOG_DEBUG(TLVL_DEBUG_ALL) << "TGM OUT: " << timestamp;
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TGM] OUT: " << timestamp;
     m_data_vs_system_time_out.store(
       fabs(get_current_system_time() - (timestamp * m_clock_ticks_to_ms) - m_initial_offset));
     return;
