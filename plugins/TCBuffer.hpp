@@ -9,6 +9,12 @@
 #ifndef TRIGGER_PLUGINS_TCBUFFER_HPP_
 #define TRIGGER_PLUGINS_TCBUFFER_HPP_
 
+#include "appfwk/app/Nljs.hpp"
+#include "appfwk/cmd/Nljs.hpp"
+#include "appfwk/cmd/Structs.hpp"
+
+#include "opmonlib/InfoCollector.hpp"
+
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "iomanager/Receiver.hpp"
@@ -17,12 +23,14 @@
 #include "readoutlibs/models/DefaultRequestHandlerModel.hpp"
 #include "readoutlibs/models/SkipListLatencyBufferModel.hpp"
 #include "readoutlibs/models/DefaultSkipListRequestHandler.hpp"
+#include "readoutlibs/readoutinfo/InfoNljs.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerObjectOverlay.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include "trigger/Issues.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
+#include "trigger/txbufferinfo/InfoNljs.hpp"
 
 #include <chrono>
 #include <map>
@@ -69,7 +77,7 @@ private:
     // comparable based on first timestamp
     bool operator<(const TCWrapper& other) const
     {
-      return this->candidate.time_start < other.candidate.time_start;
+      return std::tie(this->candidate.time_start, this->candidate.type) < std::tie(other.candidate.time_start, other.candidate.type);
     }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
@@ -102,9 +110,9 @@ private:
     static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerCandidate;
     // No idea what this should really be set to
-    static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
+    static const constexpr uint64_t expected_tick_difference = 1; // NOLINT(build/unsigned)
 
-};
+  };
 
   void do_conf(const nlohmann::json& config);
   void do_start(const nlohmann::json& obj);
@@ -127,6 +135,11 @@ private:
   std::unique_ptr<latency_buffer_t> m_latency_buffer_impl{nullptr};
   using request_handler_t = readoutlibs::DefaultSkipListRequestHandler<buffer_object_t>;
   std::unique_ptr<request_handler_t> m_request_handler_impl{nullptr};
+
+  // operational monitoring stats
+  std::atomic<int> m_num_payloads{0};
+  std::atomic<int> m_num_payloads_overwritten{0};
+  std::atomic<int> m_num_requests{0};
 
   // Don't actually use this, but it's currently needed as arg to request handler ctor
   std::unique_ptr<readoutlibs::FrameErrorRegistry> m_error_registry;

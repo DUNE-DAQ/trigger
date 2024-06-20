@@ -95,6 +95,8 @@ public:
   std::atomic<metric_counter_type> m_n_received{ 0 };
   std::atomic<metric_counter_type> m_n_sent{ 0 };
   std::atomic<metric_counter_type> m_n_tardy{ 0 };
+  std::atomic<metric_counter_type> m_n_cache_occupancy{ 0 };
+  std::atomic<metric_counter_type> m_n_zipper_occupancy{ 0 };
 
   std::map<daqdataformats::SourceID, size_t> m_tardy_counts;
 
@@ -123,6 +125,8 @@ public:
     i.n_received = m_n_received.load();
     i.n_sent = m_n_sent.load();
     i.n_tardy = m_n_tardy.load();
+    i.n_cache_occupancy = m_n_cache_occupancy.load();
+    i.n_zipper_occupancy = m_n_zipper_occupancy.load();
 
     ci.add(i);
   }
@@ -156,10 +160,12 @@ public:
     m_n_received = 0;
     m_n_sent = 0;
     m_n_tardy = 0;
+    m_n_cache_occupancy = 0;
+    m_n_zipper_occupancy = 0;
     m_tardy_counts.clear();
     m_running.store(true);
     m_thread = std::thread(&TriggerZipper::worker, this);
-    pthread_setname_np(m_thread.native_handle(), "zipper");
+    pthread_setname_np(m_thread.native_handle(), get_name().c_str());
   }
 
   void do_stop(const nlohmann::json& /*stopobj*/)
@@ -243,6 +249,9 @@ public:
       m_cache.pop_front(); // vestigial
     }
     drain();
+
+    m_n_cache_occupancy = m_cache.size();
+    m_n_zipper_occupancy = m_zm.get_occupancy();
     return true;
   }
 

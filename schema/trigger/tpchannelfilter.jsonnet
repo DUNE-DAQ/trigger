@@ -17,6 +17,10 @@ local types = {
       doc="Name of channel map"),    
     s.field("max_time_over_threshold", self.ticks,
       doc="Maximum allowed time over threshold per TP in number of ticks"),
+    s.field("enable_latency_monit", self.bool,
+      doc="Should latency be reported to opmon"),
+    s.field("use_latency_offset", self.bool,
+      doc="Should an offset be applied to latency measurements (opmon)"),
   ], doc="FakeTPCreatorHeartbeatMaker configuration parameters."),
 
 };

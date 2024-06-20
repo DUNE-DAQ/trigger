@@ -89,6 +89,8 @@ public:
     : cardinality(k)
     , latency(max_latency)
     , origin(0) // ordering
+    , occupancy(0)
+
   {}
 
   /**
@@ -128,6 +130,8 @@ public:
 
   ordering_t get_origin() const { return origin; }
 
+  size_t get_occupancy() { return occupancy; }
+
   /**
      Clear the zipper merge buffer.
   */
@@ -153,6 +157,7 @@ public:
     }
     auto& s = streams[node.identity];
     s.occupancy += 1;
+    occupancy++;
     s.last_seen = node.debut;
     this->push(node);
     return true;
@@ -187,6 +192,7 @@ public:
     auto& s = streams.at(node.identity);
     s.occupancy -= 1;
     origin = node.ordering;
+    occupancy--;
 
     return node;
   }
@@ -344,6 +350,7 @@ private:
   ordering_t origin;
   bool tolerate_incompleteness = false;
   size_t completeness_tolerance = 1;
+  size_t occupancy;
   struct Stream
   {
     size_t occupancy{ 0 };

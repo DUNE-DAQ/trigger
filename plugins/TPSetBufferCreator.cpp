@@ -93,7 +93,7 @@ TPSetBufferCreator::do_configure(const nlohmann::json& obj)
 void
 TPSetBufferCreator::do_start(const nlohmann::json& /*args*/)
 {
-  m_thread.start_working_thread("buffer-man");
+  m_thread.start_working_thread(get_name());
   TLOG_DEBUG(TLVL_GENERAL) << "[TPSetBufferCreator] " << get_name() << " successfully started";
 }
 

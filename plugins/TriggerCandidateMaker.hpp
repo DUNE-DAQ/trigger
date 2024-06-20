@@ -11,10 +11,10 @@
 
 #include "trigger/TriggerGenericMaker.hpp"
 
+#include "trigger/TASet.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 #include "triggeralgs/TriggerCandidateMaker.hpp"
-#include "trigger/TASet.hpp"
 
 #include <memory>
 #include <string>
@@ -29,7 +29,8 @@ class TriggerCandidateMaker
 public:
   explicit TriggerCandidateMaker(const std::string& name)
     : TriggerGenericMaker(name)
-  {}
+  {
+  }
 
   TriggerCandidateMaker(const TriggerCandidateMaker&) = delete;
   TriggerCandidateMaker& operator=(const TriggerCandidateMaker&) = delete;
