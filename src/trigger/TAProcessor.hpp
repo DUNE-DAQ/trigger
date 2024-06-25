@@ -14,7 +14,7 @@
 
 #include "appmodel/DataHandlerModule.hpp"
 
-#include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
+#include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "trigger/Issues.hpp"
 #include "trigger/TAWrapper.hpp"
@@ -26,16 +26,16 @@
 namespace dunedaq {
 namespace trigger {
 
-class TAProcessor : public readoutlibs::TaskRawDataProcessorModel<TAWrapper>
+class TAProcessor : public datahandlinglibs::TaskRawDataProcessorModel<TAWrapper>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<TAWrapper>;
+  using inherited = datahandlinglibs::TaskRawDataProcessorModel<TAWrapper>;
   using taptr = TAWrapper*;
   using consttaptr = const TAWrapper*;
 
 
-  explicit TAProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry);
+  explicit TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry);
 
   ~TAProcessor();
 

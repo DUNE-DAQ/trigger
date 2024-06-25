@@ -17,7 +17,7 @@
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
 
-#include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
+#include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "trigger/Issues.hpp"
 #include "trigger/TCWrapper.hpp"
@@ -32,15 +32,15 @@
 namespace dunedaq {
 namespace trigger {
 
-class TCProcessor : public readoutlibs::TaskRawDataProcessorModel<TCWrapper>
+class TCProcessor : public datahandlinglibs::TaskRawDataProcessorModel<TCWrapper>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<TCWrapper>;
+  using inherited = datahandlinglibs::TaskRawDataProcessorModel<TCWrapper>;
   using tcptr = TCWrapper*;
   using consttcptr = const TCWrapper*;
 
-  explicit TCProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry);
+  explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry);
 
   ~TCProcessor();
 

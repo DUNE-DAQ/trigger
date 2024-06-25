@@ -12,7 +12,7 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 
-#include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
+#include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
 //#include "triggger/Issues.hpp"
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
@@ -26,16 +26,16 @@
 namespace dunedaq {
 namespace trigger {
 
-class TPProcessor : public readoutlibs::TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>
+class TPProcessor : public datahandlinglibs::TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>;
+  using inherited = datahandlinglibs::TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>;
   using tpptr = TriggerPrimitiveTypeAdapter*;
   using consttpptr = const TriggerPrimitiveTypeAdapter*;
 
 
-  explicit TPProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry);
+  explicit TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry);
 
   ~TPProcessor();
 

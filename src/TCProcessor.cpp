@@ -10,11 +10,11 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 
-#include "readoutlibs/FrameErrorRegistry.hpp"
-#include "readoutlibs/ReadoutIssues.hpp"
-#include "readoutlibs/ReadoutLogging.hpp"
-#include "readoutlibs/models/IterableQueueModel.hpp"
-#include "readoutlibs/utils/ReusableThread.hpp"
+#include "datahandlinglibs/FrameErrorRegistry.hpp"
+#include "datahandlinglibs/DataHandlingIssues.hpp"
+#include "datahandlinglibs/ReadoutLogging.hpp"
+#include "datahandlinglibs/models/IterableQueueModel.hpp"
+#include "datahandlinglibs/utils/ReusableThread.hpp"
 
 #include "trigger/TCWrapper.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
@@ -22,8 +22,8 @@
 #include "appmodel/TCDataProcessor.hpp"
 #include "appmodel/TriggerDataHandlerModule.hpp"
 
-using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
-using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
+using dunedaq::datahandlinglibs::logging::TLVL_BOOKKEEPING;
+using dunedaq::datahandlinglibs::logging::TLVL_TAKE_NOTE;
 
 // THIS SHOULDN'T BE HERE!!!!! But it is necessary.....
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
@@ -31,8 +31,8 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 namespace dunedaq {
 namespace trigger {
 
-TCProcessor::TCProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-  : readoutlibs::TaskRawDataProcessorModel<TCWrapper>(error_registry)
+TCProcessor::TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
+  : datahandlinglibs::TaskRawDataProcessorModel<TCWrapper>(error_registry)
 {
 }
 
@@ -79,7 +79,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
          m_td_sink = get_iom_sender<dfmessages::TriggerDecision>(output->UID());
       }
     } catch (const ers::Issue& excpt) {
-      ers::error(readoutlibs::ResourceQueueError(ERS_HERE, "td", "DefaultRequestHandlerModel", excpt));
+      ers::error(datahandlinglibs::ResourceQueueError(ERS_HERE, "td", "DefaultRequestHandlerModel", excpt));
     }
   }
 

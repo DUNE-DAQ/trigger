@@ -8,9 +8,9 @@
 #include "DataSubscriberModule.hpp"
 #include "logging/Logging.hpp"
 
-#include "readoutlibs/ReadoutLogging.hpp"
-#include "readoutlibs/ReadoutIssues.hpp"
-#include "readoutlibs/models/DataSubscriberModel.hpp"
+#include "datahandlinglibs/ReadoutLogging.hpp"
+#include "datahandlinglibs/DataHandlingIssues.hpp"
+#include "datahandlinglibs/models/DataSubscriberModel.hpp"
 #include "trigger/HSISourceModel.hpp"
 #include "trigger/TPSetSourceModel.hpp"
 #include "trigger/TriggerSourceModel.hpp"
@@ -24,7 +24,7 @@
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
-using namespace dunedaq::readoutlibs::logging;
+using namespace dunedaq::datahandlinglibs::logging;
 
 namespace dunedaq {
 
@@ -50,10 +50,10 @@ DataSubscriberModule::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto ini = cfg->module<confmodel::DaqModule>(get_name());
   if (ini->get_outputs().size() != 1) {
-    throw readoutlibs::InitializationError(ERS_HERE, "Only 1 output supported for subscribers");
+    throw datahandlinglibs::InitializationError(ERS_HERE, "Only 1 output supported for subscribers");
   }
   if (ini->get_inputs().size() != 1) {
-    throw readoutlibs::InitializationError(ERS_HERE, "Only 1 input supported for subscribers");
+    throw datahandlinglibs::InitializationError(ERS_HERE, "Only 1 input supported for subscribers");
   }
   m_source_concept = create_data_subscriber(ini);
   m_source_concept->init(ini);
@@ -77,7 +77,7 @@ DataSubscriberModule::get_info(opmonlib::InfoCollector& ci, int level)
 }
 
 
-std::unique_ptr<readoutlibs::SourceConcept>
+std::unique_ptr<datahandlinglibs::SourceConcept>
 DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
 {
  

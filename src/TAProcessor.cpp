@@ -11,13 +11,13 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 
-#include "readoutlibs/FrameErrorRegistry.hpp"
-#include "readoutlibs/ReadoutIssues.hpp"
-#include "readoutlibs/ReadoutLogging.hpp"
-#include "readoutlibs/models/IterableQueueModel.hpp"
-//#include "readoutlibs/readoutconfig/Nljs.hpp"
-//#include "readoutlibs/readoutinfo/InfoNljs.hpp"
-#include "readoutlibs/utils/ReusableThread.hpp"
+#include "datahandlinglibs/FrameErrorRegistry.hpp"
+#include "datahandlinglibs/DataHandlingIssues.hpp"
+#include "datahandlinglibs/ReadoutLogging.hpp"
+#include "datahandlinglibs/models/IterableQueueModel.hpp"
+//#include "datahandlinglibs/readoutconfig/Nljs.hpp"
+//#include "datahandlinglibs/readoutinfo/InfoNljs.hpp"
+#include "datahandlinglibs/utils/ReusableThread.hpp"
 
 //#include "detchannelmaps/TPCChannelMap.hpp"
 
@@ -30,8 +30,8 @@
 #include "appmodel/TADataProcessor.hpp"
 #include "appmodel/TCAlgorithm.hpp"
 
-using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
-using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
+using dunedaq::datahandlinglibs::logging::TLVL_BOOKKEEPING;
+using dunedaq::datahandlinglibs::logging::TLVL_TAKE_NOTE;
 
 // THIS SHOULDN'T BE HERE!!!!! But it is necessary.....
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TAWrapper, "TriggerActivity")
@@ -39,8 +39,8 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TAWrapper, "TriggerActivity")
 namespace dunedaq {
 namespace trigger {
 
-TAProcessor::TAProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-  : readoutlibs::TaskRawDataProcessorModel<TAWrapper>(error_registry)
+TAProcessor::TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
+  : datahandlinglibs::TaskRawDataProcessorModel<TAWrapper>(error_registry)
 {
 }
 
@@ -72,7 +72,7 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
          m_tc_sink = get_iom_sender<triggeralgs::TriggerCandidate>(output->UID());
       }
     } catch (const ers::Issue& excpt) {
-      ers::error(readoutlibs::ResourceQueueError(ERS_HERE, "tc", "DefaultRequestHandlerModel", excpt));
+      ers::error(datahandlinglibs::ResourceQueueError(ERS_HERE, "tc", "DefaultRequestHandlerModel", excpt));
     }
   }
 

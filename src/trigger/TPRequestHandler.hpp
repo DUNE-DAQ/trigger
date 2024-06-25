@@ -14,12 +14,12 @@
 
 #include "appmodel/DataHandlerModule.hpp"
 
-#include "readoutlibs/ReadoutLogging.hpp"
-#include "readoutlibs/utils/ReusableThread.hpp"
-#include "readoutlibs/FrameErrorRegistry.hpp"
-#include "readoutlibs/ReadoutIssues.hpp"
-#include "readoutlibs/ReadoutLogging.hpp"
-#include "readoutlibs/models/DefaultSkipListRequestHandler.hpp"
+#include "datahandlinglibs/ReadoutLogging.hpp"
+#include "datahandlinglibs/utils/ReusableThread.hpp"
+#include "datahandlinglibs/FrameErrorRegistry.hpp"
+#include "datahandlinglibs/DataHandlingIssues.hpp"
+#include "datahandlinglibs/ReadoutLogging.hpp"
+#include "datahandlinglibs/models/DefaultSkipListRequestHandler.hpp"
 
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TPSet.hpp"
@@ -28,7 +28,7 @@
 #include <memory>
 #include <string>
 
-using dunedaq::readoutlibs::logging::TLVL_WORK_STEPS;
+using dunedaq::datahandlinglibs::logging::TLVL_WORK_STEPS;
 
 
 namespace dunedaq {
@@ -44,16 +44,16 @@ ERS_DECLARE_ISSUE(trigger,
 
 namespace trigger {
 
-class TPRequestHandler : public dunedaq::readoutlibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>
+class TPRequestHandler : public dunedaq::datahandlinglibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>
 {
 public:
-  using inherited2 = readoutlibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>;
+  using inherited2 = datahandlinglibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>;
 
   // Constructor that binds LB and error registry
 
-  TPRequestHandler(std::unique_ptr<readoutlibs::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>>& latency_buffer,
-                                std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : readoutlibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>(
+  TPRequestHandler(std::unique_ptr<datahandlinglibs::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>>& latency_buffer,
+                                std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
+    : datahandlinglibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>(
         latency_buffer,
         error_registry)
   {
