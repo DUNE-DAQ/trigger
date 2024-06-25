@@ -4,8 +4,8 @@ local moo = import "moo.jsonnet";
 local ns = "dunedaq.trigger.txbufferconfig";
 local s = moo.oschema.schema(ns);
 
-local s_readoutconfig = import "readoutlibs/readoutconfig.jsonnet";
-local readoutconfig = moo.oschema.hier(s_readoutconfig).dunedaq.readoutlibs.readoutconfig;
+local s_readoutconfig = import "datahandlinglibs/readoutconfig.jsonnet";
+local readoutconfig = moo.oschema.hier(s_readoutconfig).dunedaq.datahandlinglibs.readoutconfig;
 
 // Object structure used by the test/fake producer module
 local txbufferconfig = {

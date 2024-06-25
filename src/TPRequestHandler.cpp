@@ -15,7 +15,7 @@ TPRequestHandler::conf(const appmodel::DataHandlerModule* conf) {
          try {
             m_tpset_sink = iomanager::IOManager::get()->get_sender<dunedaq::trigger::TPSet>(output->UID());
          } catch (const ers::Issue& excpt) {
-            throw readoutlibs::ResourceQueueError(ERS_HERE, "tp queue", "DefaultRequestHandlerModel", excpt);
+            throw datahandlinglibs::ResourceQueueError(ERS_HERE, "tp queue", "DefaultRequestHandlerModel", excpt);
          }
       }
    }

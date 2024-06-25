@@ -19,8 +19,8 @@ find_package(detdataformats REQUIRED)
 find_package(trgdataformats REQUIRED)
 find_package(detchannelmaps REQUIRED)
 find_package(hdf5libs REQUIRED)
-find_package(readoutlibs REQUIRED)
-find_package(readoutmodules REQUIRED)
+find_package(datahandlinglibs REQUIRED)
+find_package(datahandlinglibs REQUIRED)
 find_package(appmodel REQUIRED)
 find_package(CLI11 REQUIRED)
 
@@ -37,10 +37,10 @@ set(TRIGGER_DEPENDENCIES
   detdataformats::detdataformats
   trgdataformats::trgdataformats
   hdf5libs::hdf5libs
-  Boost::iostreams # Boost::iostreams comes in via readoutlibs
+  Boost::iostreams # Boost::iostreams comes in via datahandlinglibs
   detchannelmaps::detchannelmaps
-  readoutlibs::readoutlibs
-  readoutmodules::readoutmodules)
+  datahandlinglibs::datahandlinglibs
+  datahandlinglibs::datahandlinglibs)
 
 daq_add_library(
   *.cpp
@@ -69,7 +69,7 @@ daq_codegen(
   TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 
 #daq_codegen(
-#  txbuffer.jsonnet DEP_PKGS readoutlibs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+#  txbuffer.jsonnet DEP_PKGS datahandlinglibs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
   
 daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 ##############################################################################

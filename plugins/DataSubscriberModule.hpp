@@ -15,7 +15,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/ModuleConfiguration.hpp"
 
-#include "readoutlibs/concepts/SourceConcept.hpp"
+#include "datahandlinglibs/concepts/SourceConcept.hpp"
 
 #include <string>
 
@@ -40,13 +40,13 @@ public:
   void init(std::shared_ptr<appfwk::ModuleConfiguration> cfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  std::unique_ptr<readoutlibs::SourceConcept> create_data_subscriber(const confmodel::DaqModule* cfg);
+  std::unique_ptr<datahandlinglibs::SourceConcept> create_data_subscriber(const confmodel::DaqModule* cfg);
 private:
   void do_start(const nlohmann::json& /*args*/);
   void do_stop(const nlohmann::json& /*args*/);
 
   // Internal
-  std::unique_ptr<readoutlibs::SourceConcept> m_source_concept;
+  std::unique_ptr<datahandlinglibs::SourceConcept> m_source_concept;
 
 };
 

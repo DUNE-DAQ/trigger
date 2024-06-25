@@ -9,7 +9,7 @@
 #define TRIGGER_SRC_TRIGGER_TRIGGERSOURCEMODEL_HPP_
 
 #include <functional>
-#include "readoutlibs/concepts/SourceConcept.hpp"
+#include "datahandlinglibs/concepts/SourceConcept.hpp"
 #include "detdataformats/DetID.hpp"
 #include "dfmessages/HSIEvent.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
@@ -32,37 +32,37 @@ namespace dunedaq::trigger {
 
 
 template<class TriggerXObject, class TXWrapper>
-class TriggerSourceModel : public readoutlibs::SourceConcept
+class TriggerSourceModel : public datahandlinglibs::SourceConcept
 {
 public: 
-  using inherited = readoutlibs::SourceConcept;
+  using inherited = datahandlinglibs::SourceConcept;
 
   /**
    * @brief SourceModel Constructor
    * @param name Instance name for this SourceModel instance
    */
   
-  TriggerSourceModel(): readoutlibs::SourceConcept() {}
+  TriggerSourceModel(): datahandlinglibs::SourceConcept() {}
   ~TriggerSourceModel() {}
 
   void init(const confmodel::DaqModule* cfg) override {
     if (cfg->get_outputs().size() != 1) {
-      throw readoutlibs::InitializationError(ERS_HERE, "Only 1 output supported for subscribers");
+      throw datahandlinglibs::InitializationError(ERS_HERE, "Only 1 output supported for subscribers");
     }
     m_data_sender = get_iom_sender<TXWrapper>(cfg->get_outputs()[0]->UID());
 
     if (cfg->get_inputs().size() != 1) {
-      throw readoutlibs::InitializationError(ERS_HERE, "Only 1 input supported for subscribers");
+      throw datahandlinglibs::InitializationError(ERS_HERE, "Only 1 input supported for subscribers");
     }
     m_data_receiver = get_iom_receiver<TriggerXObject>(cfg->get_inputs()[0]->UID());
 /*
     auto data_reader = cfg->cast<appmodel::DataSubscriberModule>();
     if (data_reader == nullptr) {
-       throw readoutlibs::InitializationError(ERS_HERE, "DAQ module is not a DataReader");
+       throw datahandlinglibs::InitializationError(ERS_HERE, "DAQ module is not a DataReader");
     }
     auto hsi_conf = data_reader->get_configuration()->cast<appmodel::HSI2TCTranslatorConf>();
     if (hsi_conf == nullptr) {
-	throw readoutlibs::InitializationError(ERS_HERE, "Missing HSI2TCTranslatorConf");
+	throw datahandlinglibs::InitializationError(ERS_HERE, "Missing HSI2TCTranslatorConf");
     }
     for (auto win : hsi_conf->get_signals()) {
 	   m_signals[win->get_signal_type()] = std::pair<uint32_t, uint32_t>(win->get_time_before(), win->get_time_after());

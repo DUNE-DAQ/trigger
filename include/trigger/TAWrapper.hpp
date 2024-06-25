@@ -86,7 +86,7 @@ namespace trigger {
 } // namespace dunedaq
 /*
 namespace dunedaq {
-namespace readoutlibs {
+namespace datahandlinglibs {
 
 template<>
 uint64_t

@@ -10,11 +10,11 @@
 #include "logging/Logging.hpp"
 #include "iomanager/IOManager.hpp"
 
-#include "readoutlibs/ReadoutIssues.hpp"
-#include "readoutlibs/ReadoutLogging.hpp"
-#include "readoutlibs/models/ReadoutModel.hpp"
-#include "readoutlibs/models/SkipListLatencyBufferModel.hpp"
-#include "readoutlibs/models/DefaultSkipListRequestHandler.hpp"
+#include "datahandlinglibs/DataHandlingIssues.hpp"
+#include "datahandlinglibs/ReadoutLogging.hpp"
+#include "datahandlinglibs/models/DataHandlingModel.hpp"
+#include "datahandlinglibs/models/SkipListLatencyBufferModel.hpp"
+#include "datahandlinglibs/models/DefaultSkipListRequestHandler.hpp"
 #include "trigger/TPRequestHandler.hpp"
 
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-using namespace dunedaq::readoutlibs::logging;
+using namespace dunedaq::datahandlinglibs::logging;
 
 namespace dunedaq {
 
@@ -66,19 +66,19 @@ TriggerDataHandlerModule::get_info(opmonlib::InfoCollector& ci, int level)
   inherited_dlh::get_info(ci, level);
 }
 
-std::unique_ptr<readoutlibs::ReadoutConcept>
+std::unique_ptr<datahandlinglibs::DataHandlingConcept>
 TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modconf, std::atomic<bool>& run_marker)
 {
-  namespace rol = dunedaq::readoutlibs;
+  namespace rol = dunedaq::datahandlinglibs;
 
   // Acquire DataType  
   std::string raw_dt = modconf->get_module_configuration()->get_input_data_type();
-  TLOG() << "Choosing specializations for ReadoutModel with data_type:" << raw_dt << ']';
+  TLOG() << "Choosing specializations for DataHandlingModel with data_type:" << raw_dt << ']';
 
   // IF TriggerPrimitive (TP)
   if (raw_dt.find("TriggerPrimitive") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitive";
-    auto readout_model = std::make_unique<rol::ReadoutModel<
+    auto readout_model = std::make_unique<rol::DataHandlingModel<
       TriggerPrimitiveTypeAdapter,
       TPRequestHandler,
       rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
@@ -91,7 +91,7 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
  // IF TriggerActivity (TA)
   if (raw_dt.find("TriggerActivity") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerActivity";
-    auto readout_model = std::make_unique<rol::ReadoutModel<
+    auto readout_model = std::make_unique<rol::DataHandlingModel<
       TAWrapper,
       rol::DefaultSkipListRequestHandler<trigger::TAWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TAWrapper>,
@@ -104,7 +104,7 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
  // No processing, only buffering to respond to data requests
   if (raw_dt.find("TriggerCandidate") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerCandidate";
-    auto readout_model = std::make_unique<rol::ReadoutModel<
+    auto readout_model = std::make_unique<rol::DataHandlingModel<
       TCWrapper,
       rol::DefaultSkipListRequestHandler<trigger::TCWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TCWrapper>,
