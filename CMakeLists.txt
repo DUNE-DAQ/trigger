@@ -20,7 +20,6 @@ find_package(trgdataformats REQUIRED)
 find_package(detchannelmaps REQUIRED)
 find_package(hdf5libs REQUIRED)
 find_package(datahandlinglibs REQUIRED)
-find_package(datahandlinglibs REQUIRED)
 find_package(appmodel REQUIRED)
 find_package(CLI11 REQUIRED)
 
@@ -39,7 +38,6 @@ set(TRIGGER_DEPENDENCIES
   hdf5libs::hdf5libs
   Boost::iostreams # Boost::iostreams comes in via datahandlinglibs
   detchannelmaps::detchannelmaps
-  datahandlinglibs::datahandlinglibs
   datahandlinglibs::datahandlinglibs)
 
 daq_add_library(
