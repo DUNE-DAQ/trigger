@@ -40,7 +40,7 @@ namespace trigger {
 
 TriggerDataHandlerModule::TriggerDataHandlerModule(const std::string& name)
   : DAQModule(name)
-  , DataLinkHandlerBase(name)
+  , RawDataHandlerBase(name)
 { 
   //inherited_dlh::m_readout_creator = make_readout_creator("fd");
 
