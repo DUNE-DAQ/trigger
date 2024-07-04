@@ -116,6 +116,33 @@ ModuleLevelTrigger::do_configure(const nlohmann::json& confobj)
 {
   auto params = confobj.get<moduleleveltrigger::ConfParams>();
 
+  // Get SourceID to geoid map
+  dunedaq::hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap src_to_geo_map = params.srcid_geoid_map;
+  for (auto const& entry : src_to_geo_map) {
+    daqdataformats::SourceID source_id(daqdataformats::SourceID::Subsystem::kDetectorReadout, entry.src_id);
+    m_srcid_geoid_map[source_id] = entry.geo_id;
+  }
+
+  // Get custom subdetector readout map
+  for (auto const& subdet : params.detector_readout_map) {
+    dunedaq::detdataformats::DetID::Subdetector detid;
+    detid = dunedaq::detdataformats::DetID::string_to_subdetector(subdet.subdetector);
+    if (detid == detdataformats::DetID::Subdetector::kUnknown) {
+      throw MLTConfigurationProblem(ERS_HERE, get_name(),
+          "Unknown Subdetector supplied to MLT subdetector-readout window map");
+    }
+
+    if (m_subdetector_readout_window_map.count(detid)) {
+      throw MLTConfigurationProblem(ERS_HERE, get_name(),
+          "Supplied more than one of the same Subdetector name to MLT subdetector-readout window map");
+    }
+
+    m_subdetector_readout_window_map[detid] = std::make_pair(subdet.time_before, subdet.time_after);
+
+    TLOG() << "[MLT] Custom readout map for subdetector: " << subdet.subdetector
+           << " time_start: " << subdet.time_before << " time_after: " << subdet.time_after;
+  }
+
   m_mandatory_links.clear();
   for (auto const& link : params.mandatory_links) {
     m_mandatory_links.push_back(
@@ -933,6 +960,25 @@ ModuleLevelTrigger::add_requests_to_decision(dfmessages::TriggerDecision& decisi
                                              std::vector<dfmessages::ComponentRequest> requests)
 {
   for (auto request : requests) {
+    // No custom detector readouts for non-detector readout subsystems
+    if (request.component.subsystem != daqdataformats::SourceID::Subsystem::kDetectorReadout) {
+      decision.components.push_back(request);
+      continue;
+    }
+
+    // Get the subdetector id from our map
+    dunedaq::detdataformats::DetID::Subdetector detid;
+    detid = static_cast<dunedaq::detdataformats::DetID::Subdetector>(m_srcid_geoid_map[request.component].det_id);
+
+    // No custom detector readout if we didn't specify it in the map
+    if (!m_subdetector_readout_window_map.count(detid)) {
+      decision.components.push_back(request);
+      continue;
+    }
+
+    // Override readout window with the custom subdetector readout window map
+    request.window_begin = decision.trigger_timestamp - m_subdetector_readout_window_map[detid].first;
+    request.window_end   = decision.trigger_timestamp + m_subdetector_readout_window_map[detid].second;
     decision.components.push_back(request);
   }
 }
