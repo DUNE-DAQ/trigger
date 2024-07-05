@@ -20,11 +20,13 @@
 #include "trigger/moduleleveltriggerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "detdataformats/DetID.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
+#include "hdf5libs/hdf5rawdatafile/Structs.hpp"
 #include "iomanager/Receiver.hpp"
 #include "trgdataformats/TriggerCandidateData.hpp"
 #include "trgdataformats/Types.hpp"
@@ -180,6 +182,14 @@ private:
   bool check_trigger_bitwords();
   void print_bitword_flags(nlohmann::json m_trigger_bitwords_json);
   void set_trigger_bitwords();
+
+  /// @brief SourceID to GeoID map
+  /// @todo Would be nice to have GeoID as part of dfmessagesm or even detdataformats
+  std::map<dfmessages::SourceID, dunedaq::hdf5libs::hdf5rawdatafile::GeoID> m_srcid_geoid_map;
+
+  /// @brief Subdetector--readout-window map config
+  std::map<dunedaq::detdataformats::DetID::Subdetector, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
+    m_subdetector_readout_window_map;
 
   // Readout map config
   bool m_use_readout_map;
