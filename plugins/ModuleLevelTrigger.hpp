@@ -127,6 +127,9 @@ private:
   std::atomic<bool> m_dfo_is_busy;
   std::atomic<bool> m_tc_merging;
 
+  /// @brief Ignore TCs that overlap with already made TD
+  bool m_ignore_tc_pileup;
+
   dfmessages::trigger_number_t m_last_trigger_number;
 
   dfmessages::run_number_t m_run_number;
