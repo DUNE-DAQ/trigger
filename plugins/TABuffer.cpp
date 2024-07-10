@@ -37,7 +37,7 @@ void
 TABuffer::init(const nlohmann::json& init_data)
 {
   try {
-    m_input_queue_tas = get_iom_receiver<TASet>(appfwk::connection_uid(init_data, "taset_source"));
+    m_input_queue_tas = get_iom_receiver<triggeralgs::TriggerActivity>(appfwk::connection_uid(init_data, "ta_source"));
     m_input_queue_dr =
       get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
   } catch (const ers::Issue& excpt) {
@@ -111,17 +111,16 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
 
     bool popped_anything=false;
-    std::optional<TASet> taset = m_input_queue_tas->try_receive(std::chrono::milliseconds(0));
-    if (taset.has_value()) {
+    std::optional<triggeralgs::TriggerActivity> ta = m_input_queue_tas->try_receive(std::chrono::milliseconds(0));
+    if (ta.has_value()) {
       popped_anything = true;
-      for (auto const& ta: taset->objects) {
-        if (!m_latency_buffer_impl->write(TAWrapper(ta))) {
-          ++m_num_payloads_overwritten;
-          TLOG_DEBUG(TLVL_DEBUG_LOW) << "[TABuffer] Latency buffer full and data was being overwritten!";
-        }
-        ++n_tas_received;
-        ++m_num_payloads;
+
+      if (!m_latency_buffer_impl->write(TAWrapper(ta.value()))) {
+        ++m_num_payloads_overwritten;
+        TLOG_DEBUG(TLVL_DEBUG_LOW) << "[TABuffer] Latency buffer full and data was being overwritten!";
       }
+      ++n_tas_received;
+      ++m_num_payloads;
     }
     
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
