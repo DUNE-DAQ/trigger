@@ -3,10 +3,14 @@ local ns = "dunedaq.trigger.moduleleveltrigger";
 local s = moo.oschema.schema(ns);
 local nc = moo.oschema.numeric_constraints;
 
+local s_hdf5rdf = import "hdf5libs/hdf5rawdatafile.jsonnet";
+local hdf5rdf = moo.oschema.hier(s_hdf5rdf).dunedaq.hdf5libs.hdf5rawdatafile;
+
 local types = {
   group_id: s.number("group_id", "i4"),
   element_id : s.number("element_id_t", "u4"),
   subsystem : s.string("subsystem_t"),
+  subdetector_name: s.string("subdetector_name_t"),
   flag : s.boolean("Boolean", doc="Option for flags, true/false"),
   candidate_type_t : s.number("candidate_type_t", "u4", doc="Candidate type"),
   time_t : s.number("time_t", "i8", doc="Time"),
@@ -48,11 +52,22 @@ local types = {
   ]),
 
   roi_conf_map: s.sequence("roi_conf_map", self.roi_group_conf),
+
+  subdetector_readout_conf: s.record("subdetector_readout_conf", [
+    s.field("subdetector",  self.subdetector_name,      default="DAQ"),
+    s.field("time_before",  self.readout_time,          default=1000, doc="Readout time before time stamp"),
+    s.field("time_after",   self.readout_time,          default=1000, doc="Readout time after time stamp"),
+  ]),
+
+  subdetector_readout_map : s.sequence("subdetector_readout_map", self.subdetector_readout_conf),
  
   conf : s.record("ConfParams", [
+      s.field("srcid_geoid_map", hdf5rdf.SrcIDGeoIDMap, doc="The Source-Geo Id map"),
+      s.field("detector_readout_map", self.subdetector_readout_map, [], doc="Custom detector readout map per sub-dector as defined in dunedaq::detdataformats::DetID::Subdetector"),
       s.field("mandatory_links", self.linkvec, doc="List of link identifiers that will be included in trigger decision"),
       s.field("groups_links", self.grouplinks, doc="List of link identifiers that may be included in trigger decision"),
       s.field("merge_overlapping_tcs", self.flag, default=true, doc="Flag to allow(true)/disable(false) merging of overlapping TCs when forming TD"),
+      s.field("ignore_overlapping_tcs", types.flag, default=false, doc="Option to ignore consecutive overlapping TCs/pileup events. Cannot run with mlt_merge_overlapping_tcs"),
       s.field("td_out_of_timeout", self.flag, default=true, doc="Option to send TD if TC comes out of timeout window (late, overlapping already sent TD"),
       s.field("buffer_timeout", self.time_t, 100, doc="Buffering timeout [ms] for new TCs"),
       s.field("td_readout_limit", self.time_t, 1000, doc="Time limit [ms] for the length of TD readout window"),
@@ -69,4 +84,4 @@ local types = {
   
 };
 
-moo.oschema.sort_select(types, ns)
+s_hdf5rdf + moo.oschema.sort_select(types, ns)

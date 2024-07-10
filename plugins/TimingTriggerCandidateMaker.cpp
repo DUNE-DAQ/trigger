@@ -118,7 +118,6 @@ TimingTriggerCandidateMaker::do_conf(const nlohmann::json& config)
           "Created TTCM, but supplied an empty signal map!");
   }
 
-  auto first_entry = *std::begin(m_hsisignal_map);
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
   TLOG_DEBUG(TLVL_GENERAL) << "[TTCM] " << get_name() + " configured.";

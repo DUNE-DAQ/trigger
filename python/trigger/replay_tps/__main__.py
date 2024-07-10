@@ -179,11 +179,12 @@ def replay_app(the_system, input_file, slowdown_factor, number_of_loops, tpset_t
 
     return
 
-def trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_infos, debug):
+def trigger_app(the_system, dro_map, daq_common, get_trigger_app, trigger, detector, tp_infos, debug):
     trigger_data_request_timeout = daq_common.data_request_timeout_ms
     the_system.apps['trigger'] = get_trigger_app(
         trigger=trigger,
         detector=detector,
+        src_geo_id_map=dro_map.get_src_geo_map(),
         daq_common=daq_common,
         tp_infos=tp_infos,
         trigger_data_request_timeout=trigger_data_request_timeout,
@@ -472,7 +473,7 @@ def cli(
     #--------------------------------------------------------------------------
     # Trigger
     #--------------------------------------------------------------------------
-    trigger_app(the_system, daq_common, get_trigger_app, trigger, detector, tp_infos, debug)
+    trigger_app(the_system, dro_map, daq_common, get_trigger_app, trigger, detector, tp_infos, debug)
 
     #--------------------------------------------------------------------------
     # DFO
