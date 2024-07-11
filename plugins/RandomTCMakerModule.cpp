@@ -45,7 +45,7 @@ RandomTCMakerModule::RandomTCMakerModule(const std::string& name)
 {
   register_command("conf", &RandomTCMakerModule::do_configure);
   register_command("start", &RandomTCMakerModule::do_start);
-  register_command("stop", &RandomTCMakerModule::do_stop);
+  register_command("stop_trigger_sources", &RandomTCMakerModule::do_stop);
   register_command("scrap", &RandomTCMakerModule::do_scrap);
 }
 
@@ -196,18 +196,15 @@ RandomTCMakerModule::send_trigger_candidates()
   }
 
   dfmessages::timestamp_t initial_timestamp = m_timestamp_estimator->get_timestamp_estimate();
-  dfmessages::timestamp_t first_interval = get_interval(gen);
-  // Round up to the next multiple of trigger_interval_ticks
-  dfmessages::timestamp_t next_trigger_timestamp = (initial_timestamp / first_interval + 1) * first_interval;
-  TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp
-                << ", next_trigger_timestamp is " << next_trigger_timestamp;
+  dfmessages::timestamp_t next_trigger_timestamp = initial_timestamp;
+  TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp;
 
   while (m_running_flag.load()) {
     if (m_timestamp_estimator->wait_for_timestamp(next_trigger_timestamp, m_running_flag) ==
         utilities::TimestampEstimatorBase::kInterrupted) {
       break;
     }
-
+    next_trigger_timestamp = m_timestamp_estimator->get_timestamp_estimate();
     triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
