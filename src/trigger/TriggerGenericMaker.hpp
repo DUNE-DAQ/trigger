@@ -296,12 +296,21 @@ public:
   {
     ++m_low_level_input_count;
     std::vector<OUT> out_vec; // one input -> many outputs
+
+    if (m_parent.m_use_latency_monit && sizeof(in) > 0) {
+      m_parent.update_latency_in(in.time_start);
+    }
+
     try {
       m_parent.m_maker->operator()(in, out_vec);
     } catch (...) { // NOLINT TODO Benjamin Land <BenLand100@github.com> May 28-2021 can we restrict the possible
                     // exceptions triggeralgs might raise?
       ers::fatal(AlgorithmFatalError(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
       return;
+    }
+
+    if (m_parent.m_use_latency_monit && !out_vec.empty()) {
+      m_parent.update_latency_out(out_vec.front().time_start);
     }
 
     while (out_vec.size()) {
