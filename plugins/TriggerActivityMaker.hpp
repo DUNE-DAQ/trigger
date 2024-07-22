@@ -11,7 +11,6 @@
 
 #include "trigger/TriggerGenericMaker.hpp"
 
-#include "trigger/TASet.hpp"
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerActivityMaker.hpp"
