@@ -11,7 +11,6 @@
 
 #include "trigger/TriggerGenericMaker.hpp"
 
-#include "trigger/TASet.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 #include "triggeralgs/TriggerCandidateMaker.hpp"
@@ -22,7 +21,7 @@
 namespace dunedaq::trigger {
 
 class TriggerCandidateMaker
-  : public TriggerGenericMaker<Set<triggeralgs::TriggerActivity>,
+  : public TriggerGenericMaker<triggeralgs::TriggerActivity,
                                triggeralgs::TriggerCandidate,
                                triggeralgs::TriggerCandidateMaker>
 {
