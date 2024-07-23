@@ -26,7 +26,7 @@
 #include "utilities/WorkerThread.hpp"
 
 #include "trigger/Issues.hpp"
-#include "trigger/TASet.hpp"
+#include "trigger/TriggerActivity_serialization.hpp"
 #include "trigger/txbufferinfo/InfoNljs.hpp"
 
 
@@ -127,7 +127,7 @@ private:
 
   dunedaq::utilities::WorkerThread m_thread;
 
-  using tas_source_t = iomanager::ReceiverConcept<trigger::TASet>;
+  using tas_source_t = iomanager::ReceiverConcept<triggeralgs::TriggerActivity>;
   std::shared_ptr<tas_source_t> m_input_queue_tas{nullptr};
 
   using dr_source_t = iomanager::ReceiverConcept<dfmessages::DataRequest>;
