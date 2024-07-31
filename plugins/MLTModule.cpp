@@ -162,7 +162,7 @@ MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
   m_lc_deadtime = m_livetime_counter->get_time(LivetimeCounter::State::kDead) +
                   m_livetime_counter->get_time(LivetimeCounter::State::kPaused);
 
-  TLOG(3) << "LivetimeCounter - total deadtime+paused: " << m_lc_deadtime << std::endl;
+  TLOG_DEBUG(3) << "LivetimeCounter - total deadtime+paused: " << m_lc_deadtime << std::endl;
   m_livetime_counter.reset(); // Calls LivetimeCounter dtor?
 
   ers::info(TriggerEndOfRun(ERS_HERE, m_run_number));
@@ -203,7 +203,7 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
     decision.run_number = m_run_number;
     decision.trigger_number = m_last_trigger_number;
 
-    TLOG() << "Received decision with timestamp "
+    TLOG_DEBUG(10) << "Received decision with timestamp "
              << decision.trigger_timestamp ;
     
     if ((!m_paused.load() && !m_dfo_is_busy.load())) {

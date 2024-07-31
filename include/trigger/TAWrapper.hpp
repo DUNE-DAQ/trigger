@@ -21,7 +21,7 @@ namespace trigger {
   struct TAWrapper
   {
     triggeralgs::TriggerActivity activity;
-    std::vector<uint8_t> activity_overlay_buffer;
+    //std::vector<uint8_t> activity_overlay_buffer;
     
     // Don't really want this default ctor, but IterableQueueModel requires it
     TAWrapper() {}
@@ -29,27 +29,22 @@ namespace trigger {
     TAWrapper(triggeralgs::TriggerActivity a)
       : activity(a)
     {
-      populate_buffer();
+      //populate_buffer();
     }
-
+/*
     void populate_buffer()
     {
       activity_overlay_buffer.resize(triggeralgs::get_overlay_nbytes(activity));
       triggeralgs::write_overlay(activity, activity_overlay_buffer.data());
     }
-    
+*/    
     // comparable based on first timestamp
     bool operator<(const TAWrapper& other) const
     {
-      return this->activity.time_start < other.activity.time_start;
+       return std::tie(this->activity.time_start, this->activity.channel_start) < std::tie(other.activity.time_start, other.activity.channel_start);
     }
 
-    uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
-    {
-      return activity.time_start;
-    }
-
-    void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
+    void set_timestamp(uint64_t ts) // NOLINT(build/unsigned)
     {
       activity.time_start = ts;
     }
@@ -59,7 +54,19 @@ namespace trigger {
       return activity.time_start;
     }
 
-    size_t get_payload_size() { return activity_overlay_buffer.size(); }
+    void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
+    { 
+      activity.time_start = ts;
+    } 
+
+    uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
+    {
+      return activity.time_start;
+    }
+
+
+    //DUMMY
+    size_t get_payload_size() { return 1; }
 
     size_t get_num_frames() { return 1; }
 
@@ -72,13 +79,14 @@ namespace trigger {
     
     TAWrapper* end()
     {
-      return (TAWrapper*)(activity_overlay_buffer.data()+activity_overlay_buffer.size());
+	    //DUMMY
+      return (this+1);
     }
 
     static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerActivity;
     // No idea what this should really be set to
-    static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
+    static const constexpr uint64_t expected_tick_difference = 1; // NOLINT(build/unsigned)
 
 };
 

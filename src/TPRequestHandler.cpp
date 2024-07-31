@@ -40,13 +40,14 @@ TPRequestHandler::start(const nlohmann::json& args) {
 void
 TPRequestHandler::periodic_data_transmission() {
    dunedaq::dfmessages::DataRequest dr;
-
+/*
    {
       std::unique_lock<std::mutex> lock(m_cv_mutex);
       m_cv.wait(lock, [&] { return !m_cleanup_requested; });
       m_requests_running++;
    }
    m_cv.notify_all();
+*/
    if(m_latency_buffer->occupancy() != 0) {
        // Prepare response
        RequestResult rres(ResultCode::kUnknown, dr);
@@ -55,12 +56,11 @@ TPRequestHandler::periodic_data_transmission() {
        // Get the newest TP
        SkipListAcc acc(inherited2::m_latency_buffer->get_skip_list());
        auto tail = acc.last();
-       auto head = acc.first();
        m_newest_ts = (*tail).get_first_timestamp();
-       m_oldest_ts = (*head).get_first_timestamp();
        
        if (m_first_cycle) {
-    	  m_start_win_ts = m_oldest_ts;
+          auto head = acc.first();
+    	  m_start_win_ts = (*head).get_first_timestamp();
 	  m_first_cycle = false;
        }
        if (m_newest_ts - m_start_win_ts > m_ts_set_sender_offset_ticks) {
@@ -99,12 +99,14 @@ TPRequestHandler::periodic_data_transmission() {
          m_start_win_ts = m_end_win_ts;
        }
     }
-    {
+/*
+   {
       std::lock_guard<std::mutex> lock(m_cv_mutex);
       m_requests_running--;
     }
     m_cv.notify_all();  
-   return;
+*/
+    return;
 }
 
 } // namespace fdreadoutlibs
