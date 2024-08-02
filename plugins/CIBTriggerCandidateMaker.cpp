@@ -71,7 +71,7 @@ CIBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
         candidate.type = m_CIB_TC_map[i];
         candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
         candidate.inputs = {};
-
+        TLOG() << get_name() << "Adding TC [" << candidate.time_candidate << "] type [" << candidate.type << "] to the valid candidate queue";
         candidates.push_back(candidate);
       }
       else
