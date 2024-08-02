@@ -14,7 +14,6 @@
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 #include "triggeralgs/TriggerCandidateMaker.hpp"
-#include "trigger/TASet.hpp"
 
 #include <memory>
 #include <string>
@@ -22,14 +21,15 @@
 namespace dunedaq::trigger {
 
 class TriggerCandidateMaker
-  : public TriggerGenericMaker<Set<triggeralgs::TriggerActivity>,
+  : public TriggerGenericMaker<triggeralgs::TriggerActivity,
                                triggeralgs::TriggerCandidate,
                                triggeralgs::TriggerCandidateMaker>
 {
 public:
   explicit TriggerCandidateMaker(const std::string& name)
     : TriggerGenericMaker(name)
-  {}
+  {
+  }
 
   TriggerCandidateMaker(const TriggerCandidateMaker&) = delete;
   TriggerCandidateMaker& operator=(const TriggerCandidateMaker&) = delete;

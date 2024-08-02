@@ -20,11 +20,13 @@
 #include "trigger/moduleleveltriggerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "detdataformats/DetID.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
+#include "hdf5libs/hdf5rawdatafile/Structs.hpp"
 #include "iomanager/Receiver.hpp"
 #include "trgdataformats/TriggerCandidateData.hpp"
 #include "trgdataformats/Types.hpp"
@@ -125,6 +127,9 @@ private:
   std::atomic<bool> m_dfo_is_busy;
   std::atomic<bool> m_tc_merging;
 
+  /// @brief Ignore TCs that overlap with already made TD
+  bool m_ignore_tc_pileup;
+
   dfmessages::trigger_number_t m_last_trigger_number;
 
   dfmessages::run_number_t m_run_number;
@@ -181,6 +186,14 @@ private:
   void print_bitword_flags(nlohmann::json m_trigger_bitwords_json);
   void set_trigger_bitwords();
 
+  /// @brief SourceID to GeoID map
+  /// @todo Would be nice to have GeoID as part of dfmessagesm or even detdataformats
+  std::map<dfmessages::SourceID, dunedaq::hdf5libs::hdf5rawdatafile::GeoID> m_srcid_geoid_map;
+
+  /// @brief Subdetector--readout-window map config
+  std::map<dunedaq::detdataformats::DetID::Subdetector, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
+    m_subdetector_readout_window_map;
+
   // Readout map config
   bool m_use_readout_map;
   nlohmann::json m_readout_window_map_data;
@@ -224,6 +237,18 @@ private:
   std::atomic<metric_counter_type> m_lc_kLive{ 0 };
   std::atomic<metric_counter_type> m_lc_kPaused{ 0 };
   std::atomic<metric_counter_type> m_lc_kDead{ 0 };
+  std::atomic<uint64_t> m_tc_data_vs_system;
+  std::atomic<uint64_t> m_td_made_vs_ro;
+  std::atomic<uint64_t> m_td_send_vs_ro_start;
+  std::atomic<uint64_t> m_td_send_vs_ro_end;
+
+  // Latency
+  std::atomic<double> m_clock_ticks_to_ms;
+  std::atomic<bool> m_first_tc;
+  std::atomic<bool> m_use_latency_monit;
+  std::atomic<uint64_t> m_initial_offset;
+  std::atomic<bool> m_use_latency_offset;
+  std::atomic<uint64_t> m_system_time;
 };
 } // namespace trigger
 } // namespace dunedaq

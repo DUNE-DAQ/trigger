@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(trigger VERSION 1.8.0)
+project(trigger VERSION 1.8.6)
 
 find_package(daq-cmake REQUIRED)
 
@@ -61,6 +61,7 @@ daq_codegen(
   tasetsink.jsonnet
   tpchannelfilter.jsonnet
   cibtriggercandidatemaker.jsonnet
+  DEP_PKGS hdf5libs
   TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 
 daq_codegen(
@@ -79,18 +80,17 @@ daq_add_plugin(TriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDecisionMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(RandomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(CustomTriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(ModuleLevelTrigger duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(ModuleLevelTrigger duneDAQModule LINK_LIBRARIES trigger hdf5libs::hdf5libs detdataformats::detdataformats)
 daq_add_plugin(TPSetSink duneDAQModule LINK_LIBRARIES trigger TEST)
 daq_add_plugin(TASetSink duneDAQModule LINK_LIBRARIES trigger TEST)
 daq_add_plugin(FakeTPCreatorHeartbeatMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TPSetBufferCreator duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(TPBuffer duneDAQModule LINK_LIBRARIES trigger readoutlibs::readoutlibs)
 daq_add_plugin(TABuffer duneDAQModule LINK_LIBRARIES trigger readoutlibs::readoutlibs)
 daq_add_plugin(TCBuffer duneDAQModule LINK_LIBRARIES trigger readoutlibs::readoutlibs)
 daq_add_plugin(TPChannelFilter duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TPSetTee duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(TASetTee duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TCTee duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(TATee duneDAQModule LINK_LIBRARIES trigger)
 
 daq_add_plugin(TPZipper duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TAZipper duneDAQModule LINK_LIBRARIES trigger)

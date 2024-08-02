@@ -59,7 +59,7 @@ template<class T>
 void
 Tee<T>::do_start(const nlohmann::json&)
 {
-  m_thread.start_working_thread("tee");
+  m_thread.start_working_thread(get_name());
   TLOG_DEBUG(TLVL_GENERAL) << "[Tee] " << get_name() + " successfully started.";
 }
 

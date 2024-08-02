@@ -215,6 +215,13 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((std::string)name),
                        ((std::string)item))
 
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       MLTConfigurationProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Configuration error: " << item,
+                       ((std::string)name),
+                       ((std::string)item))
+
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_

@@ -9,17 +9,26 @@
 #ifndef TRIGGER_PLUGINS_TABUFFER_HPP_
 #define TRIGGER_PLUGINS_TABUFFER_HPP_
 
+#include "appfwk/app/Nljs.hpp"
+#include "appfwk/cmd/Nljs.hpp"
+#include "appfwk/cmd/Structs.hpp"
+
+#include "opmonlib/InfoCollector.hpp"
+
 #include "daqdataformats/Fragment.hpp"
 #include "iomanager/Receiver.hpp"
 #include "readoutlibs/FrameErrorRegistry.hpp"
 #include "readoutlibs/models/DefaultSkipListRequestHandler.hpp"
 #include "readoutlibs/models/SkipListLatencyBufferModel.hpp"
+#include "readoutlibs/readoutinfo/InfoNljs.hpp"
 #include "triggeralgs/TriggerObjectOverlay.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include "trigger/Issues.hpp"
-#include "trigger/TASet.hpp"
+#include "trigger/TriggerActivity_serialization.hpp"
+#include "trigger/txbufferinfo/InfoNljs.hpp"
+
 
 #include <chrono>
 #include <map>
@@ -68,6 +77,7 @@ private:
     bool operator<(const TAWrapper& other) const
     {
       return this->activity.time_start < other.activity.time_start;
+      return std::tie(this->activity.time_start, this->activity.channel_start) < std::tie(other.activity.time_start, other.activity.channel_start);
     }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
@@ -105,9 +115,9 @@ private:
     static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerActivity;
     // No idea what this should really be set to
-    static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
+    static const constexpr uint64_t expected_tick_difference = 1; // NOLINT(build/unsigned)
 
-};
+  };
 
   void do_conf(const nlohmann::json& config);
   void do_start(const nlohmann::json& obj);
@@ -117,7 +127,7 @@ private:
 
   dunedaq::utilities::WorkerThread m_thread;
 
-  using tas_source_t = iomanager::ReceiverConcept<trigger::TASet>;
+  using tas_source_t = iomanager::ReceiverConcept<triggeralgs::TriggerActivity>;
   std::shared_ptr<tas_source_t> m_input_queue_tas{nullptr};
 
   using dr_source_t = iomanager::ReceiverConcept<dfmessages::DataRequest>;
@@ -130,6 +140,11 @@ private:
   std::unique_ptr<latency_buffer_t> m_latency_buffer_impl{nullptr};
   using request_handler_t = readoutlibs::DefaultSkipListRequestHandler<buffer_object_t>;
   std::unique_ptr<request_handler_t> m_request_handler_impl{nullptr};
+
+  // operational monitoring stats
+  std::atomic<int> m_num_payloads{0};
+  std::atomic<int> m_num_payloads_overwritten{0};
+  std::atomic<int> m_num_requests{0};
 
   // Don't actually use this, but it's currently needed as arg to request handler ctor
   std::unique_ptr<readoutlibs::FrameErrorRegistry> m_error_registry;

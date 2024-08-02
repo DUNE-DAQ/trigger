@@ -16,6 +16,7 @@
 
 using dunedaq::trigger::logging::TLVL_GENERAL;
 using dunedaq::trigger::logging::TLVL_DEBUG_ALL;
+using dunedaq::trigger::logging::TLVL_DEBUG_LOW;
 
 namespace dunedaq {
 namespace trigger {
@@ -36,7 +37,7 @@ void
 TABuffer::init(const nlohmann::json& init_data)
 {
   try {
-    m_input_queue_tas = get_iom_receiver<TASet>(appfwk::connection_uid(init_data, "taset_source"));
+    m_input_queue_tas = get_iom_receiver<triggeralgs::TriggerActivity>(appfwk::connection_uid(init_data, "ta_source"));
     m_input_queue_dr =
       get_iom_receiver<dfmessages::DataRequest>(appfwk::connection_uid(init_data, "data_request_source"));
   } catch (const ers::Issue& excpt) {
@@ -49,8 +50,19 @@ TABuffer::init(const nlohmann::json& init_data)
 }
 
 void
-TABuffer::get_info(opmonlib::InfoCollector& /* ci */, int /*level*/)
+TABuffer::get_info(opmonlib::InfoCollector& ci, int level)
 {
+  txbufferinfo::Info ri;
+
+  // Get opmon from this daqmodule
+  ri.num_buffer_elements = m_latency_buffer_impl->occupancy();
+  ri.num_payloads = m_num_payloads.exchange(0);
+  ri.num_payloads_overwritten = m_num_payloads_overwritten.exchange(0);
+  ri.num_requests = m_num_requests.exchange(0);
+  ci.add(ri);
+
+  // Get opmon from the latencybuffer request handler too
+  m_request_handler_impl->get_info(ci, level);
 }
 
 void
@@ -69,7 +81,7 @@ void
 TABuffer::do_start(const nlohmann::json& args)
 {
   m_request_handler_impl->start(args);
-  m_thread.start_working_thread("tabuffer");
+  m_thread.start_working_thread(get_name());
   TLOG_DEBUG(TLVL_GENERAL) << "[TAB] "  << get_name() + " successfully started.";
 }
 
@@ -99,27 +111,24 @@ TABuffer::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
 
     bool popped_anything=false;
-    std::optional<TASet> taset = m_input_queue_tas->try_receive(std::chrono::milliseconds(0));
-    if (taset.has_value()) {
+    std::optional<triggeralgs::TriggerActivity> ta = m_input_queue_tas->try_receive(std::chrono::milliseconds(0));
+    if (ta.has_value()) {
       popped_anything = true;
-      for (auto const& ta: taset->objects) {
-        //uint64_t ta_rec_sys_time  = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-        //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Got TA at the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy(); 
-        m_latency_buffer_impl->write(TAWrapper(ta));
-        ++n_tas_received;
-        //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Written TA to the TABuffer, it's datatime is: " << ta.time_start << " and system time is: " << ta_rec_sys_time << " and occupancy is: " << m_latency_buffer_impl->occupancy();
+
+      if (!m_latency_buffer_impl->write(TAWrapper(ta.value()))) {
+        ++m_num_payloads_overwritten;
+        TLOG_DEBUG(TLVL_DEBUG_LOW) << "[TABuffer] Latency buffer full and data was being overwritten!";
       }
+      ++n_tas_received;
+      ++m_num_payloads;
     }
     
     std::optional<dfmessages::DataRequest> data_request = m_input_queue_dr->try_receive(std::chrono::milliseconds(0));
     if (data_request.has_value()) {
-      //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Received a data request, occupancy is: " << m_latency_buffer_impl->occupancy();
+      ++m_num_requests;
       popped_anything = true;
-      //uint64_t dr_rec_sys_time  = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-      //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Got TA data request, with window request datatime starting: " << data_request->trigger_timestamp << " and system time is: " << dr_rec_sys_time;
       ++n_requests_received;
       m_request_handler_impl->issue_request(*data_request, false);
-      //TLOG_DEBUG(TLVL_DEBUG_ALL) << "[TAB] Handled data request, occupancy is: " << m_latency_buffer_impl->occupancy();
     }
 
     if (!popped_anything) {
