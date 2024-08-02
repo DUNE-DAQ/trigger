@@ -149,7 +149,7 @@ CIBTriggerCandidateMaker::do_stop(const nlohmann::json&)
   TLOG() << "[CIB] Received " << m_tsd_received_count
          << " HSIEvent messages. Successfully sent " << m_tc_sent_count
          << " TriggerCandidates";
-  TLOG() << "[CIB] "
+//  TLOG() << "[CIB] "
   TLOG_DEBUG(TLVL_GENERAL) << "[CIB] " << get_name() + " successfully stopped.";
 }
 
