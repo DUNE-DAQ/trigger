@@ -43,8 +43,7 @@ CIBTriggerCandidateMaker::CIBTriggerCandidateMaker(const std::string& name)
 std::vector<triggeralgs::TriggerCandidate>
 CIBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent& data)
 {
-  TLOG() << "[CIB] Converting HSI event, signal: " << data.signal_map;
-//  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CIB] Converting HSI event, signal: " << data.signal_map;
+  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CIB] Converting HSI event, signal: " << data.signal_map;
 
   std::vector<triggeralgs::TriggerCandidate> candidates;
 
@@ -93,24 +92,20 @@ CIBTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   m_time_after = params.time_after;
   m_prescale = params.prescale;
   m_prescale_flag = (m_prescale > 1) ? true : false;
-//  TLOG_DEBUG(TLVL_GENERAL) << "[CIB] " << get_name() + " configured.";
-//  TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CIB] Time before: " << m_time_before;
-//  TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CIB] Time after: " << m_time_after;
-  TLOG() << "[CIB] " << get_name() + " configured.";
-  TLOG() << "[CIB] Time before: " << m_time_before;
-  TLOG() << "[CIB] Time after: " << m_time_after;
+  TLOG_DEBUG(TLVL_GENERAL) << "[CIB] " << get_name() + " configured.";
+  TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CIB] Time before: " << m_time_before;
+  TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CIB] Time after: " << m_time_after;
 
   if (m_prescale_flag)
   {
-//    TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CIB] Running with prescale at: " << m_prescale;
-    TLOG() << "[CIB] Running with prescale at: " << m_prescale;
+    TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CIB] Running with prescale at: " << m_prescale;
   }
 }
 
 void
 CIBTriggerCandidateMaker::init(const nlohmann::json& iniobj)
 {
-  TLOG() << get_name() << "Received iniobj \n "
+  TLOG_DEBUG(TLVL_GENERAL) << get_name() << "Received iniobj \n "
       << iniobj.dump() ;
   try
   {
@@ -149,17 +144,13 @@ CIBTriggerCandidateMaker::do_stop(const nlohmann::json&)
   TLOG() << "[CIB] Received " << m_tsd_received_count
          << " HSIEvent messages. Successfully sent " << m_tc_sent_count
          << " TriggerCandidates";
-//  TLOG() << "[CIB] "
   TLOG_DEBUG(TLVL_GENERAL) << "[CIB] " << get_name() + " successfully stopped.";
 }
 
 void
 CIBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
 {
-//  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CIB] Activity received with timestamp " << data.timestamp << ", sequence_counter "
-//                                << data.sequence_counter << ", and run_number " << data.run_number;
-
-  TLOG() << "[CIB] Activity received with timestamp " << data.timestamp << ", sequence_counter "
+  TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CIB] Activity received with timestamp " << data.timestamp << ", sequence_counter "
                                 << data.sequence_counter << ", and run_number " << data.run_number;
 
   if (data.run_number != m_run_number)
@@ -175,7 +166,7 @@ CIBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
   {
     if (m_tsd_received_count % m_prescale != 0)
     {
-      TLOG() << get_name() << "[CIB] : Prescaling received HSI";
+      TLOG_DEBUG(TLVL_VERY_IMPORTANT) << get_name() << "[CIB] : Prescaling received HSI";
       return;
     }
   }
@@ -200,7 +191,7 @@ CIBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
       try
       {
         triggeralgs::TriggerCandidate candidate_copy(candidate);
-        TLOG() << get_name() << "[CIB] : Sending a candidate";
+        TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << get_name() << "[CIB] : Sending a candidate";
         m_output_queue->send(std::move(candidate_copy), m_queue_timeout);
         successfullyWasSent = true;
         ++m_tc_sent_count;
