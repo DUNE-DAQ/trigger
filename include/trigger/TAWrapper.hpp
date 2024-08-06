@@ -41,7 +41,7 @@ namespace trigger {
     // comparable based on first timestamp
     bool operator<(const TAWrapper& other) const
     {
-      return this->activity.time_start < other.activity.time_start;
+      return std::tie(this->activity.time_start, this->activity.channel_start) < std::tie(other.activity.time_start, other.activity.channel_start);
     }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
@@ -67,7 +67,7 @@ namespace trigger {
 
     TAWrapper* begin()
     {
-      return this;
+      return (TAWrapper*)(activity_overlay_buffer.data());
     }
     
     TAWrapper* end()
@@ -78,7 +78,7 @@ namespace trigger {
     static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerActivity;
     // No idea what this should really be set to
-    static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
+    static const constexpr uint64_t expected_tick_difference = 1; // NOLINT(build/unsigned)
 
 };
 
