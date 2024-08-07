@@ -8,8 +8,6 @@
 #define TRIGGER_PLUGINS_RANDOMTRIGGERCANDIDATEMAKER_HPP_
 
 #include "trigger/TokenManager.hpp"
-//#include "trigger/randomtriggercandidatemaker/Nljs.hpp"
-#include "trigger/randomtriggercandidatemakerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/ModuleConfiguration.hpp"
@@ -64,7 +62,7 @@ public:
     delete; ///< RandomTCMakerModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  //void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
   // Commands
@@ -98,7 +96,7 @@ private:
   std::atomic<bool> m_configured_flag{ false };
 
   // OpMon variables
-  using metric_counter_type = decltype(randomtriggercandidatemakerinfo::Info::tc_sent_count);
+  using metric_counter_type = uint64_t; //decltype(randomtriggercandidatemakerinfo::Info::tc_sent_count);
   std::atomic<metric_counter_type> m_tc_sent_count{ 0 };
 };
 } // namespace trigger

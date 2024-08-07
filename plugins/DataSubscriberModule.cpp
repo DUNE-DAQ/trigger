@@ -70,11 +70,11 @@ DataSubscriberModule::do_stop(const nlohmann::json& /*args*/) {
   m_source_concept->stop();
 }
 
-void
-DataSubscriberModule::get_info(opmonlib::InfoCollector& ci, int level)
-{
-  m_source_concept->get_info(ci, level);
-}
+// void
+// DataSubscriberModule::get_info(opmonlib::InfoCollector& ci, int level)
+// {
+//   m_source_concept->get_info(ci, level);
+// }
 
 
 std::unique_ptr<datahandlinglibs::SourceConcept>

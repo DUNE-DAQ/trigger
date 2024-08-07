@@ -96,13 +96,13 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
   inherited::conf(conf);
 }
 
-void
-TPProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-{
-  //TLOG() << "Generated TAs = " << m_new_tas << ", dropped TAs = " << m_tas_dropped;
-  inherited::get_info(ci, level);
-  //ci.add(info);
-}
+// void
+// TPProcessor::get_info(opmonlib::InfoCollector& ci, int level)
+// {
+//   //TLOG() << "Generated TAs = " << m_new_tas << ", dropped TAs = " << m_tas_dropped;
+//   inherited::get_info(ci, level);
+//   //ci.add(info);
+// }
 
 
 /**

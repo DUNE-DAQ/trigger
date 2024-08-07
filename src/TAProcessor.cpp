@@ -15,8 +15,6 @@
 #include "datahandlinglibs/DataHandlingIssues.hpp"
 #include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/models/IterableQueueModel.hpp"
-//#include "datahandlinglibs/readoutconfig/Nljs.hpp"
-//#include "datahandlinglibs/readoutinfo/InfoNljs.hpp"
 #include "datahandlinglibs/utils/ReusableThread.hpp"
 
 //#include "detchannelmaps/TPCChannelMap.hpp"
@@ -96,13 +94,13 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
   inherited::conf(conf);
 }
 
-void
-TAProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-{
+// void
+// TAProcessor::get_info(opmonlib::InfoCollector& ci, int level)
+// {
 
-  inherited::get_info(ci, level);
-  //ci.add(info);
-}
+//   inherited::get_info(ci, level);
+//   //ci.add(info);
+// }
 
 
 /**

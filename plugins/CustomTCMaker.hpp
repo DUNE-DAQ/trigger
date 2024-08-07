@@ -8,8 +8,6 @@
 #define TRIGGER_PLUGINS_CUSTOMTRIGGERCANDIDATEMAKER_HPP_
 
 #include "trigger/TokenManager.hpp"
-//#include "trigger/customtriggercandidatemaker/Nljs.hpp"
-#include "trigger/customtriggercandidatemakerinfo/InfoNljs.hpp"
 
 #include "appmodel/CustomTCMaker.hpp"
 #include "appmodel/CustomTCMakerConf.hpp"
@@ -62,7 +60,7 @@ public:
     delete; ///< CustomTCMaker is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  //void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
   // Commands
@@ -112,7 +110,7 @@ private:
   std::atomic<bool> m_configured_flag{ false };
 
   // OpMon variables
-  using metric_counter_type = decltype(customtriggercandidatemakerinfo::Info::tc_sent_count);
+  using metric_counter_type = uint64_t; //decltype(customtriggercandidatemakerinfo::Info::tc_sent_count);
   std::atomic<metric_counter_type> m_tc_sent_count{ 0 };
 };
 } // namespace trigger

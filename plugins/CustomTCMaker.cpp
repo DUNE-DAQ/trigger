@@ -97,15 +97,15 @@ CustomTCMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 //  //  get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(obj, "trigger_candidate_sink"));
 //}
 
-void
-CustomTCMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-{
-  customtriggercandidatemakerinfo::Info i;
+// void
+// CustomTCMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+// {
+//   customtriggercandidatemakerinfo::Info i;
 
-  i.tc_sent_count = m_tc_sent_count.load();
+//   i.tc_sent_count = m_tc_sent_count.load();
 
-  ci.add(i);
-}
+//   ci.add(i);
+// }
 
 void
 CustomTCMaker::do_configure(const nlohmann::json& /*obj*/)
