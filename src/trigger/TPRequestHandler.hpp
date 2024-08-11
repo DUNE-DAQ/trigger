@@ -51,7 +51,7 @@ public:
 
   // Constructor that binds LB and error registry
 
-  TPRequestHandler(std::unique_ptr<datahandlinglibs::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>>& latency_buffer,
+  TPRequestHandler(std::shared_ptr<datahandlinglibs::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>>& latency_buffer,
                                 std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
     : datahandlinglibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>(
         latency_buffer,

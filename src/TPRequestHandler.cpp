@@ -56,8 +56,8 @@ TPRequestHandler::periodic_data_transmission() {
        SkipListAcc acc(inherited2::m_latency_buffer->get_skip_list());
        auto tail = acc.last();
        auto head = acc.first();
-       m_newest_ts = (*tail).get_first_timestamp();
-       m_oldest_ts = (*head).get_first_timestamp();
+       m_newest_ts = (*tail).get_timestamp();
+       m_oldest_ts = (*head).get_timestamp();
        
        if (m_first_cycle) {
     	  m_start_win_ts = m_oldest_ts;

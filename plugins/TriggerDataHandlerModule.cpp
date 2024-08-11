@@ -66,7 +66,7 @@ TriggerDataHandlerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
 //   inherited_dlh::get_info(ci, level);
 // }
 
-std::unique_ptr<datahandlinglibs::DataHandlingConcept>
+std::shared_ptr<datahandlinglibs::DataHandlingConcept>
 TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modconf, std::atomic<bool>& run_marker)
 {
   namespace rol = dunedaq::datahandlinglibs;
@@ -78,12 +78,12 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
   // IF TriggerPrimitive (TP)
   if (raw_dt.find("TriggerPrimitive") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitive";
-    auto readout_model = std::make_unique<rol::DataHandlingModel<
+    auto readout_model = std::make_shared<rol::DataHandlingModel<
       TriggerPrimitiveTypeAdapter,
       TPRequestHandler,
       rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
       TPProcessor>>(run_marker);
-    
+    register_node(modconf->UID(), readout_model); 
     readout_model->init(modconf);
     return readout_model;
   }
@@ -91,11 +91,12 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
  // IF TriggerActivity (TA)
   if (raw_dt.find("TriggerActivity") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerActivity";
-    auto readout_model = std::make_unique<rol::DataHandlingModel<
+    auto readout_model = std::make_shared<rol::DataHandlingModel<
       TAWrapper,
       rol::DefaultSkipListRequestHandler<trigger::TAWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TAWrapper>,
       TAProcessor>>(run_marker);
+    register_node(modconf->UID(), readout_model); 
     
     readout_model->init(modconf);
     return readout_model;
@@ -104,11 +105,12 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
  // No processing, only buffering to respond to data requests
   if (raw_dt.find("TriggerCandidate") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerCandidate";
-    auto readout_model = std::make_unique<rol::DataHandlingModel<
+    auto readout_model = std::make_shared<rol::DataHandlingModel<
       TCWrapper,
       rol::DefaultSkipListRequestHandler<trigger::TCWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TCWrapper>,
       TCProcessor>>(run_marker);
+    register_node(modconf->UID(), readout_model); 
     
     readout_model->init(modconf);
     return readout_model;

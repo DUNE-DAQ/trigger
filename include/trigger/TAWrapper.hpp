@@ -44,19 +44,14 @@ namespace trigger {
       return std::tie(this->activity.time_start, this->activity.channel_start) < std::tie(other.activity.time_start, other.activity.channel_start);
     }
 
-    uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
-    {
-      return activity.time_start;
-    }
-
-    void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
-    {
-      activity.time_start = ts;
-    }
-
     uint64_t get_timestamp() const // NOLINT(build/unsigned)
     {
       return activity.time_start;
+    }
+
+    void set_timestamp(uint64_t ts) // NOLINT(build/unsigned)
+    {
+      activity.time_start = ts;
     }
 
     size_t get_payload_size() { return activity_overlay_buffer.size(); }
