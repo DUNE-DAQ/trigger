@@ -50,13 +50,13 @@ daq_add_library(
 ## As a one liner, this call is a major source of git conflicts due to
 ## us all changing it.  Please keep one file per line to give git
 ## merge a chance to succeed.
-#daq_codegen(
+daq_codegen(
 #  faketpcreatorheartbeatmaker.jsonnet
 #  moduleleveltrigger.jsonnet
 #  randomtriggercandidatemaker.jsonnet
 #  customtriggercandidatemaker.jsonnet
 #  timingtriggercandidatemaker.jsonnet
-#  triggerprimitivemaker.jsonnet
+  triggerprimitivemaker.jsonnet
 #  triggeractivitymaker.jsonnet
 #  triggercandidatemaker.jsonnet
 #  triggerdecisionmaker.jsonnet
@@ -64,7 +64,7 @@ daq_add_library(
 #  tpsetbuffercreator.jsonnet
 #  tasetsink.jsonnet
 #  tpchannelfilter.jsonnet
-#  TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+  TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 
 #daq_codegen(
 #  txbuffer.jsonnet DEP_PKGS datahandlinglibs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
