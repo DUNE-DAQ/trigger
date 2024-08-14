@@ -28,19 +28,14 @@ struct TriggerPrimitiveTypeAdapter
     return std::tie(this->tp.time_start, this->tp.channel) < std::tie(other.tp.time_start, other.tp.channel);
   }
 
-  uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
-  {
-    return tp.time_start;
-  }
-
-  void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
-  {
-    tp.time_start = ts;
-  }
-
   uint64_t get_timestamp() const // NOLINT(build/unsigned)
   {
     return tp.time_start;
+  }
+
+  void set_timestamp(uint64_t ts) // NOLINT(build/unsigned)
+  {
+    tp.time_start = ts;
   }
 
   void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset = 25*/) // NOLINT(build/unsigned)

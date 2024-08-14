@@ -71,8 +71,6 @@ public:
     m_data_receiver->remove_callback();
   }
 
-  void get_info(opmonlib::InfoCollector& /*ci*/, int /*level*/) {}
-
   bool handle_payload(dfmessages::HSIEvent& data) // NOLINT(build/unsigned)
   {
     TLOG_DEBUG(1) << "Received HSIEvent with signal map " << data.signal_map << " and timestamp " << data.timestamp; 

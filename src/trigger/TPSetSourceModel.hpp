@@ -77,8 +77,6 @@ public:
     m_data_receiver->remove_callback();
   }
 
-  void get_info(opmonlib::InfoCollector& /*ci*/, int /*level*/) {}
-
   bool handle_payload(trigger::TPSet& data) // NOLINT(build/unsigned)
   {
    for (auto tpraw : data.objects) {

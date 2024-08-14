@@ -56,6 +56,7 @@ DataSubscriberModule::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
     throw datahandlinglibs::InitializationError(ERS_HERE, "Only 1 input supported for subscribers");
   }
   m_source_concept = create_data_subscriber(ini);
+  register_node(get_name(), m_source_concept); 
   m_source_concept->init(ini);
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) <<  ": Exiting init() method";
 }
@@ -70,14 +71,14 @@ DataSubscriberModule::do_stop(const nlohmann::json& /*args*/) {
   m_source_concept->stop();
 }
 
-void
-DataSubscriberModule::get_info(opmonlib::InfoCollector& ci, int level)
-{
-  m_source_concept->get_info(ci, level);
-}
+// void
+// DataSubscriberModule::get_info(opmonlib::InfoCollector& ci, int level)
+// {
+//   m_source_concept->get_info(ci, level);
+// }
 
 
-std::unique_ptr<datahandlinglibs::SourceConcept>
+std::shared_ptr<datahandlinglibs::SourceConcept>
 DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
 {
  
@@ -87,28 +88,28 @@ DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
   if (raw_dt == "TPSet") {
     TLOG_DEBUG(1) << "Creating trigger primitives subscriber";
     auto source_model =
-      std::make_unique<trigger::TPSetSourceModel>();
+      std::make_shared<trigger::TPSetSourceModel>();
     return source_model;
   }
 
   if (raw_dt == "TriggerActivity") {
     TLOG_DEBUG(1) << "Creating trigger activities subscriber";
     auto source_model =
-      std::make_unique<trigger::TriggerSourceModel<triggeralgs::TriggerActivity, trigger::TAWrapper>>();
+      std::make_shared<trigger::TriggerSourceModel<triggeralgs::TriggerActivity, trigger::TAWrapper>>();
     return source_model;
   }
 
   if (raw_dt == "TriggerCandidate") {
     TLOG_DEBUG(1) << "Creating trigger candidates subscriber";
     auto source_model =
-      std::make_unique<trigger::TriggerSourceModel<triggeralgs::TriggerCandidate, trigger::TCWrapper>>();
+      std::make_shared<trigger::TriggerSourceModel<triggeralgs::TriggerCandidate, trigger::TCWrapper>>();
     return source_model;
   }
 
    if (raw_dt == "HSIEvent") {
     TLOG_DEBUG(1) << "Creating trigger candidates subscriber";
     auto source_model =
-      std::make_unique<trigger::HSISourceModel>();
+      std::make_shared<trigger::HSISourceModel>();
     return source_model;
   }
   return nullptr;

@@ -45,15 +45,10 @@ namespace trigger {
 
     uint64_t get_timestamp() const // NOLINT(build/unsigned)
     {
-      return candidate.time_start;;
-    }
-
-    uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
-    {
       return candidate.time_start;
     }
 
-    void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
+    void set_timestamp(uint64_t ts) // NOLINT(build/unsigned)
     {
       candidate.time_start = ts;
     }

@@ -66,15 +66,15 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_conf = mtrg->get_configuration();
 }
 
-void
-RandomTCMakerModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-{
-  randomtriggercandidatemakerinfo::Info i;
+// void
+// RandomTCMakerModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+// {
+//   randomtriggercandidatemakerinfo::Info i;
 
-  i.tc_sent_count = m_tc_sent_count.load();
+//   i.tc_sent_count = m_tc_sent_count.load();
 
-  ci.add(i);
-}
+//   ci.add(i);
+// }
 
 void
 RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)

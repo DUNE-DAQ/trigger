@@ -17,7 +17,6 @@
 #include "trigger/Issues.hpp"
 #include "trigger/LivetimeCounter.hpp"
 #include "trigger/TokenManager.hpp"
-#include "trigger/moduleleveltriggerinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
 
@@ -69,7 +68,7 @@ public:
   MLTModule& operator=(MLTModule&&) = delete;      ///< MLTModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
   // Commands
@@ -207,7 +206,7 @@ private:
   bool check_trigger_type_ignore(unsigned int tc_type);
   */
   // Opmon variables
-  using metric_counter_type = decltype(moduleleveltriggerinfo::Info::tc_received_count);
+  using metric_counter_type = uint64_t ; //decltype(moduleleveltriggerinfo::Info::tc_received_count);
   std::atomic<metric_counter_type> m_tc_received_count{ 0 };
   std::atomic<metric_counter_type> m_tc_ignored_count{ 0 };
   std::atomic<metric_counter_type> m_td_sent_count{ 0 };

@@ -78,8 +78,6 @@ public:
     m_data_receiver->remove_callback();
   }
 
-  void get_info(opmonlib::InfoCollector& /*ci*/, int /*level*/) {}
-
   bool handle_payload(TriggerXObject& data) // NOLINT(build/unsigned)
   {
     TXWrapper tx(data);

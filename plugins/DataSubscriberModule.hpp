@@ -38,15 +38,15 @@ public:
   DataSubscriberModule& operator=(DataSubscriberModule&&) = delete;      ///< DataSubscriberModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> cfg) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  std::unique_ptr<datahandlinglibs::SourceConcept> create_data_subscriber(const confmodel::DaqModule* cfg);
+  std::shared_ptr<datahandlinglibs::SourceConcept> create_data_subscriber(const confmodel::DaqModule* cfg);
 private:
   void do_start(const nlohmann::json& /*args*/);
   void do_stop(const nlohmann::json& /*args*/);
 
   // Internal
-  std::unique_ptr<datahandlinglibs::SourceConcept> m_source_concept;
+  std::shared_ptr<datahandlinglibs::SourceConcept> m_source_concept;
 
 };
 
