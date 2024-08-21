@@ -27,6 +27,7 @@
 #include "utilities/TimestampEstimator.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 #include "trigger/TCWrapper.hpp"
+#include "trigger/opmon/randomtcmaker_info.pb.h"
 
 #include <memory>
 #include <random>
@@ -63,6 +64,7 @@ public:
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   //void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 private:
   // Commands
@@ -97,7 +99,10 @@ private:
 
   // OpMon variables
   using metric_counter_type = uint64_t; //decltype(randomtriggercandidatemakerinfo::Info::tc_sent_count);
+  std::atomic<metric_counter_type> m_tc_made_count{ 0 };
   std::atomic<metric_counter_type> m_tc_sent_count{ 0 };
+  std::atomic<metric_counter_type> m_tc_failed_sent_count{ 0 };
+  void print_opmon_stats();
 };
 } // namespace trigger
 } // namespace dunedaq
