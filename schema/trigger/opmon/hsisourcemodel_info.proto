@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dunedaq.trigger.opmon;
+
+// Message representing HSI Source Model Information
+message HSISourceModelInfo {
+  uint32 received_events_count = 1; // Number of received HSI signals
+  uint32 tcs_made_count = 2;        // Number of TCs made
+  uint32 tcs_sent_count = 3;        // Number of TCs succesfully sent
+  uint32 tcs_dropped_count = 4;     // Number of TCs dropped (failed to send)
+}
