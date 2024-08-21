@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package dunedaq.trigger.opmon;
+
+// Message representing Custom Trigger Candidate Maker Information
+message CustomTCMakerInfo {
+  uint32 tc_made_count = 1;        // Number of TCs made by CTCM
+  uint32 tc_sent_count = 2;        // Number of TCs sent by CTCM
+  uint32 tc_failed_sent_count = 3; // Number of TCs that failed to be sent by CTCM 
+}
