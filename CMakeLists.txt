@@ -23,6 +23,8 @@ find_package(datahandlinglibs REQUIRED)
 find_package(appmodel REQUIRED)
 find_package(CLI11 REQUIRED)
 
+daq_protobuf_codegen( opmon/*.proto )
+
 ##############################################################################
 # Main library 
 set(TRIGGER_DEPENDENCIES

@@ -104,6 +104,31 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 // }
 
 void
+MLTModule::generate_opmon_data()
+{
+  opmon::ModuleLevelTriggerInfo info;
+
+  info.set_td_msg_received_count( m_td_msg_received_count.load() );
+  info.set_td_sent_count( m_td_sent_count.load() );
+  info.set_td_inhibited_count( m_td_inhibited_count.load() );
+  info.set_td_paused_count( m_td_paused_count.load() );
+  info.set_td_queue_timeout_expired_err_count( m_td_queue_timeout_expired_err_count.load() );
+  info.set_td_total_count( m_td_total_count.load() );
+
+  if (m_lc_started) {
+    info.set_lc_klive( m_livetime_counter->get_time(LivetimeCounter::State::kLive) );
+    info.set_lc_kpaused( m_livetime_counter->get_time(LivetimeCounter::State::kPaused) );
+    info.set_lc_kdead( m_livetime_counter->get_time(LivetimeCounter::State::kDead) );
+  } else {
+    info.set_lc_klive( m_lc_kLive);
+    info.set_lc_kpaused( m_lc_kPaused );
+    info.set_lc_kdead( m_lc_kDead );
+  }
+
+  this->publish(std::move(info));
+}
+
+void
 MLTModule::do_start(const nlohmann::json& startobj)
 {
   m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
@@ -111,21 +136,14 @@ MLTModule::do_start(const nlohmann::json& startobj)
   m_last_trigger_number = 0;
 
   // OpMon.
-  m_tc_received_count.store(0);
-  m_tc_ignored_count.store(0);
+  m_td_msg_received_count.store(0);
   m_td_sent_count.store(0);
-  m_td_sent_tc_count.store(0);
-  m_td_inhibited_count.store(0);
-  m_td_inhibited_tc_count.store(0);
-  m_td_paused_count.store(0);
-  m_td_paused_tc_count.store(0);
-  m_td_dropped_count.store(0);
-  m_td_dropped_tc_count.store(0);
-  m_td_cleared_count.store(0);
-  m_td_cleared_tc_count.store(0);
-  m_td_not_triggered_count.store(0);
-  m_td_not_triggered_tc_count.store(0);
   m_td_total_count.store(0);
+  // OpMon DFO
+  m_td_inhibited_count.store(0);
+  m_td_paused_count.store(0);
+  m_td_queue_timeout_expired_err_count.store(0);
+  // OpMon Livetime counter
   m_lc_kLive.store(0);
   m_lc_kPaused.store(0);
   m_lc_kDead.store(0);
@@ -135,6 +153,7 @@ MLTModule::do_start(const nlohmann::json& startobj)
   m_dfo_is_busy.store(false);
 
   m_livetime_counter.reset(new LivetimeCounter(LivetimeCounter::State::kPaused));
+  m_lc_started = true;
 
   m_inhibit_input->add_callback(std::bind(&MLTModule::dfo_busy_callback, this, std::placeholders::_1));
   m_decision_input->add_callback(std::bind(&MLTModule::trigger_decisions_callback, this, std::placeholders::_1));
@@ -164,6 +183,9 @@ MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
 
   TLOG(3) << "LivetimeCounter - total deadtime+paused: " << m_lc_deadtime << std::endl;
   m_livetime_counter.reset(); // Calls LivetimeCounter dtor?
+  m_lc_started = false; 
+
+  print_opmon_stats();
 
   ers::info(TriggerEndOfRun(ERS_HERE, m_run_number));
 }
@@ -198,6 +220,7 @@ MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
 void
 MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 {
+    m_td_msg_received_count++;
     auto ts = decision.trigger_timestamp;
     auto tt = decision.trigger_type;
     decision.run_number = m_run_number;
@@ -211,13 +234,9 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
              << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
  	     << " number of links " << decision.components.size();
 
-      //using namespace std::chrono;
-      // uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
       try {
         m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
         m_td_sent_count++;
-        m_new_td_sent_count++;
-//        m_td_sent_tc_count += pending_td.contributing_tcs.size();
         m_last_trigger_number++;
 //        add_td(pending_td);
       } catch (const ers::Issue& e) {
@@ -225,12 +244,10 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
         TLOG_DEBUG(1) << "The network is misbehaving: TD send failed for "
                       << m_last_trigger_number;
         m_td_queue_timeout_expired_err_count++;
-        //m_td_queue_timeout_expired_err_tc_count += pending_td.contributing_tcs.size();
       }
 
     } else if (m_paused.load()) {
       ++m_td_paused_count;
-      //m_td_paused_tc_count += pending_td.contributing_tcs.size();
       TLOG_DEBUG(1) << "Triggers are paused. Not sending a TriggerDecision for TD with timestamp and type "
                     << ts << "/" << tt;
     } else {
@@ -238,12 +255,8 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
       TLOG_DEBUG(1) << "The DFO is busy. Not sending a TriggerDecision with timestamp and type "
                     << ts << "/" << tt;
       m_td_inhibited_count++;
-      m_new_td_inhibited_count++;
-      //m_td_inhibited_tc_count += pending_td.contributing_tcs.size();
     }
     m_td_total_count++;
-    m_new_td_total_count++;
-   
 }
 
 void
@@ -259,6 +272,23 @@ MLTModule::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
   }
 }
 
+void
+MLTModule::print_opmon_stats()
+{
+  TLOG() << "MLT opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "Received TD messages: \t" << m_td_msg_received_count;
+  TLOG() << "Sent TDs: \t\t\t" << m_td_sent_count;
+  TLOG() << "Inhibited TDs: \t\t" << m_td_inhibited_count;
+  TLOG() << "Paused TDs: \t\t" << m_td_paused_count;
+  TLOG() << "Queue timeout TDs: \t\t" << m_td_queue_timeout_expired_err_count;
+  TLOG() << "Total TDs: \t\t\t" << m_td_total_count;
+  TLOG() << "------------------------------";
+  TLOG() << "Livetime::Live: \t" << m_lc_kLive;
+  TLOG() << "Livetime::Paused: \t" << m_lc_kPaused;
+  TLOG() << "Livetime::Dead: \t" << m_lc_kDead;
+  TLOG();
+}
 
 } // namespace trigger
 } // namespace dunedaq

@@ -21,6 +21,7 @@
 
 #include "trigger/Issues.hpp"
 #include "trigger/TCWrapper.hpp"
+#include "trigger/opmon/tcprocessor_info.pb.h"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -51,6 +52,7 @@ public:
   void conf(const appmodel::DataHandlerModule* conf) override;
 
   //  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 protected:
 
@@ -169,11 +171,23 @@ protected:
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerDecision>> m_td_sink;
 
   // opmon
-  std::atomic<uint64_t> m_new_tds{ 0 };  // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tds_dropped{ 0 };
-  std::atomic<uint64_t> m_td_dropped_tc_count{ 0 };
-  std::atomic<uint64_t> m_tc_ignored_count{ 0 };
+  using metric_counter_type = uint64_t; 
+  std::atomic<metric_counter_type> m_tds_created_count{ 0 };  // NOLINT(build/unsigned)
+  std::atomic<metric_counter_type> m_tds_sent_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_dropped_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_failed_bitword_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_cleared_count{ 0 };
 
+  // opmon: per TC
+  std::atomic<metric_counter_type> m_tc_received_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_created_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_sent_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_dropped_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_failed_bitword_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_cleared_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tc_ignored_count{ 0 };
+
+  void print_opmon_stats();
 };
 
 } // namespace trigger

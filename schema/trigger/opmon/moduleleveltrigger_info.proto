@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package dunedaq.trigger.opmon;
+
+// Message representing Module Level Trigger Information
+message ModuleLevelTriggerInfo {
+  uint32 td_msg_received_count = 1;                 // Number of trigger decision messages received at MLT from TCProcessor
+  uint32 td_sent_count = 2;                         // Number of trigger decisions added to queue
+  uint32 td_inhibited_count = 3;                    // Number of trigger decisions inhibited
+  uint32 td_paused_count = 4;                       // Number of trigger decisions created during pause mode
+  uint32 td_queue_timeout_expired_err_count = 5;    // Number of trigger decisions failed to be added to queue due to timeout
+  uint32 td_total_count = 6;                        // Total number of trigger decisions created
+  uint32 lc_klive = 10;                             // Total time [ms] spent in Live state - alive to triggers
+  uint32 lc_kpaused = 11;                           // Total time [ms] spent in Paused state - paused to triggers
+  uint32 lc_kdead = 12;                             // Total time [ms] spent in Dead state - dead to triggers
+}
