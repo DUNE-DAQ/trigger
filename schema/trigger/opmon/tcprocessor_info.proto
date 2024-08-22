@@ -12,7 +12,7 @@ message TCProcessorInfo {
   uint32 tc_received_count = 10;           // Number of received TCs
   uint32 tc_ignored_count = 11;            // Number of ignored TCs
   uint32 tds_created_tc_count = 21;        // Number of TCs contributing to created TDs (requests)
-  uint32 tds_sent_tc_count = 22;           // Number of TCs contributing to sent TDs (requests)
+  uint32 tds_sent_tc_count = 22;           // Number of TCs contributing to send TDs (requests)
   uint32 tds_dropped_tc_count = 23;        // Number of TCs contributing to dropped TDs (requests)
   uint32 tds_failed_bitword_tc_count = 24; // Number of TCs contributing to TDs (requests) that failed the bitword check
   uint32 tds_cleared_tc_count = 25;        // Number of TCs contributing to TDs (requests) that were cleared at run stage change
