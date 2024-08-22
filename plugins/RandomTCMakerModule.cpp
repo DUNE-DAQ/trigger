@@ -244,7 +244,7 @@ RandomTCMakerModule::print_opmon_stats()
   TLOG() << "------------------------------";
   TLOG() << "Made TCs: \t\t" << m_tc_made_count;
   TLOG() << "Sent TCs: \t\t" << m_tc_sent_count;
-  TLOG() << "Failed to sent TCs: \t" << m_tc_failed_sent_count;
+  TLOG() << "Failed to send TCs: \t" << m_tc_failed_sent_count;
   TLOG();
 }
 
