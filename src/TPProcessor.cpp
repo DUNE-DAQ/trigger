@@ -148,9 +148,9 @@ TPProcessor::print_opmon_stats()
 {
   TLOG() << "TPProcessor opmon counters summary:";
   TLOG() << "------------------------------";
-  TLOG() << "TPs received: \t" << m_tp_received_count;
-  TLOG() << "TAs made: \t\t" << m_ta_made_count;
-  TLOG() << "TAs sent: \t\t" << m_ta_sent_count;
+  TLOG() << "TPs received: \t\t" << m_tp_received_count;
+  TLOG() << "TAs made: \t\t\t" << m_ta_made_count;
+  TLOG() << "TAs sent: \t\t\t" << m_ta_sent_count;
   TLOG() << "TAs failed to send: \t" << m_ta_failed_sent_count;
   TLOG();
 }

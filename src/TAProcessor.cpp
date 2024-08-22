@@ -143,9 +143,9 @@ TAProcessor::print_opmon_stats()
 {
   TLOG() << "TAProcessor opmon counters summary:";
   TLOG() << "------------------------------";
-  TLOG() << "TAs received: \t" << m_ta_received_count;
-  TLOG() << "TCs made: \t\t" << m_tc_made_count;
-  TLOG() << "TCs sent: \t\t" << m_tc_sent_count;
+  TLOG() << "TAs received: \t\t" << m_ta_received_count;
+  TLOG() << "TCs made: \t\t\t" << m_tc_made_count;
+  TLOG() << "TCs sent: \t\t\t" << m_tc_sent_count;
   TLOG() << "TCs failed to send: \t" << m_tc_failed_sent_count;
   TLOG();
 }
