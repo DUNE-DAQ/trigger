@@ -48,8 +48,11 @@ TPProcessor::start(const nlohmann::json& args)
 {
 
   // Reset stats
-  m_new_tas = 0;
-  m_tas_dropped = 0;
+  m_tp_received_count.store(0);
+  m_ta_made_count.store(0);
+  m_ta_sent_count.store(0);
+  m_ta_failed_sent_count.store(0);
+
   inherited::start(args);
 }
 
@@ -57,6 +60,7 @@ void
 TPProcessor::stop(const nlohmann::json& args)
 {
   inherited::stop(args);
+  print_opmon_stats();
 }
 
 void
@@ -104,6 +108,18 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
 //   //ci.add(info);
 // }
 
+void
+TPProcessor::generate_opmon_data()
+{
+  opmon::TPProcessorInfo info;
+
+  info.set_tp_received_count( m_tp_received_count.load() );
+  info.set_ta_made_count( m_ta_made_count.load() );
+  info.set_ta_sent_count( m_ta_sent_count.load() );
+  info.set_ta_failed_sent_count( m_ta_failed_sent_count.load() );
+
+  this->publish(std::move(info));
+}
 
 /**
  * Pipeline Stage 2.: Do software TPG
@@ -111,19 +127,32 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
 void
 TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<triggeralgs::TriggerActivityMaker> taa)
 {
-	
+  m_tp_received_count++;	
   std::vector<triggeralgs::TriggerActivity> tas;
   taa->operator()(tp->tp, tas);
 
   while (tas.size()) {
+      m_ta_made_count++;
       if (!m_ta_sink->try_send(std::move(tas.back()), iomanager::Sender::s_no_block)) {
         ers::warning(TADropped(ERS_HERE, tp->tp.time_start, m_sourceid.id));
-        m_tas_dropped++;
+        m_ta_failed_sent_count++;
       }
-      m_new_tas++;
+      m_ta_sent_count++;
       tas.pop_back();
   }
   return;
+}
+
+void
+TPProcessor::print_opmon_stats()
+{
+  TLOG() << "TPProcessor opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "TPs received: \t" << m_tp_received_count;
+  TLOG() << "TAs made: \t\t" << m_ta_made_count;
+  TLOG() << "TAs sent: \t\t" << m_ta_sent_count;
+  TLOG() << "TAs failed to send: \t" << m_ta_failed_sent_count;
+  TLOG();
 }
 
 } // namespace fdreadoutlibs
