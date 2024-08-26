@@ -68,7 +68,7 @@ private:
 
   std::chrono::milliseconds m_queue_timeout;
 
-  // HLT to TC type map
+  // CIB bit to TC type map
   std::map<int, trgdataformats::TriggerCandidateData::Type> m_CIB_TC_map = {
     { 0, trgdataformats::TriggerCandidateData::Type::kCIBFakeTrigger },
     { 1, trgdataformats::TriggerCandidateData::Type::kCIBLaserTriggerP1 },
