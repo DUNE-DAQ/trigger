@@ -121,6 +121,8 @@ MLTModule::generate_opmon_data()
     td_info.set_received(counts.received.exchange(0));
     td_info.set_sent(counts.sent.exchange(0));
     td_info.set_failed_send(counts.failed_send.exchange(0));
+    td_info.set_paused(counts.paused.exchange(0));
+    td_info.set_inhibited(counts.inhibited.exchange(0));
     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
     publish( std::move(td_info), {{"type", name}} );
   }
@@ -273,6 +275,10 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 
     } else if (m_paused.load()) {
       ++m_td_paused_count;
+      for ( const auto t : trigger_types ) {
+        ++get_trigger_counter(t).paused;
+      }
+
       TLOG_DEBUG(1) << "Triggers are paused. Not sending a TriggerDecision for TD with timestamp and type "
                     << ts << "/" << tt;
     } else {
@@ -280,6 +286,10 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
       TLOG_DEBUG(1) << "The DFO is busy. Not sending a TriggerDecision with timestamp and type "
                     << ts << "/" << tt;
       m_td_inhibited_count++;
+      for ( const auto t : trigger_types ) {
+        ++get_trigger_counter(t).inhibited;
+      }
+
     }
     m_td_total_count++;
 }

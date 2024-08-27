@@ -227,6 +227,8 @@ private:
     std::atomic<metric_counter_type> received{ 0 };
     std::atomic<metric_counter_type> sent{ 0 };
     std::atomic<metric_counter_type> failed_send{ 0 };
+    std::atomic<metric_counter_type> paused{ 0 };
+    std::atomic<metric_counter_type> inhibited{ 0 };
   };
   static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types( decltype(dfmessages::TriggerDecision::trigger_type) t) {
     std::set<trgdataformats::TriggerCandidateData::Type> results;

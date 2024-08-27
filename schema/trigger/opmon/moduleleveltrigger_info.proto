@@ -16,8 +16,11 @@ message ModuleLevelTriggerInfo {
 }
 
 // Message representing TD Information, these counters are published separately for each TC type
+// states >1 are mutually exclusive states
 message TriggerDecisionInfo {
   uint32 received = 1;        // Number of received 
   uint32 sent = 2;            // Number of sent
-  uint32 failed_send = 3;     // Number of failed to send
+  uint32 failed_send = 3;     // Number of failed to send (network issue)
+  uint32 paused = 4;          // Number of pauesd (triggers are paused)
+  uint32 inhibited = 5;       // Number of inhibited (DFO is busy)
 }
