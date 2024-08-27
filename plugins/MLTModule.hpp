@@ -222,6 +222,34 @@ private:
   std::atomic<metric_counter_type> m_lc_kDead{ 0 };
   bool m_lc_started = false;
 
+  // Struct for per TC stats
+  struct TDData {
+    std::atomic<metric_counter_type> received{ 0 };
+    std::atomic<metric_counter_type> sent{ 0 };
+    std::atomic<metric_counter_type> failed_send{ 0 };
+  };
+  static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types( decltype(dfmessages::TriggerDecision::trigger_type) t) {
+    std::set<trgdataformats::TriggerCandidateData::Type> results;
+    if (t == dfmessages::TypeDefaults::s_invalid_trigger_type)
+      return results;
+    const std::bitset<64> bits(t);
+    for( size_t i = 0; i < bits.size(); ++i ) {
+      if ( bits[i] ) results.insert((trgdataformats::TriggerCandidateData::Type)i);
+    }
+    return results;
+  }
+
+  std::map<dunedaq::trgdataformats::TriggerCandidateData::Type, TDData> m_trigger_counters;
+
+  std::mutex m_trigger_mutex;
+  TDData & get_trigger_counter(trgdataformats::TriggerCandidateData::Type type) {
+    auto it = m_trigger_counters.find(type);
+    if (it != m_trigger_counters.end()) return it->second;
+    
+    std::lock_guard<std::mutex> guard(m_trigger_mutex);
+    return m_trigger_counters[type];
+  }
+
   void print_opmon_stats();
 };
 } // namespace trigger

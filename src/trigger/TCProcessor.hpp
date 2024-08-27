@@ -139,10 +139,10 @@ protected:
   bool m_use_bitwords;
   nlohmann::json m_trigger_bitwords_json;
   bool m_bitword_check;
-  std::bitset<16> m_TD_bitword;
-  std::vector<std::bitset<16>> m_trigger_bitwords;
-  std::bitset<16> get_TD_bitword(const PendingTD& ready_td);
-  void print_trigger_bitwords(std::vector<std::bitset<16>> trigger_bitwords);
+  std::bitset<64> m_TD_bitword;
+  std::vector<std::bitset<64>> m_trigger_bitwords;
+  std::bitset<64> get_TD_bitword(const PendingTD& ready_td);
+  void print_trigger_bitwords(std::vector<std::bitset<64>> trigger_bitwords);
   bool check_trigger_bitwords();
   void print_bitword_flags(nlohmann::json m_trigger_bitwords_json);
   void set_trigger_bitwords();

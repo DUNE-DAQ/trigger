@@ -270,7 +270,12 @@ TCProcessor::create_decision(const PendingTD& pending_td)
       decision.trigger_type = m_trigger_type_shifted;
     }
   } else {
-    decision.trigger_type = 1; // m_trigger_type;
+    m_TD_bitword = get_TD_bitword(pending_td);
+    TLOG() << "[MLT] TD has bitword: " << m_TD_bitword << " "
+                                       << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
+    decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
+
+    //decision.trigger_type = 1; // m_trigger_type;
   }
 
   TLOG_DEBUG(3) << "HSI passthrough: " << m_hsi_passthrough
@@ -519,26 +524,8 @@ TCProcessor::check_trigger_type_ignore(unsigned int tc_type)
   return ignore;
 }
 
-std::bitset<16>
-TCProcessor::get_TD_bitword(const PendingTD& ready_td)
-{
-  // get only unique types
-  std::vector<int> tc_types;
-  for (auto tc : ready_td.contributing_tcs) {
-    tc_types.push_back(static_cast<int>(tc.type));
-  }
-  tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
-
-  // form TD bitword
-  std::bitset<16> td_bitword = 0b0000000000000000;
-  for (auto tc_type : tc_types) {
-    td_bitword.set(tc_type);
-  }
-  return td_bitword;
-}
-
 void
-TCProcessor::print_trigger_bitwords(std::vector<std::bitset<16>> trigger_bitwords)
+TCProcessor::print_trigger_bitwords(std::vector<std::bitset<64>> trigger_bitwords)
 {
   TLOG_DEBUG(3) << "Configured trigger words:";
   for (auto bitword : trigger_bitwords) {
@@ -576,7 +563,7 @@ void
 TCProcessor::set_trigger_bitwords()
 {
   for (auto flag : m_trigger_bitwords_json) {
-    std::bitset<16> temp_bitword = 0b0000000000000000;
+    std::bitset<64> temp_bitword = 0b0000000000000000;
     for (auto bit : flag) {
       temp_bitword.set(bit);
     }
@@ -780,6 +767,24 @@ TCProcessor::roi_readout_make_requests(dfmessages::TriggerDecision& decision)
     links.clear();
   }
   return;
+}
+
+std::bitset<64>
+TCProcessor::get_TD_bitword(const PendingTD& ready_td)
+{
+  // get only unique types
+  std::vector<int> tc_types;
+  for (auto tc : ready_td.contributing_tcs) {
+    tc_types.push_back(static_cast<int>(tc.type));
+  }
+  tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
+
+  // form TD bitword
+  std::bitset<64> td_bitword;
+  for (auto tc_type : tc_types) {
+    td_bitword.set(tc_type);
+  }
+  return td_bitword;
 }
 
 void

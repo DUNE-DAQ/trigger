@@ -14,3 +14,10 @@ message ModuleLevelTriggerInfo {
   uint32 lc_kpaused = 11;                           // Total time [ms] spent in Paused state - paused to triggers
   uint32 lc_kdead = 12;                             // Total time [ms] spent in Dead state - dead to triggers
 }
+
+// Message representing TD Information, these counters are published separately for each TC type
+message TriggerDecisionInfo {
+  uint32 received = 1;        // Number of received 
+  uint32 sent = 2;            // Number of sent
+  uint32 failed_send = 3;     // Number of failed to send
+}

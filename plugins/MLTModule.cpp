@@ -115,6 +115,16 @@ MLTModule::generate_opmon_data()
   info.set_td_queue_timeout_expired_err_count( m_td_queue_timeout_expired_err_count.load() );
   info.set_td_total_count( m_td_total_count.load() );
 
+  std::lock_guard<std::mutex>	guard(m_trigger_mutex);
+  for ( auto & [type, counts] : m_trigger_counters ) {
+    opmon::TriggerDecisionInfo td_info;
+    td_info.set_received(counts.received.exchange(0));
+    td_info.set_sent(counts.sent.exchange(0));
+    td_info.set_failed_send(counts.failed_send.exchange(0));
+    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
+    publish( std::move(td_info), {{"type", name}} );
+  }
+
   if (m_lc_started) {
     info.set_lc_klive( m_livetime_counter->get_time(LivetimeCounter::State::kLive) );
     info.set_lc_kpaused( m_livetime_counter->get_time(LivetimeCounter::State::kPaused) );
@@ -221,6 +231,12 @@ void
 MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 {
     m_td_msg_received_count++;
+
+    auto trigger_types = unpack_types(decision.trigger_type);
+    for ( const auto t : trigger_types ) {
+      ++get_trigger_counter(t).received;
+    }
+
     auto ts = decision.trigger_timestamp;
     auto tt = decision.trigger_type;
     decision.run_number = m_run_number;
@@ -237,6 +253,12 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
       try {
         m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
         m_td_sent_count++;
+
+        auto trigger_types = unpack_types(decision.trigger_type);
+        for ( const auto t : trigger_types ) {
+          ++get_trigger_counter(t).sent;
+        }
+
         m_last_trigger_number++;
 //        add_td(pending_td);
       } catch (const ers::Issue& e) {
@@ -244,6 +266,11 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
         TLOG_DEBUG(1) << "The network is misbehaving: TD send failed for "
                       << m_last_trigger_number;
         m_td_queue_timeout_expired_err_count++;
+
+        auto trigger_types = unpack_types(decision.trigger_type);
+        for ( const auto t : trigger_types ) {
+          ++get_trigger_counter(t).failed_send;
+        }
       }
 
     } else if (m_paused.load()) {
