@@ -75,6 +75,10 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
   std::string raw_dt = modconf->get_module_configuration()->get_input_data_type();
   TLOG() << "Choosing specializations for DataHandlingModel with data_type:" << raw_dt << ']';
 
+  TLOG() << "modconf: " << modconf;
+  TLOG() << modconf->class_name();
+  TLOG() << modconf->get_module_configuration();
+
   // IF TriggerPrimitive (TP)
   if (raw_dt.find("TriggerPrimitive") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitive";
@@ -83,7 +87,7 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
       TPRequestHandler,
       rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
       TPProcessor>>(run_marker);
-    register_node(modconf->UID(), readout_model); 
+    register_node("TPProcessor", readout_model); 
     readout_model->init(modconf);
     return readout_model;
   }
@@ -96,7 +100,7 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
       rol::DefaultSkipListRequestHandler<trigger::TAWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TAWrapper>,
       TAProcessor>>(run_marker);
-    register_node(modconf->UID(), readout_model); 
+    register_node("TAProcessor", readout_model); 
     
     readout_model->init(modconf);
     return readout_model;
@@ -110,7 +114,7 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
       rol::DefaultSkipListRequestHandler<trigger::TCWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TCWrapper>,
       TCProcessor>>(run_marker);
-    register_node(modconf->UID(), readout_model); 
+    register_node("TCProcessor", readout_model); 
     
     readout_model->init(modconf);
     return readout_model;
