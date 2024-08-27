@@ -194,12 +194,12 @@ TCProcessor::generate_opmon_data()
   info.set_tds_failed_bitword_count( m_tds_failed_bitword_count.load() );
   info.set_tds_cleared_count( m_tds_cleared_count.load() );
   info.set_tc_received_count( m_tc_received_count.load() );
-  info.set_tc_ignored_count( m_tds_created_tc_count.load() );
-  info.set_tds_created_tc_count( m_tds_sent_tc_count.load() );
-  info.set_tds_sent_tc_count( m_tds_dropped_tc_count.load() );
-  info.set_tds_dropped_tc_count( m_tds_failed_bitword_tc_count.load() );
-  info.set_tds_failed_bitword_tc_count( m_tds_cleared_tc_count.load() );
-  info.set_tds_cleared_tc_count( m_tc_ignored_count.load() );
+  info.set_tc_ignored_count( m_tc_ignored_count.load() );
+  info.set_tds_created_tc_count( m_tds_created_tc_count.load() );
+  info.set_tds_sent_tc_count( m_tds_sent_tc_count.load() );
+  info.set_tds_dropped_tc_count( m_tds_dropped_tc_count.load() );
+  info.set_tds_failed_bitword_tc_count( m_tds_failed_bitword_tc_count.load() );
+  info.set_tds_cleared_tc_count( m_tds_cleared_tc_count.load() );
 
   this->publish(std::move(info));
 }
