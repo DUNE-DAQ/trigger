@@ -254,7 +254,6 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
         m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
         m_td_sent_count++;
 
-        auto trigger_types = unpack_types(decision.trigger_type);
         for ( const auto t : trigger_types ) {
           ++get_trigger_counter(t).sent;
         }
@@ -267,7 +266,6 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
                       << m_last_trigger_number;
         m_td_queue_timeout_expired_err_count++;
 
-        auto trigger_types = unpack_types(decision.trigger_type);
         for ( const auto t : trigger_types ) {
           ++get_trigger_counter(t).failed_send;
         }
