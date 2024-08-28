@@ -46,15 +46,19 @@ CIBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
   TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CIB] Converting HSI event, signal: " << data.signal_map;
 
   std::vector<triggeralgs::TriggerCandidate> candidates;
+
   std::bitset<32> bits(data.signal_map);
   TLOG_DEBUG(TLVL_DEBUG_HIGH) << "[CIB] BITS: " << bits;
 
-  for (size_t i = 0; i < bits.size(); ++i) {
-    if (bits.test(i)) {
+  for (size_t i = 0; i < bits.size(); ++i)
+  {
+    if (bits.test(i))
+    {
 
       TLOG_DEBUG(TLVL_DEBUG_ALL) << "[CIB] this bit: " << i;
 
-      if (m_CIB_TC_map.count(i)) {
+      if (m_CIB_TC_map.count(i))
+      {
         TLOG_DEBUG(TLVL_DEBUG_ALL) << "[CIB] TC type: " << static_cast<int>(m_CIB_TC_map[i]);
 
         triggeralgs::TriggerCandidate candidate;
@@ -66,9 +70,11 @@ CIBTriggerCandidateMaker::HSIEventToTriggerCandidate(const dfmessages::HSIEvent&
         candidate.type = m_CIB_TC_map[i];
         candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
         candidate.inputs = {};
-
+        //        TLOG() << get_name() << "Adding TC [" << candidate.time_candidate << "] type [" << static_cast<int>(candidate.type) << "] to the valid candidate queue";
         candidates.push_back(candidate);
-      } else {
+      }
+      else
+      {
         ers::error(
           dunedaq::trigger::InvalidCIBSignal(ERS_HERE, get_name(), data.signal_map, bits, m_CIB_TC_map.size()));
       }
@@ -89,7 +95,9 @@ CIBTriggerCandidateMaker::do_conf(const nlohmann::json& config)
   TLOG_DEBUG(TLVL_GENERAL) << "[CIB] " << get_name() + " configured.";
   TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CIB] Time before: " << m_time_before;
   TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CIB] Time after: " << m_time_after;
-  if (m_prescale_flag) {
+
+  if (m_prescale_flag)
+  {
     TLOG_DEBUG(TLVL_VERY_IMPORTANT) << "[CIB] Running with prescale at: " << m_prescale;
   }
 }
@@ -97,11 +105,16 @@ CIBTriggerCandidateMaker::do_conf(const nlohmann::json& config)
 void
 CIBTriggerCandidateMaker::init(const nlohmann::json& iniobj)
 {
-  try {
+  TLOG_DEBUG(TLVL_GENERAL) << get_name() << "Received iniobj \n "
+      << iniobj.dump() ;
+  try
+  {
     auto ci = appfwk::connection_index(iniobj, { "output", "hsi_input" });
     m_output_queue = get_iom_sender<triggeralgs::TriggerCandidate>(ci["output"]);
     m_hsievent_input = get_iom_receiver<dfmessages::HSIEvent>(ci["hsi_input"]);
-  } catch (const ers::Issue& excpt) {
+  }
+  catch (const ers::Issue& excpt)
+  {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
   }
 }
@@ -128,7 +141,8 @@ CIBTriggerCandidateMaker::do_stop(const nlohmann::json&)
 {
   m_hsievent_input->remove_callback();
 
-  TLOG() << "[CIB] Received " << m_tsd_received_count << " HSIEvent messages. Successfully sent " << m_tc_sent_count
+  TLOG() << "[CIB] Received " << m_tsd_received_count
+         << " HSIEvent messages. Successfully sent " << m_tc_sent_count
          << " TriggerCandidates";
   TLOG_DEBUG(TLVL_GENERAL) << "[CIB] " << get_name() + " successfully stopped.";
 }
@@ -139,7 +153,8 @@ CIBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
   TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << "[CIB] Activity received with timestamp " << data.timestamp << ", sequence_counter "
                                 << data.sequence_counter << ", and run_number " << data.run_number;
 
-  if (data.run_number != m_run_number) {
+  if (data.run_number != m_run_number)
+  {
     ers::error(dunedaq::trigger::InvalidHSIEventRunNumber(
       ERS_HERE, get_name(), data.run_number, m_run_number, data.timestamp, data.sequence_counter));
     return;
@@ -147,30 +162,42 @@ CIBTriggerCandidateMaker::receive_hsievent(dfmessages::HSIEvent& data)
 
   ++m_tsd_received_count;
 
-  if (m_prescale_flag) {
-    if (m_tsd_received_count % m_prescale != 0) {
+  if (m_prescale_flag)
+  {
+    if (m_tsd_received_count % m_prescale != 0)
+    {
+      TLOG_DEBUG(TLVL_VERY_IMPORTANT) << get_name() << "[CIB] : Prescaling received HSI";
       return;
     }
   }
 
   std::vector<triggeralgs::TriggerCandidate> candidates;
-  try {
+  try
+  {
     candidates = HSIEventToTriggerCandidate(data);
-  } catch (SignalTypeError& e) {
+  }
+  catch (SignalTypeError& e)
+  {
     m_tc_sig_type_err_count++;
     ers::error(e);
     return;
   }
 
-  for (const auto& candidate : candidates) {
+  for (const auto& candidate : candidates)
+  {
     bool successfullyWasSent = false;
-    while (!successfullyWasSent) {
-      try {
+    while (!successfullyWasSent)
+    {
+      try
+      {
         triggeralgs::TriggerCandidate candidate_copy(candidate);
+        TLOG_DEBUG(TLVL_DEBUG_MEDIUM) << get_name() << "[CIB] : Sending a candidate";
         m_output_queue->send(std::move(candidate_copy), m_queue_timeout);
         successfullyWasSent = true;
         ++m_tc_sent_count;
-      } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
+      }
+      catch (const dunedaq::iomanager::TimeoutExpired& excpt)
+      {
         std::ostringstream oss_warn;
         oss_warn << "push to output queue \"" << m_output_queue->get_name() << "\"";
         ers::warning(dunedaq::iomanager::TimeoutExpired(ERS_HERE, get_name(), oss_warn.str(), m_queue_timeout.count()));
