@@ -222,6 +222,7 @@ MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
   ers::info(TriggerActive(ERS_HERE));
   TLOG() << "******* Triggers RESUMED! in run " << m_run_number << " *********";
   m_livetime_counter->set_state(LivetimeCounter::State::kLive);
+  m_lc_started = true;
   m_paused.store(false);
   TLOG_DEBUG(5) << "TS Start: "
                 << std::chrono::duration_cast<std::chrono::microseconds>(
@@ -303,7 +304,8 @@ MLTModule::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
     TLOG_DEBUG(18) << "Changing our flag for the DFO busy state from " << m_dfo_is_busy.load() << " to "
                    << inhibit.busy;
     m_dfo_is_busy = inhibit.busy;
-    m_livetime_counter->set_state(LivetimeCounter::State::kDead);
+    LivetimeCounter::State state = (inhibit.busy) ? LivetimeCounter::State::kDead : LivetimeCounter::State::kLive;
+    m_livetime_counter->set_state(state);
   }
 }
 
