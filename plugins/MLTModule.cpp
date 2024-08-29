@@ -18,6 +18,7 @@
 #include "trigger/LivetimeCounter.hpp"
 
 #include "appfwk/app/Nljs.hpp"
+#include "appmodel/DFOApplication.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -41,6 +42,7 @@ MLTModule::MLTModule(const std::string& name)
   register_command("disable_triggers",  &MLTModule::do_pause);
   register_command("enable_triggers", &MLTModule::do_resume);
 //  register_command("scrap",  &MLTModule::do_scrap);
+  register_command("enable_dfo", &MLTModule::do_enable_dfo);
   // clang-format on
 }
 
@@ -66,6 +68,10 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       m_decision_output = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
   }
 
+  auto initial_active_dfo = mtrg->get_configuration()->get_initial_active_dfo();
+  if (initial_active_dfo != nullptr) {
+    m_active_dfo = initial_active_dfo->UID();
+  }
   // Now do the configuration: dummy for now
   m_configured_flag.store(true);
 }
@@ -196,6 +202,15 @@ MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
 }
 
 void
+MLTModule::do_enable_dfo(const nlohmann::json& args)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_enable_dfo() method";
+  m_active_dfo = args.value<std::string>("dfo", "");
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_enable_dfo() method";
+}
+
+void
 MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 {
     auto ts = decision.trigger_timestamp;
@@ -251,7 +266,7 @@ MLTModule::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
 {
   TLOG_DEBUG(17) << "Received inhibit message with busy status " << inhibit.busy << " and run number "
                  << inhibit.run_number;
-  if (inhibit.run_number == m_run_number) {
+  if (inhibit.run_number == m_run_number && inhibit.dfo_id == m_active_dfo) {
     TLOG_DEBUG(18) << "Changing our flag for the DFO busy state from " << m_dfo_is_busy.load() << " to "
                    << inhibit.busy;
     m_dfo_is_busy = inhibit.busy;

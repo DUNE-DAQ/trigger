@@ -77,6 +77,8 @@ private:
   void do_pause(const nlohmann::json& obj);
   void do_resume(const nlohmann::json& obj);
 
+  void do_enable_dfo(const nlohmann::json& obj);
+
   void trigger_decisions_callback(dfmessages::TriggerDecision& decision);
   void dfo_busy_callback(dfmessages::TriggerInhibit& inhibit);
 
@@ -133,6 +135,7 @@ private:
   dfmessages::trigger_number_t m_last_trigger_number;
 
   dfmessages::run_number_t m_run_number;
+  std::string m_active_dfo; // Ignore inhibit messages from inactive DFOs
 
   // Are we in the RUNNING state?
   std::atomic<bool> m_running_flag{ false };
