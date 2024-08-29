@@ -9,3 +9,8 @@ message TPProcessorInfo {
   uint32 ta_sent_count = 3;        // Number of TAs sent
   uint32 ta_failed_sent_count = 4; // Number of TAs that failed to be sent
 }
+
+message TPProcessorLatency {
+  uint32 latency_in = 1;
+  uint32 latency_out = 2;
+}

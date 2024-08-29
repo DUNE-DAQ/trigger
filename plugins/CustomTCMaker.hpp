@@ -26,6 +26,7 @@
 #include "utilities/TimestampEstimator.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 #include "trigger/TCWrapper.hpp"
+#include "trigger/Latency.hpp"
 #include "trigger/opmon/customtcmaker_info.pb.h"
 
 #include <memory>
@@ -117,6 +118,11 @@ private:
   std::atomic<metric_counter_type> m_tc_sent_count{ 0 };
   std::atomic<metric_counter_type> m_tc_failed_sent_count{ 0 };
   void print_opmon_stats();
+
+  // Create an instance of the Latency class
+  dunedaq::trigger::Latency m_latency_instance;
+  std::atomic<metric_counter_type> m_latency_in{ 0 };
+  std::atomic<metric_counter_type> m_latency_out{ 0 };
 };
 } // namespace trigger
 } // namespace dunedaq

@@ -9,3 +9,9 @@ message HSISourceModelInfo {
   uint32 tcs_sent_count = 3;        // Number of TCs succesfully sent
   uint32 tcs_dropped_count = 4;     // Number of TCs dropped (failed to send)
 }
+
+message HSISourceModelLatency {
+  uint32 latency_in = 1;
+  uint32 latency_out = 2;
+}
+

@@ -14,6 +14,7 @@
 #include "dfmessages/HSIEvent.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 #include "trigger/Issues.hpp"
+#include "trigger/Latency.hpp"
 #include "trigger/opmon/hsisourcemodel_info.pb.h"
 
 #include "iomanager/IOManager.hpp"
@@ -102,6 +103,8 @@ public:
   void start() {
     m_data_receiver->add_callback(std::bind(&HSISourceModel::handle_payload, this, std::placeholders::_1));
 
+    m_running_flag = true;
+
     m_received_events_count.store(0);
     m_tcs_made_count.store(0);
     m_tcs_sent_count.store(0);
@@ -110,12 +113,14 @@ public:
 
   void stop() {
     m_data_receiver->remove_callback();
+    m_running_flag = false;
     print_opmon_stats();
   }
 
   bool handle_payload(dfmessages::HSIEvent& data) // NOLINT(build/unsigned)
   {
     m_received_events_count++;
+    m_latency_instance.update_latency_in( data.timestamp );
 
     // Prescale after n-hsi received
     if (m_received_events_count % m_prescale != 0) {
@@ -153,6 +158,7 @@ public:
         m_tcs_dropped_count++;
       }
       else {
+        m_latency_instance.update_latency_out( candidate.time_candidate );
         m_tcs_sent_count++;
       }
 
@@ -173,6 +179,15 @@ public:
     info.set_tcs_dropped_count( m_tcs_dropped_count );
 
     this->publish(std::move(info));
+
+    if (m_running_flag) {
+      opmon::HSISourceModelLatency lat_info;
+
+      lat_info.set_latency_in( m_latency_instance.get_latency_in() );
+      lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+      this->publish(std::move(lat_info));
+    }
   }
 
   void print_opmon_stats()
@@ -197,13 +212,20 @@ private:
   std::map<uint32_t, HSISignal> m_signals;
 
   //Stats
-  std::atomic<uint64_t> m_received_events_count{0};
-  std::atomic<uint64_t> m_tcs_made_count{0};
-  std::atomic<uint64_t> m_tcs_sent_count{0};
-  std::atomic<uint64_t> m_tcs_dropped_count{0};
+  using metric_counter_type = uint64_t;
+  std::atomic<metric_counter_type> m_received_events_count{0};
+  std::atomic<metric_counter_type> m_tcs_made_count{0};
+  std::atomic<metric_counter_type> m_tcs_sent_count{0};
+  std::atomic<metric_counter_type> m_tcs_dropped_count{0};
 
   /// @brief {rescale for the input HSIEvents, default 1
   uint64_t m_prescale;
+
+  // Create an instance of the Latency class
+  bool m_running_flag = false;
+  dunedaq::trigger::Latency m_latency_instance;
+  std::atomic<metric_counter_type> m_latency_in{ 0 };
+  std::atomic<metric_counter_type> m_latency_out{ 0 };
 };
 
 } // namespace dunedaq::trigger

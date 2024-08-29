@@ -75,10 +75,6 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
   std::string raw_dt = modconf->get_module_configuration()->get_input_data_type();
   TLOG() << "Choosing specializations for DataHandlingModel with data_type:" << raw_dt << ']';
 
-  TLOG() << "modconf: " << modconf;
-  TLOG() << modconf->class_name();
-  TLOG() << modconf->get_module_configuration();
-
   // IF TriggerPrimitive (TP)
   if (raw_dt.find("TriggerPrimitive") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitive";

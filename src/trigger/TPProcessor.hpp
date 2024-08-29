@@ -16,6 +16,7 @@
 
 //#include "triggger/Issues.hpp"
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
+#include "trigger/Latency.hpp"
 #include "trigger/opmon/tpprocessor_info.pb.h"
 #include "triggeralgs/TriggerActivity.hpp"
 
@@ -68,11 +69,19 @@ protected:
 
   daqdataformats::SourceID m_sourceid;
 
-  std::atomic<uint64_t> m_tp_received_count{ 0 };  // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_ta_made_count{ 0 };
-  std::atomic<uint64_t> m_ta_sent_count{ 0 };
-  std::atomic<uint64_t> m_ta_failed_sent_count{ 0 };
+  using metric_counter_type = uint64_t;
+  std::atomic<metric_counter_type> m_tp_received_count{ 0 };  // NOLINT(build/unsigned)
+  std::atomic<metric_counter_type> m_ta_made_count{ 0 };
+  std::atomic<metric_counter_type> m_ta_sent_count{ 0 };
+  std::atomic<metric_counter_type> m_ta_failed_sent_count{ 0 };
   void print_opmon_stats();
+
+  // Create an instance of the Latency class
+  bool m_running_flag = false;
+  dunedaq::trigger::Latency m_latency_instance;
+  std::atomic<metric_counter_type> m_latency_in{ 0 };
+  std::atomic<metric_counter_type> m_latency_out{ 0 };
+
 };
 
 } // namespace trigger
