@@ -52,7 +52,7 @@ time_serialization(int tps_per_set)
       tp.adc_peak = uniform(generator);
       tp.detid = 1;
       tp.type = triggeralgs::TriggerPrimitive::Type::kUnknown;
-      tp.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
+      tp.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kSimpleThreshold;
       tp.flag = 1;
 
       set.objects.push_back(tp);
