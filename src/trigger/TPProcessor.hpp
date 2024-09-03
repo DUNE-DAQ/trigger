@@ -35,7 +35,7 @@ public:
   using consttpptr = const TriggerPrimitiveTypeAdapter*;
 
 
-  explicit TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry);
+  explicit TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
 
   ~TPProcessor();
 

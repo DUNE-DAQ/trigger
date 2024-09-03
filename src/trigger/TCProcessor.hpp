@@ -40,7 +40,7 @@ public:
   using tcptr = TCWrapper*;
   using consttcptr = const TCWrapper*;
 
-  explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry);
+  explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
 
   ~TCProcessor();
 
