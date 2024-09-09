@@ -124,7 +124,7 @@ MLTModule::generate_opmon_data()
     td_info.set_paused(counts.paused.exchange(0));
     td_info.set_inhibited(counts.inhibited.exchange(0));
     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
-    publish( std::move(td_info), {{"type", name}} );
+    this->publish( std::move(td_info), {{"type", name}} );
   }
 
   if (m_lc_started) {

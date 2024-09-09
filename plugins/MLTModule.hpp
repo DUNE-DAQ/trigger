@@ -230,7 +230,7 @@ private:
     std::atomic<metric_counter_type> paused{ 0 };
     std::atomic<metric_counter_type> inhibited{ 0 };
   };
-  static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types( decltype(dfmessages::TriggerDecision::trigger_type) t) {
+  static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types( const dfmessages::trigger_type_t& t) {
     std::set<trgdataformats::TriggerCandidateData::Type> results;
     if (t == dfmessages::TypeDefaults::s_invalid_trigger_type)
       return results;

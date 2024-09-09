@@ -136,8 +136,9 @@ TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<tri
       if (!m_ta_sink->try_send(std::move(tas.back()), iomanager::Sender::s_no_block)) {
         ers::warning(TADropped(ERS_HERE, tp->tp.time_start, m_sourceid.id));
         m_ta_failed_sent_count++;
+      } else {
+        m_ta_sent_count++;
       }
-      m_ta_sent_count++;
       tas.pop_back();
   }
   return;

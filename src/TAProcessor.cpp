@@ -132,8 +132,9 @@ TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerC
     if(!m_tc_sink->try_send(std::move(tc), iomanager::Sender::s_no_block)) {
         ers::warning(TCDropped(ERS_HERE, tc.time_start, m_sourceid.id));
         m_tc_failed_sent_count++;
+    } else {
+      m_tc_sent_count++;
     }
-    m_tc_sent_count++;
   }
   return;
 }

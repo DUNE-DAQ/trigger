@@ -271,7 +271,7 @@ TCProcessor::create_decision(const PendingTD& pending_td)
     }
   } else {
     m_TD_bitword = get_TD_bitword(pending_td);
-    TLOG() << "[MLT] TD has bitword: " << m_TD_bitword << " "
+    TLOG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " "
                                        << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
     decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
 
