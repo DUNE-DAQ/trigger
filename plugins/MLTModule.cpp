@@ -284,7 +284,7 @@ MLTModule::print_opmon_stats()
   TLOG() << "Received TD messages: \t" << m_td_msg_received_count;
   TLOG() << "Sent TDs: \t\t\t" << m_td_sent_count;
   TLOG() << "Inhibited TDs: \t\t" << m_td_inhibited_count;
-  TLOG() << "Paused TDs: \t\t" << m_td_paused_count;
+  TLOG() << "Paused TDs: \t\t\t" << m_td_paused_count;
   TLOG() << "Queue timeout TDs: \t\t" << m_td_queue_timeout_expired_err_count;
   TLOG() << "Total TDs: \t\t\t" << m_td_total_count;
   TLOG() << "------------------------------";
