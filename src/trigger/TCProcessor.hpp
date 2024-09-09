@@ -51,7 +51,6 @@ public:
 
   void conf(const appmodel::DataHandlerModule* conf) override;
 
-  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
   void generate_opmon_data() override;
 
 protected:

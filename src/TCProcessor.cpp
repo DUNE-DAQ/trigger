@@ -175,14 +175,6 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   inherited::conf(mtrg);
 }
 
-// void
-// TCProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-// {
-
-//   inherited::get_info(ci, level);
-//   //ci.add(info);
-// }
-
 void
 TCProcessor::generate_opmon_data()
 {

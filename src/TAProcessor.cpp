@@ -97,14 +97,6 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
   inherited::conf(conf);
 }
 
-// void
-// TAProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-// {
-
-//   inherited::get_info(ci, level);
-//   //ci.add(info);
-// }
-
 void
 TAProcessor::generate_opmon_data()
 {
