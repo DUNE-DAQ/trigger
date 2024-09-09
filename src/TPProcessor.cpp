@@ -35,8 +35,8 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter, "TriggerPrimi
 namespace dunedaq {
 namespace trigger {
 
-TPProcessor::TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
-  : TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>(error_registry)
+TPProcessor::TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled)
+  : TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>(error_registry, post_processing_enabled)
 {
 }
 
@@ -82,7 +82,7 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
   std::vector<const appmodel::TAAlgorithm*> ta_algorithms;
   auto dp = conf->get_module_configuration()->get_data_processor();
   auto proc_conf = dp->cast<appmodel::TPDataProcessor>();
-  if (proc_conf != nullptr && proc_conf->get_mask_processing() == false) {
+  if (proc_conf != nullptr && m_post_processing_enabled) {
     ta_algorithms = proc_conf->get_algorithms();
     }
 

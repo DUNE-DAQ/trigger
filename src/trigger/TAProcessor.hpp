@@ -36,7 +36,7 @@ public:
   using consttaptr = const TAWrapper*;
 
 
-  explicit TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry);
+  explicit TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
 
   ~TAProcessor();
 
