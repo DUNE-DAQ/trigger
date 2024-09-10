@@ -25,11 +25,13 @@ message TriggerDecisionInfo {
   uint32 inhibited = 5;       // Number of inhibited (DFO is busy)
 }
 
+// Message for MLT latency vars
 message ModuleLevelTriggerLatency {
   uint32 latency_in = 1;
   uint32 latency_out = 2;
 }
 
+// Message for MLT TD requests latency vars
 message ModuleLevelTriggerRequestLatency {
   uint32 latency_window_start = 1;
   uint32 latency_window_end = 2;

@@ -9,6 +9,7 @@ message CustomTCMakerInfo {
   uint32 tc_failed_sent_count = 3; // Number of TCs that failed to be sent by CTCM 
 }
 
+// Message for CTCM latency vars
 message CustomTCMakerLatency {
   uint32 latency_in = 1;
   uint32 latency_out = 2;
