@@ -17,3 +17,8 @@ message TCProcessorInfo {
   uint32 tds_failed_bitword_tc_count = 24; // Number of TCs contributing to TDs (requests) that failed the bitword check
   uint32 tds_cleared_tc_count = 25;        // Number of TCs contributing to TDs (requests) that were cleared at run stage change
 }
+
+message TCProcessorLatency {
+  uint32 latency_in = 1;
+  uint32 latency_out = 2;
+}
