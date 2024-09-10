@@ -82,18 +82,6 @@ MLTModule::generate_opmon_data()
   info.set_td_queue_timeout_expired_err_count( m_td_queue_timeout_expired_err_count.load() );
   info.set_td_total_count( m_td_total_count.load() );
 
-  std::lock_guard<std::mutex>	guard(m_trigger_mutex);
-  for ( auto & [type, counts] : m_trigger_counters ) {
-    opmon::TriggerDecisionInfo td_info;
-    td_info.set_received(counts.received.exchange(0));
-    td_info.set_sent(counts.sent.exchange(0));
-    td_info.set_failed_send(counts.failed_send.exchange(0));
-    td_info.set_paused(counts.paused.exchange(0));
-    td_info.set_inhibited(counts.inhibited.exchange(0));
-    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
-    this->publish( std::move(td_info), {{"type", name}} );
-  }
-
   if (m_lc_started) {
     info.set_lc_klive( m_livetime_counter->get_time(LivetimeCounter::State::kLive) );
     info.set_lc_kpaused( m_livetime_counter->get_time(LivetimeCounter::State::kPaused) );
@@ -105,6 +93,19 @@ MLTModule::generate_opmon_data()
   }
 
   this->publish(std::move(info));
+
+  // per TC type
+  std::lock_guard<std::mutex>   guard(m_trigger_mutex);
+  for ( auto & [type, counts] : m_trigger_counters ) {
+    opmon::TriggerDecisionInfo td_info;
+    td_info.set_received(counts.received.exchange(0));
+    td_info.set_sent(counts.sent.exchange(0));
+    td_info.set_failed_send(counts.failed_send.exchange(0));
+    td_info.set_paused(counts.paused.exchange(0));
+    td_info.set_inhibited(counts.inhibited.exchange(0));
+    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
+    this->publish( std::move(td_info), {{"type", name}} );
+  }
 }
 
 void
