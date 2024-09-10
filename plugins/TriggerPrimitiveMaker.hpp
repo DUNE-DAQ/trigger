@@ -11,6 +11,7 @@
 
 #include "trigger/TPSet.hpp"
 #include "trigger/triggerprimitivemaker/Nljs.hpp"
+#include "trigger/opmon/triggerprimitivemaker_info.pb.h"
 
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/SourceID.hpp"
@@ -67,6 +68,8 @@ private:
 
   nlohmann::json m_init_obj; // Stash this so we know name -> instance mappings
 
+  void generate_opmon_data() override;
+
   struct TPStream
   {
     std::shared_ptr<iomanager::SenderConcept<TPSet>> tpset_sink;
@@ -80,6 +83,12 @@ private:
   // Variables to keep track of the total time span of multiple TP streams
   triggeralgs::timestamp_t m_earliest_first_tpset_timestamp;
   triggeralgs::timestamp_t m_latest_last_tpset_timestamp;
+
+  // opmon
+  using metric_counter_type = uint64_t;
+  std::atomic<metric_counter_type> m_tp_made_count;
+  std::atomic<metric_counter_type> m_tp_set_made_count;
+  std::atomic<metric_counter_type> m_tp_set_failed_sent_count;
 };
 } // namespace trigger
 } // namespace dunedaq

@@ -47,8 +47,19 @@ TCProcessor::start(const nlohmann::json& args)
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-dec"); // TODO: originally mlt-trig-dec
 
   // Reset stats
-  m_new_tds = 0;
-  m_tds_dropped = 0;
+  m_tds_created_count.store(0);
+  m_tds_sent_count.store(0);
+  m_tds_dropped_count.store(0);
+  m_tds_failed_bitword_count.store(0);
+  m_tds_cleared_count.store(0);
+  // per TC
+  m_tc_received_count.store(0);
+  m_tds_created_tc_count.store(0);
+  m_tds_sent_tc_count.store(0);
+  m_tds_dropped_tc_count.store(0);
+  m_tds_failed_bitword_tc_count.store(0);
+  m_tds_cleared_tc_count.store(0);
+  m_tc_ignored_count.store(0);
   inherited::start(args);
 }
 
@@ -63,6 +74,8 @@ TCProcessor::stop(const nlohmann::json& args)
   // after joining m_send_trigger_decisions_thread so we don't
   // concurrently access the vectors
   clear_td_vectors();
+
+  print_opmon_stats();
 
 }
 
@@ -162,14 +175,26 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   inherited::conf(mtrg);
 }
 
-// void
-// TCProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-// {
+void
+TCProcessor::generate_opmon_data()
+{
+  opmon::TCProcessorInfo info;
 
-//   inherited::get_info(ci, level);
-//   //ci.add(info);
-// }
+  info.set_tds_created_count( m_tds_created_count.load() );  
+  info.set_tds_sent_count( m_tds_sent_count.load() );
+  info.set_tds_dropped_count( m_tds_dropped_count.load() );
+  info.set_tds_failed_bitword_count( m_tds_failed_bitword_count.load() );
+  info.set_tds_cleared_count( m_tds_cleared_count.load() );
+  info.set_tc_received_count( m_tc_received_count.load() );
+  info.set_tc_ignored_count( m_tc_ignored_count.load() );
+  info.set_tds_created_tc_count( m_tds_created_tc_count.load() );
+  info.set_tds_sent_tc_count( m_tds_sent_tc_count.load() );
+  info.set_tds_dropped_tc_count( m_tds_dropped_tc_count.load() );
+  info.set_tds_failed_bitword_tc_count( m_tds_failed_bitword_tc_count.load() );
+  info.set_tds_cleared_tc_count( m_tds_cleared_tc_count.load() );
 
+  this->publish(std::move(info));
+}
 
 /**
  * Pipeline Stage 2.: put valid TCs in a vector for grouping and forming of TDs
@@ -179,6 +204,7 @@ TCProcessor::make_td(const TCWrapper* tcw)
 {
 	
   auto tc = tcw->candidate;
+  m_tc_received_count++;
 
   if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ) {
     TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc.type) << ", timestamp " << tc.time_candidate
@@ -236,7 +262,12 @@ TCProcessor::create_decision(const PendingTD& pending_td)
       decision.trigger_type = m_trigger_type_shifted;
     }
   } else {
-    decision.trigger_type = 1; // m_trigger_type;
+    m_TD_bitword = get_TD_bitword(pending_td);
+    TLOG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " "
+                                       << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
+    decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
+
+    //decision.trigger_type = 1; // m_trigger_type;
   }
 
   TLOG_DEBUG(3) << "HSI passthrough: " << m_hsi_passthrough
@@ -261,6 +292,9 @@ TCProcessor::create_decision(const PendingTD& pending_td)
   } else { // using ROI readout
     roi_readout_make_requests(decision);
   }
+
+  m_tds_created_count++;
+  m_tds_created_tc_count += pending_td.contributing_tcs.size();
 
   return decision;
 }
@@ -289,6 +323,10 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
     // Check trigger bitwords
     m_TD_bitword = get_TD_bitword(pending_td);
     m_bitword_check = check_trigger_bitwords();
+    if (m_bitword_check == false) {
+      m_tds_failed_bitword_count++;
+      m_tds_failed_bitword_tc_count += pending_td.contributing_tcs.size();
+    }
   }
 
   if ((!m_use_bitwords) || (m_bitword_check)) {
@@ -298,11 +336,13 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
     auto td_ts = decision.trigger_timestamp;
 
     if(!m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
-        ers::warning(TDDropped(ERS_HERE, tn, td_ts));
-        m_tds_dropped++;
+      ers::warning(TDDropped(ERS_HERE, tn, td_ts));
+      m_tds_dropped_count++;
+      m_tds_dropped_tc_count += pending_td.contributing_tcs.size();
     }
     else {
-	m_new_tds++;
+      m_tds_sent_count++;
+      m_tds_sent_tc_count += pending_td.contributing_tcs.size();
     }
   } 
 }
@@ -451,6 +491,15 @@ void
 TCProcessor::clear_td_vectors()
 {
   std::lock_guard<std::mutex> lock(m_td_vector_mutex);
+  m_tds_cleared_count += m_pending_tds.size();
+  // Use std::accumulate to sum up the sizes of all contributing_tcs vectors
+  size_t tds_cleared_tc_count = std::accumulate(
+    m_pending_tds.begin(), m_pending_tds.end(), 0,
+    [](size_t sum, const PendingTD& ptd) {
+      return sum + ptd.contributing_tcs.size();
+    }
+  );
+  m_tds_cleared_tc_count += tds_cleared_tc_count;
   m_pending_tds.clear();
 }
 bool
@@ -467,26 +516,8 @@ TCProcessor::check_trigger_type_ignore(unsigned int tc_type)
   return ignore;
 }
 
-std::bitset<16>
-TCProcessor::get_TD_bitword(const PendingTD& ready_td)
-{
-  // get only unique types
-  std::vector<int> tc_types;
-  for (auto tc : ready_td.contributing_tcs) {
-    tc_types.push_back(static_cast<int>(tc.type));
-  }
-  tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
-
-  // form TD bitword
-  std::bitset<16> td_bitword = 0b0000000000000000;
-  for (auto tc_type : tc_types) {
-    td_bitword.set(tc_type);
-  }
-  return td_bitword;
-}
-
 void
-TCProcessor::print_trigger_bitwords(std::vector<std::bitset<16>> trigger_bitwords)
+TCProcessor::print_trigger_bitwords(std::vector<std::bitset<64>> trigger_bitwords)
 {
   TLOG_DEBUG(3) << "Configured trigger words:";
   for (auto bitword : trigger_bitwords) {
@@ -524,7 +555,7 @@ void
 TCProcessor::set_trigger_bitwords()
 {
   for (auto flag : m_trigger_bitwords_json) {
-    std::bitset<16> temp_bitword = 0b0000000000000000;
+    std::bitset<64> temp_bitword = 0b0000000000000000;
     for (auto bit : flag) {
       temp_bitword.set(bit);
     }
@@ -730,6 +761,39 @@ TCProcessor::roi_readout_make_requests(dfmessages::TriggerDecision& decision)
   return;
 }
 
+std::bitset<64>
+TCProcessor::get_TD_bitword(const PendingTD& ready_td)
+{
+  // get only unique types
+  std::vector<int> tc_types;
+  for (auto tc : ready_td.contributing_tcs) {
+    tc_types.push_back(static_cast<int>(tc.type));
+  }
+  tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
+
+  // form TD bitword
+  std::bitset<64> td_bitword;
+  for (auto tc_type : tc_types) {
+    td_bitword.set(tc_type);
+  }
+  return td_bitword;
+}
+
+void
+TCProcessor::print_opmon_stats()
+{
+  TLOG() << "TCProcessor opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "TDs created: \t\t" << m_tds_created_count << " \t(" << m_tds_created_tc_count << " TCs)";
+  TLOG() << "TDs sent: \t\t\t" << m_tds_sent_count << " \t(" << m_tds_sent_tc_count << " TCs)";
+  TLOG() << "TDs dropped: \t\t" << m_tds_dropped_count << " \t(" << m_tds_dropped_tc_count << " TCs)";
+  TLOG() << "TDs failed bitword check: \t" << m_tds_failed_bitword_count << " \t(" << m_tds_failed_bitword_tc_count << " TCs)";
+  TLOG() << "TDs cleared: \t\t" << m_tds_cleared_count << " \t(" << m_tds_cleared_tc_count << " TCs)";
+  TLOG() << "------------------------------";
+  TLOG() << "TCs received: \t" << m_tc_received_count;
+  TLOG() << "TCs ignored: \t" << m_tc_ignored_count;
+  TLOG();
+}
 
 } // namespace fdreadoutlibs
 } // namespace dunedaq

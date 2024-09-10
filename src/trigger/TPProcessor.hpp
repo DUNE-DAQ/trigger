@@ -16,6 +16,7 @@
 
 //#include "triggger/Issues.hpp"
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
+#include "trigger/opmon/tpprocessor_info.pb.h"
 #include "triggeralgs/TriggerActivity.hpp"
 
 #include "triggeralgs/Types.hpp"
@@ -45,7 +46,7 @@ public:
 
   void conf(const appmodel::DataHandlerModule* conf) override;
 
-  // void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 protected:
   // Internals
@@ -66,8 +67,11 @@ protected:
 
   daqdataformats::SourceID m_sourceid;
 
-  std::atomic<uint64_t> m_new_tas{ 0 };  // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tas_dropped{ 0 };
+  std::atomic<uint64_t> m_tp_received_count{ 0 };  // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_ta_made_count{ 0 };
+  std::atomic<uint64_t> m_ta_sent_count{ 0 };
+  std::atomic<uint64_t> m_ta_failed_sent_count{ 0 };
+  void print_opmon_stats();
 };
 
 } // namespace trigger

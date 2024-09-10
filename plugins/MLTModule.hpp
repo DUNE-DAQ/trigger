@@ -17,6 +17,7 @@
 #include "trigger/Issues.hpp"
 #include "trigger/LivetimeCounter.hpp"
 #include "trigger/TokenManager.hpp"
+#include "trigger/opmon/moduleleveltrigger_info.pb.h"
 
 #include "appfwk/DAQModule.hpp"
 
@@ -68,7 +69,7 @@ public:
   MLTModule& operator=(MLTModule&&) = delete;      ///< MLTModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 private:
   // Commands
@@ -207,29 +208,50 @@ private:
   */
   // Opmon variables
   using metric_counter_type = uint64_t ; //decltype(moduleleveltriggerinfo::Info::tc_received_count);
-  std::atomic<metric_counter_type> m_tc_received_count{ 0 };
-  std::atomic<metric_counter_type> m_tc_ignored_count{ 0 };
+  std::atomic<metric_counter_type> m_td_msg_received_count{ 0 };
   std::atomic<metric_counter_type> m_td_sent_count{ 0 };
-  std::atomic<metric_counter_type> m_new_td_sent_count{ 0 };
-  std::atomic<metric_counter_type> m_td_sent_tc_count{ 0 };
-  std::atomic<metric_counter_type> m_td_inhibited_count{ 0 };
-  std::atomic<metric_counter_type> m_new_td_inhibited_count{ 0 };
-  std::atomic<metric_counter_type> m_td_inhibited_tc_count{ 0 };
-  std::atomic<metric_counter_type> m_td_paused_count{ 0 };
-  std::atomic<metric_counter_type> m_td_paused_tc_count{ 0 };
-  std::atomic<metric_counter_type> m_td_dropped_count{ 0 };
-  std::atomic<metric_counter_type> m_td_dropped_tc_count{ 0 };
-  std::atomic<metric_counter_type> m_td_cleared_count{ 0 };
-  std::atomic<metric_counter_type> m_td_cleared_tc_count{ 0 };
-  std::atomic<metric_counter_type> m_td_not_triggered_count{ 0 };
-  std::atomic<metric_counter_type> m_td_not_triggered_tc_count{ 0 };
   std::atomic<metric_counter_type> m_td_total_count{ 0 };
-  std::atomic<metric_counter_type> m_new_td_total_count{ 0 };
+  // DFO state related
+  std::atomic<metric_counter_type> m_td_inhibited_count{ 0 };
+  std::atomic<metric_counter_type> m_td_paused_count{ 0 };
   std::atomic<metric_counter_type> m_td_queue_timeout_expired_err_count{ 0 };
-  std::atomic<metric_counter_type> m_td_queue_timeout_expired_err_tc_count{ 0 };
+  // livetime related
   std::atomic<metric_counter_type> m_lc_kLive{ 0 };
   std::atomic<metric_counter_type> m_lc_kPaused{ 0 };
   std::atomic<metric_counter_type> m_lc_kDead{ 0 };
+  bool m_lc_started = false;
+
+  // Struct for per TC stats
+  struct TDData {
+    std::atomic<metric_counter_type> received{ 0 };
+    std::atomic<metric_counter_type> sent{ 0 };
+    std::atomic<metric_counter_type> failed_send{ 0 };
+    std::atomic<metric_counter_type> paused{ 0 };
+    std::atomic<metric_counter_type> inhibited{ 0 };
+  };
+  static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types( const dfmessages::trigger_type_t& t) {
+    std::set<trgdataformats::TriggerCandidateData::Type> results;
+    if (t == dfmessages::TypeDefaults::s_invalid_trigger_type)
+      return results;
+    const std::bitset<64> bits(t);
+    for( size_t i = 0; i < bits.size(); ++i ) {
+      if ( bits[i] ) results.insert((trgdataformats::TriggerCandidateData::Type)i);
+    }
+    return results;
+  }
+
+  std::map<dunedaq::trgdataformats::TriggerCandidateData::Type, TDData> m_trigger_counters;
+
+  std::mutex m_trigger_mutex;
+  TDData & get_trigger_counter(trgdataformats::TriggerCandidateData::Type type) {
+    auto it = m_trigger_counters.find(type);
+    if (it != m_trigger_counters.end()) return it->second;
+    
+    std::lock_guard<std::mutex> guard(m_trigger_mutex);
+    return m_trigger_counters[type];
+  }
+
+  void print_opmon_stats();
 };
 } // namespace trigger
 } // namespace dunedaq

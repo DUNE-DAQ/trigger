@@ -50,8 +50,10 @@ TAProcessor::start(const nlohmann::json& args)
 {
 
   // Reset stats
-  m_new_tcs = 0;
-  m_tcs_dropped = 0;
+  m_ta_received_count.store(0);
+  m_tc_made_count.store(0);
+  m_tc_sent_count.store(0);
+  m_tc_failed_sent_count.store(0);
   inherited::start(args);
 }
 
@@ -59,6 +61,7 @@ void
 TAProcessor::stop(const nlohmann::json& args)
 {
   inherited::stop(args);
+  print_opmon_stats();
 }
 
 void
@@ -94,14 +97,18 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
   inherited::conf(conf);
 }
 
-// void
-// TAProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-// {
+void
+TAProcessor::generate_opmon_data()
+{
+  opmon::TAProcessorInfo info;
 
-//   inherited::get_info(ci, level);
-//   //ci.add(info);
-// }
+  info.set_ta_received_count( m_ta_received_count.load() );
+  info.set_tc_made_count( m_tc_made_count.load() );
+  info.set_tc_sent_count( m_tc_sent_count.load() );
+  info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );
 
+  this->publish(std::move(info));
+}
 
 /**
  * Pipeline Stage 2.: Do software TPG
@@ -109,16 +116,31 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
 void
 TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerCandidateMaker> tca)
 {
+  m_ta_received_count++;
   std::vector<triggeralgs::TriggerCandidate> tcs;
   tca->operator()(ta->activity, tcs);
   for (auto tc : tcs) {
+    m_tc_made_count++;
     if(!m_tc_sink->try_send(std::move(tc), iomanager::Sender::s_no_block)) {
         ers::warning(TCDropped(ERS_HERE, tc.time_start, m_sourceid.id));
-        m_tcs_dropped++;
+        m_tc_failed_sent_count++;
+    } else {
+      m_tc_sent_count++;
     }
-    m_new_tcs++;
   }
   return;
+}
+
+void
+TAProcessor::print_opmon_stats()
+{
+  TLOG() << "TAProcessor opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "TAs received: \t\t" << m_ta_received_count;
+  TLOG() << "TCs made: \t\t\t" << m_tc_made_count;
+  TLOG() << "TCs sent: \t\t\t" << m_tc_sent_count;
+  TLOG() << "TCs failed to send: \t" << m_tc_failed_sent_count;
+  TLOG();
 }
 
 } // namespace fdreadoutlibs

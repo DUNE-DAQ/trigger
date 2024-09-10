@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dunedaq.trigger.opmon;
+
+// Message representing TP Processor Information
+message TPProcessorInfo {
+  uint32 tp_received_count = 1;    // Number of TPs received
+  uint32 ta_made_count = 2;        // Number of TAs made
+  uint32 ta_sent_count = 3;        // Number of TAs sent
+  uint32 ta_failed_sent_count = 4; // Number of TAs that failed to be sent
+}

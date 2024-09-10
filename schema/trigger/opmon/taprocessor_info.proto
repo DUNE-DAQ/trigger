@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dunedaq.trigger.opmon;
+
+// Message representing TA Processor Information
+message TAProcessorInfo {
+  uint32 ta_received_count = 1;    // Number of TAs received
+  uint32 tc_made_count = 2;        // Number of TCs made
+  uint32 tc_sent_count = 3;        // Number of TCs sent
+  uint32 tc_failed_sent_count = 4; // Number of TCs that failed to be sent
+}

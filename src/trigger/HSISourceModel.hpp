@@ -14,6 +14,7 @@
 #include "dfmessages/HSIEvent.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 #include "trigger/Issues.hpp"
+#include "trigger/opmon/hsisourcemodel_info.pb.h"
 
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
@@ -100,18 +101,24 @@ public:
 
   void start() {
     m_data_receiver->add_callback(std::bind(&HSISourceModel::handle_payload, this, std::placeholders::_1));
+
+    m_received_events_count.store(0);
+    m_tcs_made_count.store(0);
+    m_tcs_sent_count.store(0);
+    m_tcs_dropped_count.store(0);
   }  
 
   void stop() {
     m_data_receiver->remove_callback();
+    print_opmon_stats();
   }
 
   bool handle_payload(dfmessages::HSIEvent& data) // NOLINT(build/unsigned)
   {
-    ++m_hsievents_received;
+    m_received_events_count++;
 
     // Prescale after n-hsi received
-    if (m_hsievents_received % m_prescale != 0) {
+    if (m_received_events_count % m_prescale != 0) {
       return true;
     }
 
@@ -139,14 +146,14 @@ public:
       candidate.type = m_signals[signal].type;
       candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kHSIEventToTriggerCandidate;
       candidate.inputs = {};
-      ++m_tc_made;
+      m_tcs_made_count++; 
 
       // Send the TC
       if (!m_data_sender->try_send(std::move(candidate), iomanager::Sender::s_no_block)) {
-        ++m_dropped_packets;
+        m_tcs_dropped_count++;
       }
       else {
-        ++m_tc_sent;
+        m_tcs_sent_count++;
       }
 
       // Clear the least significant bit
@@ -154,6 +161,29 @@ public:
     }
     
     return true;
+  }
+
+  void generate_opmon_data() override
+  {
+    opmon::HSISourceModelInfo info;
+    
+    info.set_received_events_count( m_received_events_count );
+    info.set_tcs_made_count( m_tcs_made_count );
+    info.set_tcs_sent_count( m_tcs_sent_count );
+    info.set_tcs_dropped_count( m_tcs_dropped_count );
+
+    this->publish(std::move(info));
+  }
+
+  void print_opmon_stats()
+  {
+    TLOG() << "HSI Source Model opmon counters summary:";
+    TLOG() << "------------------------------";
+    TLOG() << "Signals received: \t" << m_received_events_count;
+    TLOG() << "TCs made: \t\t" << m_tcs_made_count;
+    TLOG() << "TCs sent: \t\t" << m_tcs_sent_count;
+    TLOG() << "TCs dropped: \t\t" << m_tcs_dropped_count;
+    TLOG();
   }
 
 private:
@@ -167,10 +197,10 @@ private:
   std::map<uint32_t, HSISignal> m_signals;
 
   //Stats
-  std::atomic<uint64_t> m_dropped_packets{0};
-  std::atomic<uint64_t> m_hsievents_received{0};
-  std::atomic<uint64_t> m_tc_made{0};
-  std::atomic<uint64_t> m_tc_sent{0};
+  std::atomic<uint64_t> m_received_events_count{0};
+  std::atomic<uint64_t> m_tcs_made_count{0};
+  std::atomic<uint64_t> m_tcs_sent_count{0};
+  std::atomic<uint64_t> m_tcs_dropped_count{0};
 
   /// @brief {rescale for the input HSIEvents, default 1
   uint64_t m_prescale;

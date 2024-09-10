@@ -66,15 +66,17 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_conf = mtrg->get_configuration();
 }
 
-// void
-// RandomTCMakerModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-// {
-//   randomtriggercandidatemakerinfo::Info i;
+void
+RandomTCMakerModule::generate_opmon_data()
+{
+  opmon::RandomTCMakerInfo info;
 
-//   i.tc_sent_count = m_tc_sent_count.load();
+  info.set_tc_made_count( m_tc_made_count.load() );
+  info.set_tc_sent_count( m_tc_sent_count.load() );
+  info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );
 
-//   ci.add(i);
-// }
+  this->publish(std::move(info));
+}
 
 void
 RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
@@ -131,6 +133,8 @@ RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 
   m_time_sync_source->remove_callback();
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
+
+  print_opmon_stats();
 }
 
 void
@@ -206,15 +210,32 @@ RandomTCMakerModule::send_trigger_candidates()
     }
     next_trigger_timestamp = m_timestamp_estimator->get_timestamp_estimate();
     triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
+    m_tc_made_count++;
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
     TCWrapper tcw(candidate);
-    m_trigger_candidate_sink->send(std::move(tcw), std::chrono::milliseconds(10));
-    m_tc_sent_count++;
+    try{
+      m_trigger_candidate_sink->send(std::move(tcw), std::chrono::milliseconds(10));
+      m_tc_sent_count++;
+    } catch (const ers::Issue& e) {
+      ers::error(e);
+      m_tc_failed_sent_count++;
+    }
 
     next_trigger_timestamp += get_interval(gen);
   }
+}
+
+void
+RandomTCMakerModule::print_opmon_stats()
+{
+  TLOG() << "RandomTCMaker opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "Made TCs: \t\t" << m_tc_made_count;
+  TLOG() << "Sent TCs: \t\t" << m_tc_sent_count;
+  TLOG() << "Failed to send TCs: \t" << m_tc_failed_sent_count;
+  TLOG();
 }
 
 } // namespace trigger

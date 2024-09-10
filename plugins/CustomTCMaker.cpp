@@ -97,15 +97,17 @@ CustomTCMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 //  //  get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(obj, "trigger_candidate_sink"));
 //}
 
-// void
-// CustomTCMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-// {
-//   customtriggercandidatemakerinfo::Info i;
+void 
+CustomTCMaker::generate_opmon_data()
+{
+  opmon::CustomTCMakerInfo info;
 
-//   i.tc_sent_count = m_tc_sent_count.load();
+  info.set_tc_made_count( m_tc_made_count.load() );
+  info.set_tc_sent_count( m_tc_sent_count.load() );
+  info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );  
 
-//   ci.add(i);
-// }
+  this->publish(std::move(info));
+}
 
 void
 CustomTCMaker::do_configure(const nlohmann::json& /*obj*/)
@@ -176,6 +178,7 @@ CustomTCMaker::do_stop(const nlohmann::json& /*obj*/)
   m_time_sync_source->remove_callback();
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
 
+  print_opmon_stats();
   // Prints final counts of each used TC type
   print_final_tc_counts(m_tc_sent_count_type);
 }
@@ -234,14 +237,20 @@ CustomTCMaker::send_trigger_candidates()
     }
 
     triggeralgs::TriggerCandidate candidate = create_candidate(m_next_trigger_timestamp, m_tc_timestamps.front().first);
+    m_tc_made_count++;
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
 
     TCWrapper tcw(candidate);
-    m_trigger_candidate_sink->send(std::move(tcw), std::chrono::milliseconds(10));
-    m_tc_sent_count++;
-    m_tc_sent_count_type[m_tc_timestamps.front().first] += 1;
+    try {
+      m_trigger_candidate_sink->send(std::move(tcw), std::chrono::milliseconds(10));
+      m_tc_sent_count++;
+      m_tc_sent_count_type[m_tc_timestamps.front().first] += 1;
+    } catch (const ers::Issue& e) {
+      ers::error(e);
+      m_tc_failed_sent_count++;
+    }
 
     // Need to record last used TS for calculation of next ones
     m_last_timestamps_of_type[m_tc_timestamps.front().first] = m_tc_timestamps.front().second;
@@ -346,6 +355,17 @@ CustomTCMaker::print_timestamps_vector(std::vector<std::pair<int, dfmessages::ti
     TLOG_DEBUG(3) << "TC type: " << it->first << ", timestamp: " << it->second;
   }
   return;
+}
+
+void
+CustomTCMaker::print_opmon_stats()
+{
+  TLOG() << "CustomTCMaker opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "Made TCs: \t\t" << m_tc_made_count;
+  TLOG() << "Sent TCs: \t\t" << m_tc_sent_count;
+  TLOG() << "Failed to send TCs: \t" << m_tc_failed_sent_count;
+  TLOG();
 }
 
 void
