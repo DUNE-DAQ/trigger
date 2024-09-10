@@ -77,7 +77,7 @@ RandomTCMakerModule::generate_opmon_data()
 
   this->publish(std::move(info));
 
-  if (m_running_flag) {
+  if (m_running_flag.load()) {
     opmon::RandomTCMakerLatency lat_info;
 
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );

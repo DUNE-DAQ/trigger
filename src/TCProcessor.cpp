@@ -303,7 +303,7 @@ TCProcessor::create_decision(const PendingTD& pending_td)
 void
 TCProcessor::send_trigger_decisions() {
 
- while (m_running_flag) {
+ while (m_running_flag.load()) {
     std::lock_guard<std::mutex> lock(m_td_vector_mutex);
     auto ready_tds = get_ready_tds(m_pending_tds);
     TLOG_DEBUG(10) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size();

@@ -21,6 +21,7 @@
 
 #include "trigger/Issues.hpp"
 #include "trigger/TCWrapper.hpp"
+#include "trigger/Latency.hpp"
 #include "trigger/opmon/tcprocessor_info.pb.h"
 
 #include "daqdataformats/SourceID.hpp"
@@ -185,6 +186,11 @@ protected:
   std::atomic<metric_counter_type> m_tds_failed_bitword_tc_count{ 0 };
   std::atomic<metric_counter_type> m_tds_cleared_tc_count{ 0 };
   std::atomic<metric_counter_type> m_tc_ignored_count{ 0 };
+
+  // latency
+  dunedaq::trigger::Latency m_latency_instance;
+  std::atomic<metric_counter_type> m_latency_in{ 0 };
+  std::atomic<metric_counter_type> m_latency_out{ 0 };
 
   void print_opmon_stats();
 };

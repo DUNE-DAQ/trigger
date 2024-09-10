@@ -55,7 +55,7 @@ TAProcessor::start(const nlohmann::json& args)
   m_tc_sent_count.store(0);
   m_tc_failed_sent_count.store(0);
 
-  m_running_flag = true;
+  m_running_flag.store(true);
 
   inherited::start(args);
 }
@@ -64,7 +64,7 @@ void
 TAProcessor::stop(const nlohmann::json& args)
 {
   inherited::stop(args);
-  m_running_flag = false;
+  m_running_flag.store(false);
   print_opmon_stats();
 }
 
@@ -113,7 +113,7 @@ TAProcessor::generate_opmon_data()
 
   this->publish(std::move(info));
 
-  if (m_running_flag) {
+  if (m_running_flag.load()) {
     opmon::TAProcessorLatency lat_info;
 
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );

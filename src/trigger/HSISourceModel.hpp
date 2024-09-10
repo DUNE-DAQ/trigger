@@ -103,7 +103,7 @@ public:
   void start() {
     m_data_receiver->add_callback(std::bind(&HSISourceModel::handle_payload, this, std::placeholders::_1));
 
-    m_running_flag = true;
+    m_running_flag.store(true);
 
     m_received_events_count.store(0);
     m_tcs_made_count.store(0);
@@ -113,7 +113,7 @@ public:
 
   void stop() {
     m_data_receiver->remove_callback();
-    m_running_flag = false;
+    m_running_flag.store(false);
     print_opmon_stats();
   }
 
@@ -180,7 +180,7 @@ public:
 
     this->publish(std::move(info));
 
-    if (m_running_flag) {
+    if (m_running_flag.load()) {
       opmon::HSISourceModelLatency lat_info;
 
       lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -222,7 +222,7 @@ private:
   uint64_t m_prescale;
 
   // Create an instance of the Latency class
-  bool m_running_flag = false;
+  std::atomic<bool> m_running_flag{ false };
   dunedaq::trigger::Latency m_latency_instance;
   std::atomic<metric_counter_type> m_latency_in{ 0 };
   std::atomic<metric_counter_type> m_latency_out{ 0 };
