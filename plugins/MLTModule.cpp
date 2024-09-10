@@ -97,13 +97,13 @@ MLTModule::generate_opmon_data()
   // per TC type
   std::lock_guard<std::mutex>   guard(m_trigger_mutex);
   for ( auto & [type, counts] : m_trigger_counters ) {
+    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
     opmon::TriggerDecisionInfo td_info;
     td_info.set_received(counts.received.exchange(0));
     td_info.set_sent(counts.sent.exchange(0));
     td_info.set_failed_send(counts.failed_send.exchange(0));
     td_info.set_paused(counts.paused.exchange(0));
     td_info.set_inhibited(counts.inhibited.exchange(0));
-    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
     this->publish( std::move(td_info), {{"type", name}} );
   }
 }
