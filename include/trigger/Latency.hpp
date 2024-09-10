@@ -49,14 +49,26 @@ namespace trigger {
     uint64_t get_latency_in() const
     {
       std::lock_guard<std::mutex> lock(m_mutex);
-      return m_latency_in.load() != 0 ? (get_current_system_time() - m_latency_in.load()) : 0;
+      if (m_latency_in.load() != 0) {
+        // in edge cases the TP time was more recent then current sys time...
+        // this is a catch for that
+	uint64_t diff = abs( int64_t(get_current_system_time()) - int64_t(m_latency_in.load()) );
+	return diff;
+      } else {
+        return 0;
+      }
     }
 
     // Function to get the value of latency_out
     uint64_t get_latency_out() const
     {
       std::lock_guard<std::mutex> lock(m_mutex);
-      return m_latency_out.load() != 0 ? (get_current_system_time() - m_latency_out.load()) : 0;
+      if (m_latency_out.load() != 0) {
+        uint64_t diff = abs( int64_t(get_current_system_time()) - int64_t(m_latency_out.load()) );
+        return diff;
+      } else {
+        return 0;
+      }
     }
 
   private:
