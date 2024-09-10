@@ -145,7 +145,6 @@ TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<tri
         m_ta_sent_count++;
       }
       m_latency_instance.update_latency_out( tas.back().time_start );
-      m_ta_sent_count++;
 
       tas.pop_back();
   }

@@ -143,7 +143,6 @@ TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerC
       m_tc_sent_count++;
     }
     m_latency_instance.update_latency_out( tc.time_candidate );
-    m_tc_sent_count++;
   }
   return;
 }
