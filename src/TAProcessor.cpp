@@ -37,8 +37,8 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TAWrapper, "TriggerActivity")
 namespace dunedaq {
 namespace trigger {
 
-TAProcessor::TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
-  : datahandlinglibs::TaskRawDataProcessorModel<TAWrapper>(error_registry)
+TAProcessor::TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled)
+  : datahandlinglibs::TaskRawDataProcessorModel<TAWrapper>(error_registry, post_processing_enabled)
 {
 }
 
@@ -86,7 +86,7 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
   std::vector<const appmodel::TCAlgorithm*> tc_algorithms;
   auto dp = conf->get_module_configuration()->get_data_processor();
   auto proc_conf = dp->cast<appmodel::TADataProcessor>();
-  if (proc_conf != nullptr && proc_conf->get_mask_processing() == false ) {
+  if (proc_conf != nullptr && m_post_processing_enabled ) {
     tc_algorithms = proc_conf->get_algorithms();
     }
 
@@ -100,14 +100,6 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
   }
   inherited::conf(conf);
 }
-
-// void
-// TAProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-// {
-
-//   inherited::get_info(ci, level);
-//   //ci.add(info);
-// }
 
 void
 TAProcessor::generate_opmon_data()
@@ -147,6 +139,8 @@ TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerC
     if(!m_tc_sink->try_send(std::move(tc), iomanager::Sender::s_no_block)) {
         ers::warning(TCDropped(ERS_HERE, tc.time_start, m_sourceid.id));
         m_tc_failed_sent_count++;
+    } else {
+      m_tc_sent_count++;
     }
     m_latency_instance.update_latency_out( tc.time_candidate );
     m_tc_sent_count++;

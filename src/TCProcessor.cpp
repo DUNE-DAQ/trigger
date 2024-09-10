@@ -31,8 +31,8 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 namespace dunedaq {
 namespace trigger {
 
-TCProcessor::TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
-  : datahandlinglibs::TaskRawDataProcessorModel<TCWrapper>(error_registry)
+TCProcessor::TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled)
+  : datahandlinglibs::TaskRawDataProcessorModel<TCWrapper>(error_registry, post_processing_enabled)
 {
 }
 
@@ -175,14 +175,6 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   inherited::conf(mtrg);
 }
 
-// void
-// TCProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-// {
-
-//   inherited::get_info(ci, level);
-//   //ci.add(info);
-// }
-
 void
 TCProcessor::generate_opmon_data()
 {
@@ -271,7 +263,7 @@ TCProcessor::create_decision(const PendingTD& pending_td)
     }
   } else {
     m_TD_bitword = get_TD_bitword(pending_td);
-    TLOG() << "[MLT] TD has bitword: " << m_TD_bitword << " "
+    TLOG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " "
                                        << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
     decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
 

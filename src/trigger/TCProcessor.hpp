@@ -41,7 +41,7 @@ public:
   using tcptr = TCWrapper*;
   using consttcptr = const TCWrapper*;
 
-  explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry);
+  explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
 
   ~TCProcessor();
 
@@ -51,7 +51,6 @@ public:
 
   void conf(const appmodel::DataHandlerModule* conf) override;
 
-  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
   void generate_opmon_data() override;
 
 protected:

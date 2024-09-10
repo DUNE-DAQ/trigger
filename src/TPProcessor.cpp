@@ -35,8 +35,8 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter, "TriggerPrimi
 namespace dunedaq {
 namespace trigger {
 
-TPProcessor::TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
-  : TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>(error_registry)
+TPProcessor::TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled)
+  : TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>(error_registry, post_processing_enabled)
 {
 }
 
@@ -85,7 +85,7 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
   std::vector<const appmodel::TAAlgorithm*> ta_algorithms;
   auto dp = conf->get_module_configuration()->get_data_processor();
   auto proc_conf = dp->cast<appmodel::TPDataProcessor>();
-  if (proc_conf != nullptr && proc_conf->get_mask_processing() == false) {
+  if (proc_conf != nullptr && m_post_processing_enabled) {
     ta_algorithms = proc_conf->get_algorithms();
     }
 
@@ -102,14 +102,6 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
   }
   inherited::conf(conf);
 }
-
-// void
-// TPProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-// {
-//   //TLOG() << "Generated TAs = " << m_new_tas << ", dropped TAs = " << m_tas_dropped;
-//   inherited::get_info(ci, level);
-//   //ci.add(info);
-// }
 
 void
 TPProcessor::generate_opmon_data()
@@ -149,9 +141,12 @@ TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<tri
       if (!m_ta_sink->try_send(std::move(tas.back()), iomanager::Sender::s_no_block)) {
         ers::warning(TADropped(ERS_HERE, tp->tp.time_start, m_sourceid.id));
         m_ta_failed_sent_count++;
+      } else {
+        m_ta_sent_count++;
       }
       m_latency_instance.update_latency_out( tas.back().time_start );
       m_ta_sent_count++;
+
       tas.pop_back();
   }
   return;

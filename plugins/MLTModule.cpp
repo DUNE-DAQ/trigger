@@ -70,39 +70,6 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_configured_flag.store(true);
 }
 
-// void
-// MLTModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-// {
-//   moduleleveltriggerinfo::Info i;
-
-//   i.tc_received_count = m_tc_received_count.load();
-//   i.tc_ignored_count = m_tc_ignored_count.load();
-//   i.td_sent_count = m_td_sent_count.load();
-//   i.new_td_sent_count = m_new_td_sent_count.exchange(0);
-//   i.td_sent_tc_count = m_td_sent_tc_count.load();
-//   i.td_inhibited_count = m_td_inhibited_count.load();
-//   i.new_td_inhibited_count = m_new_td_inhibited_count.exchange(0);
-//   i.td_inhibited_tc_count = m_td_inhibited_tc_count.load();
-//   i.td_paused_count = m_td_paused_count.load();
-//   i.td_paused_tc_count = m_td_paused_tc_count.load();
-//   i.td_dropped_count = m_td_dropped_count.load();
-//   i.td_dropped_tc_count = m_td_dropped_tc_count.load();
-//   i.td_cleared_count = m_td_cleared_count.load();
-//   i.td_cleared_tc_count = m_td_cleared_tc_count.load();
-//   i.td_not_triggered_count = m_td_not_triggered_count.load();
-//   i.td_not_triggered_tc_count = m_td_not_triggered_tc_count.load();
-//   i.td_total_count = m_td_total_count.load();
-//   i.new_td_total_count = m_new_td_total_count.exchange(0);
-
-//   if (m_livetime_counter.get() != nullptr) {
-//     i.lc_kLive = m_livetime_counter->get_time(LivetimeCounter::State::kLive);
-//     i.lc_kPaused = m_livetime_counter->get_time(LivetimeCounter::State::kPaused);
-//     i.lc_kDead = m_livetime_counter->get_time(LivetimeCounter::State::kDead);
-//   }
-
-//   ci.add(i);
-// }
-
 void
 MLTModule::generate_opmon_data()
 {
@@ -115,18 +82,6 @@ MLTModule::generate_opmon_data()
   info.set_td_queue_timeout_expired_err_count( m_td_queue_timeout_expired_err_count.load() );
   info.set_td_total_count( m_td_total_count.load() );
 
-  std::lock_guard<std::mutex>	guard(m_trigger_mutex);
-  for ( auto & [type, counts] : m_trigger_counters ) {
-    opmon::TriggerDecisionInfo td_info;
-    td_info.set_received(counts.received.exchange(0));
-    td_info.set_sent(counts.sent.exchange(0));
-    td_info.set_failed_send(counts.failed_send.exchange(0));
-    td_info.set_paused(counts.paused.exchange(0));
-    td_info.set_inhibited(counts.inhibited.exchange(0));
-    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
-    publish( std::move(td_info), {{"type", name}} );
-  }
-
   if (m_lc_started) {
     info.set_lc_klive( m_livetime_counter->get_time(LivetimeCounter::State::kLive) );
     info.set_lc_kpaused( m_livetime_counter->get_time(LivetimeCounter::State::kPaused) );
@@ -138,6 +93,19 @@ MLTModule::generate_opmon_data()
   }
 
   this->publish(std::move(info));
+
+  // per TC type
+  std::lock_guard<std::mutex>   guard(m_trigger_mutex);
+  for ( auto & [type, counts] : m_trigger_counters ) {
+    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
+    opmon::TriggerDecisionInfo td_info;
+    td_info.set_received(counts.received.exchange(0));
+    td_info.set_sent(counts.sent.exchange(0));
+    td_info.set_failed_send(counts.failed_send.exchange(0));
+    td_info.set_paused(counts.paused.exchange(0));
+    td_info.set_inhibited(counts.inhibited.exchange(0));
+    this->publish( std::move(td_info), {{"type", name}} );
+  }
 }
 
 void
@@ -317,7 +285,7 @@ MLTModule::print_opmon_stats()
   TLOG() << "Received TD messages: \t" << m_td_msg_received_count;
   TLOG() << "Sent TDs: \t\t\t" << m_td_sent_count;
   TLOG() << "Inhibited TDs: \t\t" << m_td_inhibited_count;
-  TLOG() << "Paused TDs: \t\t" << m_td_paused_count;
+  TLOG() << "Paused TDs: \t\t\t" << m_td_paused_count;
   TLOG() << "Queue timeout TDs: \t\t" << m_td_queue_timeout_expired_err_count;
   TLOG() << "Total TDs: \t\t\t" << m_td_total_count;
   TLOG() << "------------------------------";

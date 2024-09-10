@@ -62,7 +62,6 @@ public:
     delete; ///< CustomTCMaker is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  //void get_info(opmonlib::InfoCollector& ci, int level) override;
   void generate_opmon_data() override;
 
 private:
@@ -113,7 +112,7 @@ private:
   std::atomic<bool> m_configured_flag{ false };
 
   // OpMon variables
-  using metric_counter_type = uint64_t; //decltype(customtriggercandidatemakerinfo::Info::tc_sent_count);
+  using metric_counter_type = uint64_t;
   std::atomic<metric_counter_type> m_tc_made_count{ 0 };
   std::atomic<metric_counter_type> m_tc_sent_count{ 0 };
   std::atomic<metric_counter_type> m_tc_failed_sent_count{ 0 };
