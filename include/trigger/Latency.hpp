@@ -34,24 +34,28 @@ namespace trigger {
     // Function to update latency_in
     void update_latency_in(uint64_t latency)
     {
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_latency_in.store(latency * m_clock_ticks_to_ms);
     }
 
     // Function to update latency_out
     void update_latency_out(uint64_t latency)
     {
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_latency_out.store(latency * m_clock_ticks_to_ms);
     }
 
     // Function to get the value of latency_in
     uint64_t get_latency_in() const
     {
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_latency_in.load() != 0 ? (get_current_system_time() - m_latency_in.load()) : 0;
     }
 
     // Function to get the value of latency_out
     uint64_t get_latency_out() const
     {
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_latency_out.load() != 0 ? (get_current_system_time() - m_latency_out.load()) : 0;
     }
 
@@ -59,6 +63,7 @@ namespace trigger {
     std::atomic<uint64_t> m_latency_in;  // Member variable to store latency_in
     std::atomic<uint64_t> m_latency_out; // Member variable to store latency_out
     std::atomic<double> m_clock_ticks_to_ms;
+    mutable std::mutex m_mutex;
   };
 
 } // namespace trigger

@@ -24,3 +24,13 @@ message TriggerDecisionInfo {
   uint32 paused = 4;          // Number of paused (triggers are paused)
   uint32 inhibited = 5;       // Number of inhibited (DFO is busy)
 }
+
+message ModuleLevelTriggerLatency {
+  uint32 latency_in = 1;
+  uint32 latency_out = 2;
+}
+
+message ModuleLevelTriggerRequestLatency {
+  uint32 latency_window_start = 1;
+  uint32 latency_window_end = 2;
+}

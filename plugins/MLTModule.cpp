@@ -106,6 +106,21 @@ MLTModule::generate_opmon_data()
     td_info.set_inhibited(counts.inhibited.exchange(0));
     this->publish( std::move(td_info), {{"type", name}} );
   }
+
+  // latency
+  if (m_running_flag.load()) {
+    // TC in, TD out
+    opmon::ModuleLevelTriggerLatency lat_info;
+    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+    this->publish(std::move(lat_info));
+
+    // vs readout window requests
+    opmon::ModuleLevelTriggerRequestLatency lat_request_info;
+    lat_request_info.set_latency_window_start( m_latency_requests_instance.get_latency_in() );
+    lat_request_info.set_latency_window_end( m_latency_requests_instance.get_latency_out() );
+    this->publish(std::move(lat_request_info));
+  }
 }
 
 void
@@ -202,6 +217,7 @@ void
 MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 {
     m_td_msg_received_count++;
+    m_latency_instance.update_latency_in( decision.trigger_timestamp );
 
     auto trigger_types = unpack_types(decision.trigger_type);
     for ( const auto t : trigger_types ) {
@@ -223,6 +239,11 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 
       try {
         m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
+
+	// readout window latency update
+        m_latency_requests_instance.update_latency_in( decision.components.front().window_begin );
+        m_latency_requests_instance.update_latency_out( decision.components.front().window_end );
+
         m_td_sent_count++;
 
         for ( const auto t : trigger_types ) {
@@ -260,6 +281,7 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
       }
 
     }
+    m_latency_instance.update_latency_out( decision.trigger_timestamp );
     m_td_total_count++;
 }
 

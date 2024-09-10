@@ -194,6 +194,15 @@ TCProcessor::generate_opmon_data()
   info.set_tds_cleared_tc_count( m_tds_cleared_tc_count.load() );
 
   this->publish(std::move(info));
+
+  if (m_running_flag.load()) {
+    opmon::TCProcessorLatency lat_info;
+
+    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+    this->publish(std::move(lat_info));
+  }
 }
 
 /**
@@ -204,6 +213,7 @@ TCProcessor::make_td(const TCWrapper* tcw)
 {
 	
   auto tc = tcw->candidate;
+  m_latency_instance.update_latency_in( tc.time_start );
   m_tc_received_count++;
 
   if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ) {
@@ -341,6 +351,7 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
       m_tds_dropped_tc_count += pending_td.contributing_tcs.size();
     }
     else {
+      m_latency_instance.update_latency_out( pending_td.contributing_tcs.front().time_start );
       m_tds_sent_count++;
       m_tds_sent_tc_count += pending_td.contributing_tcs.size();
     }
