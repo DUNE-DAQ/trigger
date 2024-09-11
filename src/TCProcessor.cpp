@@ -15,7 +15,6 @@
 #include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/models/IterableQueueModel.hpp"
 #include "datahandlinglibs/utils/ReusableThread.hpp"
-
 #include "trigger/TCWrapper.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
@@ -196,7 +195,7 @@ TCProcessor::generate_opmon_data()
   this->publish(std::move(info));
 
   if (m_running_flag.load()) {
-    opmon::TCProcessorLatency lat_info;
+    opmon::TriggerLatency lat_info;
 
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
     lat_info.set_latency_out( m_latency_instance.get_latency_out() );

@@ -18,8 +18,9 @@
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/Latency.hpp"
 #include "trigger/opmon/tpprocessor_info.pb.h"
-#include "triggeralgs/TriggerActivity.hpp"
+#include "trigger/opmon/latency_info.pb.h"
 
+#include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/Types.hpp"
 #include "triggeralgs/TriggerActivityMaker.hpp"
 

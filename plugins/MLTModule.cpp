@@ -110,7 +110,7 @@ MLTModule::generate_opmon_data()
   // latency
   if (m_running_flag.load()) {
     // TC in, TD out
-    opmon::ModuleLevelTriggerLatency lat_info;
+    opmon::TriggerLatency lat_info;
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
     lat_info.set_latency_out( m_latency_instance.get_latency_out() );
     this->publish(std::move(lat_info));

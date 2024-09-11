@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package dunedaq.trigger.opmon;
+
+// Message for latency variables
+message TriggerLatency {
+  uint32 latency_in = 1;
+  uint32 latency_out = 2;
+}
+

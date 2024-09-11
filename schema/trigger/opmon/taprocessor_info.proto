@@ -9,9 +9,3 @@ message TAProcessorInfo {
   uint32 tc_sent_count = 3;        // Number of TCs sent
   uint32 tc_failed_sent_count = 4; // Number of TCs that failed to be sent
 }
-
-// Message for TAP latency vars
-message TAProcessorLatency {
-  uint32 latency_in = 1;
-  uint32 latency_out = 2;
-}

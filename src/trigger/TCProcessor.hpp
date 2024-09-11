@@ -23,6 +23,7 @@
 #include "trigger/TCWrapper.hpp"
 #include "trigger/Latency.hpp"
 #include "trigger/opmon/tcprocessor_info.pb.h"
+#include "trigger/opmon/latency_info.pb.h"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"

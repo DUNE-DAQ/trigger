@@ -19,6 +19,7 @@
 #include "trigger/TokenManager.hpp"
 #include "trigger/Latency.hpp"
 #include "trigger/opmon/moduleleveltrigger_info.pb.h"
+#include "trigger/opmon/latency_info.pb.h"
 
 #include "appfwk/DAQModule.hpp"
 

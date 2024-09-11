@@ -20,8 +20,9 @@
 #include "trigger/TAWrapper.hpp"
 #include "trigger/Latency.hpp"
 #include "trigger/opmon/taprocessor_info.pb.h"
-#include "triggeralgs/TriggerCandidate.hpp"
+#include "trigger/opmon/latency_info.pb.h"
 
+#include "triggeralgs/TriggerCandidate.hpp"
 #include "triggeralgs/Types.hpp"
 #include "triggeralgs/TriggerCandidateMaker.hpp"
 

@@ -29,6 +29,7 @@
 #include "trigger/TCWrapper.hpp"
 #include "trigger/Latency.hpp"
 #include "trigger/opmon/randomtcmaker_info.pb.h"
+#include "trigger/opmon/latency_info.pb.h"
 
 #include <memory>
 #include <random>

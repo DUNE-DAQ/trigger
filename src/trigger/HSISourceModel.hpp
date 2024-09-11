@@ -16,6 +16,7 @@
 #include "trigger/Issues.hpp"
 #include "trigger/Latency.hpp"
 #include "trigger/opmon/hsisourcemodel_info.pb.h"
+#include "trigger/opmon/latency_info.pb.h"
 
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
@@ -181,7 +182,7 @@ public:
     this->publish(std::move(info));
 
     if (m_running_flag.load()) {
-      opmon::HSISourceModelLatency lat_info;
+      opmon::TriggerLatency lat_info;
 
       lat_info.set_latency_in( m_latency_instance.get_latency_in() );
       lat_info.set_latency_out( m_latency_instance.get_latency_out() );
