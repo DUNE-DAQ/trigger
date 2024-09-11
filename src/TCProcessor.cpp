@@ -113,7 +113,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   }
 
 
-    // TODO: Group links!
+  // TODO: Group links!
   //m_group_links_data = conf->get_groups_links();
   parse_group_links(m_group_links_data);
   print_group_links();
@@ -169,6 +169,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
     set_trigger_bitwords(bitwords);
     print_trigger_bitwords(m_trigger_bitwords);
   }
+  m_latency_monitoring = dp->get_latency_monitoring_conf()->get_latency_monitoring();
   inherited::add_postprocess_task(std::bind(&TCProcessor::make_td, this, std::placeholders::_1));
 
   inherited::conf(mtrg);

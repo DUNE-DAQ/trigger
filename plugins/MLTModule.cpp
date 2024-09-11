@@ -67,6 +67,7 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   }
 
   // Now do the configuration: dummy for now
+  m_latency_monitoring = mtrg->get_configuration()->get_latency_monitoring_conf()->get_latency_monitoring();
   m_configured_flag.store(true);
 }
 
@@ -108,7 +109,7 @@ MLTModule::generate_opmon_data()
   }
 
   // latency
-  if (m_running_flag.load()) {
+  if ( m_running_flag.load() && m_latency_monitoring.load() ) {
     // TC in, TD out
     opmon::TriggerLatency lat_info;
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -217,7 +218,7 @@ void
 MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 {
     m_td_msg_received_count++;
-    m_latency_instance.update_latency_in( decision.trigger_timestamp );
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( decision.trigger_timestamp );
 
     auto trigger_types = unpack_types(decision.trigger_type);
     for ( const auto t : trigger_types ) {
@@ -241,8 +242,10 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
         m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
 
 	// readout window latency update
-        m_latency_requests_instance.update_latency_in( decision.components.front().window_begin );
-        m_latency_requests_instance.update_latency_out( decision.components.front().window_end );
+        if (m_latency_monitoring.load()) { 
+	  m_latency_requests_instance.update_latency_in( decision.components.front().window_begin );
+          m_latency_requests_instance.update_latency_out( decision.components.front().window_end );
+	}
 
         m_td_sent_count++;
 
@@ -281,7 +284,7 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
       }
 
     }
-    m_latency_instance.update_latency_out( decision.trigger_timestamp );
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( decision.trigger_timestamp );
     m_td_total_count++;
 }
 

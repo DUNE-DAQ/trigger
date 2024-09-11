@@ -16,6 +16,7 @@
 #include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
+#include "appmodel/LatencyMonitoringConf.hpp"
 
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
@@ -189,6 +190,7 @@ protected:
   std::atomic<metric_counter_type> m_tc_ignored_count{ 0 };
 
   // latency
+  std::atomic<bool> m_latency_monitoring{ false };
   dunedaq::trigger::Latency m_latency_instance;
   std::atomic<metric_counter_type> m_latency_in{ 0 };
   std::atomic<metric_counter_type> m_latency_out{ 0 };

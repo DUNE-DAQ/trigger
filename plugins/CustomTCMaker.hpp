@@ -11,6 +11,7 @@
 
 #include "appmodel/CustomTCMaker.hpp"
 #include "appmodel/CustomTCMakerConf.hpp"
+#include "appmodel/LatencyMonitoringConf.hpp"
 #include "confmodel/Connection.hpp"
 
 #include "appfwk/ModuleConfiguration.hpp"
@@ -120,6 +121,7 @@ private:
   void print_opmon_stats();
 
   // Create an instance of the Latency class
+  std::atomic<bool> m_latency_monitoring{ false };
   dunedaq::trigger::Latency m_latency_instance;
   std::atomic<metric_counter_type> m_latency_in{ 0 };
   std::atomic<metric_counter_type> m_latency_out{ 0 };

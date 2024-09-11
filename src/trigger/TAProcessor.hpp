@@ -13,6 +13,7 @@
 #include "logging/Logging.hpp"
 
 #include "appmodel/DataHandlerModule.hpp"
+#include "appmodel/LatencyMonitoringConf.hpp"
 
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
@@ -78,6 +79,7 @@ protected:
 
   // Create an instance of the Latency class
   std::atomic<bool> m_running_flag{ false };
+  std::atomic<bool> m_latency_monitoring{ false };
   dunedaq::trigger::Latency m_latency_instance;
   std::atomic<metric_counter_type> m_latency_in{ 0 };
   std::atomic<metric_counter_type> m_latency_out{ 0 };

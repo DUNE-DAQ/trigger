@@ -108,7 +108,7 @@ CustomTCMaker::generate_opmon_data()
 
   this->publish(std::move(info));
 
-  if (m_running_flag.load()) { 
+  if ( m_running_flag.load() && m_latency_monitoring.load() ) { 
     opmon::TriggerLatency lat_info;
 
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -134,6 +134,8 @@ CustomTCMaker::do_configure(const nlohmann::json& /*obj*/)
   //// This parameter controls how many new timestamps are calculated when needed
   //// Currently precalculates events for the next 60 seconds
   //m_sorting_size_limit = 60 * m_conf0>clock_frequency_hz;
+  
+  m_latency_monitoring = m_conf->get_latency_monitoring_conf()->get_latency_monitoring();
 }
 
 void
@@ -251,7 +253,7 @@ CustomTCMaker::send_trigger_candidates()
     }
 
     triggeralgs::TriggerCandidate candidate = create_candidate(m_next_trigger_timestamp, m_tc_timestamps.front().first);
-    m_latency_instance.update_latency_in( candidate.time_candidate );
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( candidate.time_candidate );
     m_tc_made_count++;
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
@@ -260,7 +262,7 @@ CustomTCMaker::send_trigger_candidates()
     TCWrapper tcw(candidate);
     try {
       m_trigger_candidate_sink->send(std::move(tcw), std::chrono::milliseconds(10));
-      m_latency_instance.update_latency_out( candidate.time_candidate );
+      if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
       m_tc_sent_count++;
       m_tc_sent_count_type[m_tc_timestamps.front().first] += 1;
     } catch (const ers::Issue& e) {

@@ -98,6 +98,7 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
     inherited::add_postprocess_task(std::bind(&TAProcessor::find_tc, this, std::placeholders::_1, maker));
     m_tcms.push_back(maker);
   }
+  m_latency_monitoring = dp->get_latency_monitoring_conf()->get_latency_monitoring();
   inherited::conf(conf);
 }
 

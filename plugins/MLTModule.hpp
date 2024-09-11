@@ -28,6 +28,7 @@
 #include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
+#include "appmodel/LatencyMonitoringConf.hpp"
 
 #include "confmodel/Connection.hpp"
 
@@ -254,6 +255,7 @@ private:
   }
 
   // Create an instance of the Latency class
+  std::atomic<bool> m_latency_monitoring{ false };
   dunedaq::trigger::Latency m_latency_instance;
   dunedaq::trigger::Latency m_latency_requests_instance;
   std::atomic<metric_counter_type> m_latency_in{ 0 };

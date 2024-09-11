@@ -26,6 +26,8 @@
 #include "appmodel/DataSubscriberModule.hpp"
 #include "appmodel/HSI2TCTranslatorConf.hpp" 
 #include "appmodel/HSISignalWindow.hpp" 
+#include "appmodel/LatencyMonitoringConf.hpp"
+#include "appmodel/DataProcessor.hpp"
 
 namespace dunedaq::trigger {
 
@@ -99,6 +101,8 @@ public:
     }
 
     m_prescale = hsi_conf->get_prescale();
+    m_latency_monitoring = cfg->cast<appmodel::DataProcessor>()->get_latency_monitoring_conf()->get_latency_monitoring();
+
   }
 
   void start() {
@@ -121,7 +125,7 @@ public:
   bool handle_payload(dfmessages::HSIEvent& data) // NOLINT(build/unsigned)
   {
     m_received_events_count++;
-    m_latency_instance.update_latency_in( data.timestamp );
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( data.timestamp );
 
     // Prescale after n-hsi received
     if (m_received_events_count % m_prescale != 0) {
@@ -159,7 +163,7 @@ public:
         m_tcs_dropped_count++;
       }
       else {
-        m_latency_instance.update_latency_out( candidate.time_candidate );
+        if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
         m_tcs_sent_count++;
       }
 
@@ -181,7 +185,7 @@ public:
 
     this->publish(std::move(info));
 
-    if (m_running_flag.load()) {
+    if ( m_running_flag.load() && m_latency_monitoring.load() ) {
       opmon::TriggerLatency lat_info;
 
       lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -224,6 +228,7 @@ private:
 
   // Create an instance of the Latency class
   std::atomic<bool> m_running_flag{ false };
+  std::atomic<bool> m_latency_monitoring{ false };
   dunedaq::trigger::Latency m_latency_instance;
   std::atomic<metric_counter_type> m_latency_in{ 0 };
   std::atomic<metric_counter_type> m_latency_out{ 0 };
