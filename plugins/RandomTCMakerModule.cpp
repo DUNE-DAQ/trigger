@@ -91,7 +91,7 @@ void
 RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
 {
   //m_conf = obj.get<randomtriggercandidatemaker::Conf>();
-  m_latency_monitoring = m_conf->get_latency_monitoring_conf()->get_latency_monitoring();
+  m_latency_monitoring.store( m_conf->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
 }
 
 void

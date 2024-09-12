@@ -101,7 +101,7 @@ public:
     }
 
     m_prescale = hsi_conf->get_prescale();
-    m_latency_monitoring = cfg->cast<appmodel::DataProcessor>()->get_latency_monitoring_conf()->get_latency_monitoring();
+    m_latency_monitoring.store( hsi_conf->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
 
   }
 
