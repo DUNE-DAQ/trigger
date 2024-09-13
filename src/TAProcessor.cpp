@@ -114,7 +114,7 @@ TAProcessor::generate_opmon_data()
 
   this->publish(std::move(info));
 
-  if (m_running_flag.load()) {
+  if ( m_running_flag.load() && m_latency_monitoring.load() ) {
     opmon::TriggerLatency lat_info;
 
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -131,7 +131,7 @@ void
 TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerCandidateMaker> tca)
 {
   //time_activity gave 0 :/
-  m_latency_instance.update_latency_in( ta->activity.time_start );
+  if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( ta->activity.time_start );
   m_ta_received_count++;
   std::vector<triggeralgs::TriggerCandidate> tcs;
   tca->operator()(ta->activity, tcs);
@@ -143,7 +143,7 @@ TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerC
     } else {
       m_tc_sent_count++;
     }
-    m_latency_instance.update_latency_out( tc.time_candidate );
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( tc.time_candidate );
   }
   return;
 }

@@ -116,7 +116,7 @@ TPProcessor::generate_opmon_data()
 
   this->publish(std::move(info));
 
-  if (m_running_flag.load()) {
+  if (m_running_flag.load() && m_latency_monitoring.load() ) {
     opmon::TriggerLatency lat_info;
 
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -132,7 +132,7 @@ TPProcessor::generate_opmon_data()
 void
 TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<triggeralgs::TriggerActivityMaker> taa)
 {
-  m_latency_instance.update_latency_in( tp->tp.time_start ); // time_start or time_peak ?
+  if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( tp->tp.time_start ); // time_start or time_peak ?
   m_tp_received_count++;	
   std::vector<triggeralgs::TriggerActivity> tas;
   taa->operator()(tp->tp, tas);
@@ -145,7 +145,7 @@ TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<tri
       } else {
         m_ta_sent_count++;
       }
-      m_latency_instance.update_latency_out( tas.back().time_start );
+      if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( tas.back().time_start );
 
       tas.pop_back();
   }

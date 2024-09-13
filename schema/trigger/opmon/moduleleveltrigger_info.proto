@@ -26,6 +26,8 @@ message TriggerDecisionInfo {
 }
 
 // Message for MLT TD requests latency vars
+// Latency represents the difference between current system (clock) time and the requested TD readout window (start/end)
+// Units are ms
 message ModuleLevelTriggerRequestLatency {
   uint32 latency_window_start = 1;
   uint32 latency_window_end = 2;
