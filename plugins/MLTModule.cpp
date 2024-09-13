@@ -66,8 +66,10 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       m_decision_output = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
   }
 
-  // Now do the configuration: dummy for now
+  // Latency related
   m_latency_monitoring.store( mtrg->get_configuration()->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
+
+  // Now do the configuration: dummy for now
   m_configured_flag.store(true);
 }
 
