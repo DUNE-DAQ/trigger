@@ -31,7 +31,7 @@ namespace trigger {
 
 MLTModule::MLTModule(const std::string& name)
   : DAQModule(name)
-  , m_last_trigger_number(0)
+  , m_last_trigger_number(1)
   , m_run_number(0)
 {
   // clang-format off
@@ -113,7 +113,7 @@ MLTModule::do_start(const nlohmann::json& startobj)
 {
   m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
   // We get here at start of run, so reset the trigger number
-  m_last_trigger_number = 0;
+  m_last_trigger_number = 1;
 
   // OpMon.
   m_td_msg_received_count.store(0);
