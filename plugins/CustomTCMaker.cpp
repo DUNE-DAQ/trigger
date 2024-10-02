@@ -41,7 +41,6 @@ sortbysec(const std::pair<int, dunedaq::dfmessages::timestamp_t>& a,
 }
 
 namespace dunedaq {
-DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 
 namespace trigger {
 
@@ -64,7 +63,7 @@ CustomTCMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   try {
     // Get the outputs
     for(auto con: mtrg->get_outputs()){
-        m_trigger_candidate_sink = get_iom_sender<trigger::TCWrapper>(con->UID());
+        m_trigger_candidate_sink = get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
     }
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
@@ -242,9 +241,8 @@ CustomTCMaker::send_trigger_candidates()
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
 
-    TCWrapper tcw(candidate);
     try {
-      m_trigger_candidate_sink->send(std::move(tcw), std::chrono::milliseconds(10));
+      m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
       m_tc_sent_count++;
       m_tc_sent_count_type[m_tc_timestamps.front().first] += 1;
     } catch (const ers::Issue& e) {
