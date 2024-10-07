@@ -33,8 +33,6 @@
 
 namespace dunedaq {
 
-DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
-
 namespace trigger {
 
 RandomTCMakerModule::RandomTCMakerModule(const std::string& name)
@@ -57,7 +55,7 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   for(auto con: mtrg->get_outputs()){
     TLOG() << "TC sink is " << con->class_name() << "@" << con->UID();
     m_trigger_candidate_sink =
-        get_iom_sender<trigger::TCWrapper>(con->UID());
+        get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
   }
   for(auto con: mtrg->get_inputs()) {
   // Get the time sync source
@@ -231,9 +229,9 @@ RandomTCMakerModule::send_trigger_candidates()
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
-    TCWrapper tcw(candidate);
+
     try{
-      m_trigger_candidate_sink->send(std::move(tcw), std::chrono::milliseconds(10));
+      m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
       if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
       m_tc_sent_count++;
     } catch (const ers::Issue& e) {

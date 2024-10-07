@@ -26,7 +26,6 @@
 #include "iomanager/Sender.hpp"
 #include "utilities/TimestampEstimator.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
-#include "trigger/TCWrapper.hpp"
 #include "trigger/Latency.hpp"
 #include "trigger/opmon/customtcmaker_info.pb.h"
 #include "trigger/opmon/latency_info.pb.h"
@@ -83,7 +82,7 @@ private:
 
   // Queue sources and sinks
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
-  std::shared_ptr<iomanager::SenderConcept<trigger::TCWrapper>> m_trigger_candidate_sink;
+  std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
   // Config parameters
   const appmodel::CustomTCMakerConf* m_conf;
