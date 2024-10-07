@@ -111,7 +111,7 @@ MLTModule::generate_opmon_data()
   }
 
   // latency
-  if ( m_running_flag.load() && m_latency_monitoring.load() ) {
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
     // TC in, TD out
     opmon::TriggerLatency lat_info;
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -240,15 +240,14 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
              << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
  	     << " number of links " << decision.components.size();
 
+      // readout window latency update
+      if (m_latency_monitoring.load()) {
+        m_latency_requests_instance.update_latency_in( decision.components.front().window_begin );
+        m_latency_requests_instance.update_latency_out( decision.components.front().window_end );
+      }
+
       try {
         m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
-
-	// readout window latency update
-        if (m_latency_monitoring.load()) { 
-	  m_latency_requests_instance.update_latency_in( decision.components.front().window_begin );
-          m_latency_requests_instance.update_latency_out( decision.components.front().window_end );
-	}
-
         m_td_sent_count++;
 
         for ( const auto t : trigger_types ) {

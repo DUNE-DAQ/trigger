@@ -158,12 +158,12 @@ public:
       candidate.inputs = {};
       m_tcs_made_count++; 
 
+      if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
       // Send the TC
       if (!m_data_sender->try_send(std::move(candidate), iomanager::Sender::s_no_block)) {
         m_tcs_dropped_count++;
       }
       else {
-        if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
         m_tcs_sent_count++;
       }
 
@@ -185,7 +185,7 @@ public:
 
     this->publish(std::move(info));
 
-    if ( m_running_flag.load() && m_latency_monitoring.load() ) {
+    if ( m_latency_monitoring.load() && m_running_flag.load() ) {
       opmon::TriggerLatency lat_info;
 
       lat_info.set_latency_in( m_latency_instance.get_latency_in() );

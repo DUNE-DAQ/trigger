@@ -195,7 +195,7 @@ TCProcessor::generate_opmon_data()
 
   this->publish(std::move(info));
 
-  if ( m_running_flag.load() && m_latency_monitoring.load() ) {
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
     opmon::TriggerLatency lat_info;
 
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -345,13 +345,13 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
     auto tn = decision.trigger_number;
     auto td_ts = decision.trigger_timestamp;
 
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( pending_td.contributing_tcs.front().time_start );
     if(!m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
       ers::warning(TDDropped(ERS_HERE, tn, td_ts));
       m_tds_dropped_count++;
       m_tds_dropped_tc_count += pending_td.contributing_tcs.size();
     }
     else {
-      if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( pending_td.contributing_tcs.front().time_start );
       m_tds_sent_count++;
       m_tds_sent_tc_count += pending_td.contributing_tcs.size();
     }

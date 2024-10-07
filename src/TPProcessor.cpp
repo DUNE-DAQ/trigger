@@ -116,7 +116,7 @@ TPProcessor::generate_opmon_data()
 
   this->publish(std::move(info));
 
-  if (m_running_flag.load() && m_latency_monitoring.load() ) {
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
     opmon::TriggerLatency lat_info;
 
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -139,14 +139,13 @@ TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<tri
 
   while (tas.size()) {
       m_ta_made_count++;
+      if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( tas.back().time_start );
       if (!m_ta_sink->try_send(std::move(tas.back()), iomanager::Sender::s_no_block)) {
         ers::warning(TADropped(ERS_HERE, tp->tp.time_start, m_sourceid.id));
         m_ta_failed_sent_count++;
       } else {
         m_ta_sent_count++;
       }
-      if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( tas.back().time_start );
-
       tas.pop_back();
   }
   return;

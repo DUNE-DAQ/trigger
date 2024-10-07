@@ -62,6 +62,7 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
      m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(con->UID());
   }
   m_conf = mtrg->get_configuration();
+  m_latency_monitoring.store( m_conf->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
 }
 
 void
@@ -75,7 +76,7 @@ RandomTCMakerModule::generate_opmon_data()
 
   this->publish(std::move(info));
 
-  if ( m_running_flag.load() && m_latency_monitoring.load() ) {
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
     opmon::TriggerLatency lat_info;
 
     lat_info.set_latency_in( m_latency_instance.get_latency_in() );
@@ -89,7 +90,6 @@ void
 RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
 {
   //m_conf = obj.get<randomtriggercandidatemaker::Conf>();
-  m_latency_monitoring.store( m_conf->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
 }
 
 void
@@ -230,9 +230,9 @@ RandomTCMakerModule::send_trigger_candidates()
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
 
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
     try{
       m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
-      if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
       m_tc_sent_count++;
     } catch (const ers::Issue& e) {
       ers::error(e);
