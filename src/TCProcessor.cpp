@@ -113,7 +113,6 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
         link->get_sid()});
   }
 
-
     // TODO: Group links!
   //m_group_links_data = conf->get_groups_links();
   parse_group_links(m_group_links_data);
@@ -304,6 +303,12 @@ void
 TCProcessor::send_trigger_decisions() {
 
  while (m_running_flag) {
+    // Free the thread for a bit if there's nothing to do...
+    if (!m_pending_tds.size()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      continue;
+    }
+
     std::lock_guard<std::mutex> lock(m_td_vector_mutex);
     auto ready_tds = get_ready_tds(m_pending_tds);
     TLOG_DEBUG(10) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size();
