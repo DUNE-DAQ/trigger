@@ -232,6 +232,7 @@ TCProcessor::make_td(const TCWrapper* tcw)
   else {
     std::lock_guard<std::mutex> lock(m_td_vector_mutex);
     add_tc(tc);
+    m_cv.notify_one();
     TLOG_DEBUG(10) << "pending tds size: " << m_pending_tds.size();
   }
   return;
@@ -301,15 +302,15 @@ TCProcessor::create_decision(const PendingTD& pending_td)
 
 void
 TCProcessor::send_trigger_decisions() {
+ // A unique lock that can be locked and unlocked
+ std::unique_lock<std::mutex> lock(m_td_vector_mutex);
 
  while (m_running_flag) {
-    // Free the thread for a bit if there's nothing to do...
-    if (!m_pending_tds.size()) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      continue;
-    }
+    // Either there are pending TDs, or wait for a bit
+    m_cv.wait_for(lock, std::chrono::milliseconds(10), [this] {
+        return !m_pending_tds.empty();
+    });
 
-    std::lock_guard<std::mutex> lock(m_td_vector_mutex);
     auto ready_tds = get_ready_tds(m_pending_tds);
     TLOG_DEBUG(10) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size();
 
