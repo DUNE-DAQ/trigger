@@ -68,6 +68,14 @@ TCProcessor::stop(const nlohmann::json& args)
 {
   inherited::stop(args);
   m_running_flag.store(false);
+
+  // Make sure condition_variable knows we flipped running flag
+  {
+    std::lock_guard<std::mutex> lock(m_td_vector_mutex);
+    m_cv.notify_all();
+  }
+
+  // Wait for the TD-sending thread to stop
   m_send_trigger_decisions_thread.join();
 
   // Drop all TDs in vectors at run stage change. Have to do this
@@ -307,8 +315,8 @@ TCProcessor::send_trigger_decisions() {
 
  while (m_running_flag) {
     // Either there are pending TDs, or wait for a bit
-    m_cv.wait_for(lock, std::chrono::milliseconds(10), [this] {
-        return !m_pending_tds.empty();
+    m_cv.wait(lock, [this] {
+        return !m_pending_tds.empty() || !m_running_flag;
     });
 
     auto ready_tds = get_ready_tds(m_pending_tds);
