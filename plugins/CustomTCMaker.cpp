@@ -85,7 +85,7 @@ CustomTCMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   // Currently precalculates events for the next 60 seconds
   m_sorting_size_limit = 60 * m_conf->get_clock_frequency_hz();
 
-  m_latency_monitoring.store( m_conf->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
+  m_latency_monitoring.store( m_conf->get_latency_monitoring() );
 }
 
 //void

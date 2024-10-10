@@ -16,7 +16,6 @@
 #include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
-#include "appmodel/LatencyMonitoringConf.hpp"
 
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 

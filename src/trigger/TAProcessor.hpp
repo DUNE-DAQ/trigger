@@ -13,7 +13,6 @@
 #include "logging/Logging.hpp"
 
 #include "appmodel/DataHandlerModule.hpp"
-#include "appmodel/LatencyMonitoringConf.hpp"
 
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 

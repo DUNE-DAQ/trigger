@@ -25,7 +25,6 @@
 #include "triggeralgs/TriggerActivityMaker.hpp"
 
 #include "appmodel/DataHandlerModule.hpp"
-#include "appmodel/LatencyMonitoringConf.hpp"
 
 namespace dunedaq {
 namespace trigger {

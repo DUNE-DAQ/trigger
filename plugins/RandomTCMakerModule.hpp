@@ -15,7 +15,6 @@
 
 #include "appmodel/RandomTCMakerConf.hpp"
 #include "appmodel/RandomTCMakerModule.hpp"
-#include "appmodel/LatencyMonitoringConf.hpp"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TimeSync.hpp"

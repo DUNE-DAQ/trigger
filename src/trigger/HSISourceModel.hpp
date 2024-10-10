@@ -26,7 +26,6 @@
 #include "appmodel/DataSubscriberModule.hpp"
 #include "appmodel/HSI2TCTranslatorConf.hpp" 
 #include "appmodel/HSISignalWindow.hpp" 
-#include "appmodel/LatencyMonitoringConf.hpp"
 #include "appmodel/DataProcessor.hpp"
 
 namespace dunedaq::trigger {
@@ -101,7 +100,7 @@ public:
     }
 
     m_prescale = hsi_conf->get_prescale();
-    m_latency_monitoring.store( hsi_conf->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
+    m_latency_monitoring.store( hsi_conf->get_latency_monitoring() );
 
   }
 

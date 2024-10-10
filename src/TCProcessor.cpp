@@ -169,7 +169,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
     set_trigger_bitwords(bitwords);
     print_trigger_bitwords(m_trigger_bitwords);
   }
-  m_latency_monitoring.store( dp->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
+  m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::add_postprocess_task(std::bind(&TCProcessor::make_td, this, std::placeholders::_1));
 
   inherited::conf(mtrg);

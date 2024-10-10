@@ -99,7 +99,7 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
     inherited::add_postprocess_task(std::bind(&TPProcessor::find_ta, this, std::placeholders::_1, maker));
     m_tams.push_back(maker);
   }
-  m_latency_monitoring.store( dp->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
+  m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::conf(conf);
 
 }

@@ -11,7 +11,6 @@
 
 #include "appmodel/CustomTCMaker.hpp"
 #include "appmodel/CustomTCMakerConf.hpp"
-#include "appmodel/LatencyMonitoringConf.hpp"
 #include "confmodel/Connection.hpp"
 
 #include "appfwk/ModuleConfiguration.hpp"

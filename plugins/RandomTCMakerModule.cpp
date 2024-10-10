@@ -62,7 +62,7 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
      m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(con->UID());
   }
   m_conf = mtrg->get_configuration();
-  m_latency_monitoring.store( m_conf->get_latency_monitoring_conf()->get_enable_latency_monitoring() );
+  m_latency_monitoring.store( m_conf->get_latency_monitoring() );
 }
 
 void
