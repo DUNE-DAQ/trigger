@@ -121,6 +121,7 @@ protected:
   };
   std::vector<PendingTD> m_pending_tds;
   std::mutex m_td_vector_mutex;
+  std::condition_variable m_cv;
 
   void add_tc(const triggeralgs::TriggerCandidate tc);
   void add_tc_ignored(const triggeralgs::TriggerCandidate tc);
