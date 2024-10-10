@@ -17,7 +17,6 @@
 #include "trigger/Issues.hpp"
 #include "trigger/LivetimeCounter.hpp"
 
-#include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
