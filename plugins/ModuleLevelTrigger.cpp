@@ -247,6 +247,8 @@ ModuleLevelTrigger::do_start(const nlohmann::json& startobj)
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), get_name().c_str());
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
+
+  veto_bitset.set(6);
 }
 
 void
@@ -876,6 +878,13 @@ bool
 ModuleLevelTrigger::check_trigger_bitwords()
 {
   bool trigger_check = false;
+
+  // Check if m_TD_bitword has any vetoed bits set
+  if ((m_TD_bitword & veto_bitset) != 0) {
+    TLOG_DEBUG(TLVL_DEBUG_ALL) << "[MLT] TD word vetoed: " << m_TD_bitword;
+    return false; // If any vetoed bit is set in m_TD_bitword, reject immediately
+  }
+
   for (auto bitword : m_trigger_bitwords) {
     TLOG_DEBUG(TLVL_DEBUG_ALL) << "[MLT] TD word: " << m_TD_bitword << ", bitword: " << bitword;
     trigger_check = ((m_TD_bitword & bitword) == bitword);

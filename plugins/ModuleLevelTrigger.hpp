@@ -249,6 +249,8 @@ private:
   std::atomic<uint64_t> m_initial_offset;
   std::atomic<bool> m_use_latency_offset;
   std::atomic<uint64_t> m_system_time;
+
+  std::bitset<64> veto_bitset;
 };
 } // namespace trigger
 } // namespace dunedaq
