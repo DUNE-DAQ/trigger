@@ -77,9 +77,8 @@ RandomTCMakerModule::generate_opmon_data()
   this->publish(std::move(info));
 
   if ( m_latency_monitoring.load() && m_running_flag.load() ) {
-    opmon::TriggerLatency lat_info;
+    opmon::TriggerLatencyStandalone lat_info;
 
-    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
     lat_info.set_latency_out( m_latency_instance.get_latency_out() );
 
     this->publish(std::move(lat_info));
@@ -224,7 +223,6 @@ RandomTCMakerModule::send_trigger_candidates()
     next_trigger_timestamp = m_timestamp_estimator->get_timestamp_estimate();
     triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
 
-    if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( candidate.time_candidate );
     m_tc_made_count++;
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()

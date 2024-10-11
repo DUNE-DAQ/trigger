@@ -4,10 +4,17 @@ package dunedaq.trigger.opmon;
 
 // Message for latency variables
 // Latency represents the difference between current system (clock) time and the data time of particular (TX) data object
-// Units are ms
+// Units are us
 // Used by many trigger modules
 message TriggerLatency {
   uint32 latency_in = 1;
   uint32 latency_out = 2;
 }
 
+// Message for latency variables
+// Latency represents the difference between current system (clock) time and the data time of particular (TX) data object
+// Units are us
+// Special case for Standalone makers
+message TriggerLatencyStandalone {
+  uint32 latency_out = 1;
+}
