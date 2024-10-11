@@ -62,6 +62,7 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
      m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(con->UID());
   }
   m_conf = mtrg->get_configuration();
+  m_latency_monitoring.store( m_conf->get_latency_monitoring() );
 }
 
 void
@@ -74,6 +75,14 @@ RandomTCMakerModule::generate_opmon_data()
   info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );
 
   this->publish(std::move(info));
+
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+    opmon::TriggerLatencyStandalone lat_info;
+
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+    this->publish(std::move(lat_info));
+  }
 }
 
 void
@@ -88,6 +97,11 @@ RandomTCMakerModule::do_start(const nlohmann::json& obj)
   m_run_number = obj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   m_running_flag.store(true);
+
+  // OpMon.
+  m_tc_made_count.store(0);
+  m_tc_sent_count.store(0);
+  m_tc_failed_sent_count.store(0);
 
   std::string timestamp_method = m_conf->get_timestamp_method();
   if (timestamp_method == "kTimeSync") {
@@ -208,11 +222,13 @@ RandomTCMakerModule::send_trigger_candidates()
     }
     next_trigger_timestamp = m_timestamp_estimator->get_timestamp_estimate();
     triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
+
     m_tc_made_count++;
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
 
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
     try{
       m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
       m_tc_sent_count++;
