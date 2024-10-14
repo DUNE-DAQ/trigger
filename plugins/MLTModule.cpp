@@ -294,8 +294,16 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 
     // Overwrite the component's readout window if we have custom
     // subdetector--readout window map
-    for ( const auto& [sourceid, window] : m_subdetector_readout_window_map ) {
+    for ( const auto& [subdetectorid, window] : m_subdetector_readout_window_map ) {
       for (auto& request: decision.components) {
+        if (request.component.subsystem != daqdataformats::SourceID::Subsystem::kDetectorReadout) {
+          continue;
+        }
+
+        if (subdetectorid != m_srcid_detid_map[request.component]) {
+          continue;
+        }
+
         request.window_begin = decision.trigger_timestamp - window.first;
         request.window_end = decision.trigger_timestamp + window.second;
       }
