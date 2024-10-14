@@ -54,6 +54,9 @@ TAProcessor::start(const nlohmann::json& args)
   m_tc_made_count.store(0);
   m_tc_sent_count.store(0);
   m_tc_failed_sent_count.store(0);
+
+  m_running_flag.store(true);
+
   inherited::start(args);
 }
 
@@ -61,6 +64,7 @@ void
 TAProcessor::stop(const nlohmann::json& args)
 {
   inherited::stop(args);
+  m_running_flag.store(false);
   print_opmon_stats();
 }
 
@@ -94,6 +98,7 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
     inherited::add_postprocess_task(std::bind(&TAProcessor::find_tc, this, std::placeholders::_1, maker));
     m_tcms.push_back(maker);
   }
+  m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::conf(conf);
 }
 
@@ -108,6 +113,15 @@ TAProcessor::generate_opmon_data()
   info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );
 
   this->publish(std::move(info));
+
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+    opmon::TriggerLatency lat_info;
+
+    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+    this->publish(std::move(lat_info));
+  }
 }
 
 /**
@@ -116,11 +130,14 @@ TAProcessor::generate_opmon_data()
 void
 TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerCandidateMaker> tca)
 {
+  //time_activity gave 0 :/
+  if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( ta->activity.time_start );
   m_ta_received_count++;
   std::vector<triggeralgs::TriggerCandidate> tcs;
   tca->operator()(ta->activity, tcs);
   for (auto tc : tcs) {
     m_tc_made_count++;
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( tc.time_candidate );
     if(!m_tc_sink->try_send(std::move(tc), iomanager::Sender::s_no_block)) {
         ers::warning(TCDropped(ERS_HERE, tc.time_start, m_sourceid.id));
         m_tc_failed_sent_count++;

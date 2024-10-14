@@ -85,6 +85,7 @@ CustomTCMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   // Currently precalculates events for the next 60 seconds
   m_sorting_size_limit = 60 * m_conf->get_clock_frequency_hz();
 
+  m_latency_monitoring.store( m_conf->get_latency_monitoring() );
 }
 
 //void
@@ -106,6 +107,14 @@ CustomTCMaker::generate_opmon_data()
   info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );  
 
   this->publish(std::move(info));
+
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) { 
+    opmon::TriggerLatencyStandalone lat_info;
+
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+    this->publish(std::move(lat_info));
+  }
 }
 
 void
@@ -130,6 +139,11 @@ void
 CustomTCMaker::do_start(const nlohmann::json& obj)
 {
   m_running_flag.store(true);
+
+  // OpMon.
+  m_tc_made_count.store(0);
+  m_tc_sent_count.store(0);
+  m_tc_failed_sent_count.store(0);
 
   auto start_params = obj.get<rcif::cmd::StartParams>();
 
@@ -241,6 +255,7 @@ CustomTCMaker::send_trigger_candidates()
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
 
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
     try {
       m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
       m_tc_sent_count++;

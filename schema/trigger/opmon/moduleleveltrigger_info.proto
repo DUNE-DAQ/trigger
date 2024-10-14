@@ -24,3 +24,11 @@ message TriggerDecisionInfo {
   uint32 paused = 4;          // Number of paused (triggers are paused)
   uint32 inhibited = 5;       // Number of inhibited (DFO is busy)
 }
+
+// Message for MLT TD requests latency vars
+// Latency represents the difference between current system (clock) time and the requested TD readout window (start/end)
+// Units are currently us (but use an enum and can be changed)
+message ModuleLevelTriggerRequestLatency {
+  uint32 latency_window_start = 1;
+  uint32 latency_window_end = 2;
+}

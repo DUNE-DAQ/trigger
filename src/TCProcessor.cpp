@@ -15,7 +15,6 @@
 #include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/models/IterableQueueModel.hpp"
 #include "datahandlinglibs/utils/ReusableThread.hpp"
-
 #include "trigger/TCWrapper.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
@@ -121,7 +120,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
         link->get_sid()});
   }
 
-    // TODO: Group links!
+  // TODO: Group links!
   //m_group_links_data = conf->get_groups_links();
   parse_group_links(m_group_links_data);
   print_group_links();
@@ -179,6 +178,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
     set_trigger_bitwords(bitwords);
     print_trigger_bitwords(m_trigger_bitwords);
   }
+  m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::add_postprocess_task(std::bind(&TCProcessor::make_td, this, std::placeholders::_1));
 
   inherited::conf(mtrg);
@@ -203,6 +203,15 @@ TCProcessor::generate_opmon_data()
   info.set_tds_cleared_tc_count( m_tds_cleared_tc_count.load() );
 
   this->publish(std::move(info));
+
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+    opmon::TriggerLatency lat_info;
+
+    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+    this->publish(std::move(lat_info));
+  }
 }
 
 /**
@@ -213,6 +222,7 @@ TCProcessor::make_td(const TCWrapper* tcw)
 {
 	
   auto tc = tcw->candidate;
+  if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( tc.time_start );
   m_tc_received_count++;
 
   if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ) {
@@ -273,7 +283,7 @@ TCProcessor::create_decision(const PendingTD& pending_td)
     }
   } else {
     m_TD_bitword = get_TD_bitword(pending_td);
-    TLOG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " "
+    TLOG_DEBUG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " "
                                        << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
     decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
 
@@ -320,7 +330,6 @@ TCProcessor::send_trigger_decisions() {
     m_cv.wait(lock, [this] {
         return !m_pending_tds.empty() || !m_running_flag;
     });
-
     auto ready_tds = get_ready_tds(m_pending_tds);
     TLOG_DEBUG(10) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size();
 
@@ -351,6 +360,7 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
     auto tn = decision.trigger_number;
     auto td_ts = decision.trigger_timestamp;
 
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( pending_td.contributing_tcs.front().time_start );
     if(!m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
       ers::warning(TDDropped(ERS_HERE, tn, td_ts));
       m_tds_dropped_count++;

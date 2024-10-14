@@ -17,7 +17,9 @@
 #include "trigger/Issues.hpp"
 #include "trigger/LivetimeCounter.hpp"
 #include "trigger/TokenManager.hpp"
+#include "trigger/Latency.hpp"
 #include "trigger/opmon/moduleleveltrigger_info.pb.h"
+#include "trigger/opmon/latency_info.pb.h"
 
 #include "appfwk/DAQModule.hpp"
 
@@ -264,6 +266,15 @@ private:
     std::lock_guard<std::mutex> guard(m_trigger_mutex);
     return m_trigger_counters[type];
   }
+
+  // Create an instance of the Latency class
+  std::atomic<bool> m_latency_monitoring{ false };
+  dunedaq::trigger::Latency m_latency_instance;
+  dunedaq::trigger::Latency m_latency_requests_instance;
+  std::atomic<metric_counter_type> m_latency_in{ 0 };
+  std::atomic<metric_counter_type> m_latency_out{ 0 };
+  std::atomic<metric_counter_type> m_latency_window_start{ 0 };
+  std::atomic<metric_counter_type> m_latency_window_end{ 0 };
 
   void print_opmon_stats();
 };

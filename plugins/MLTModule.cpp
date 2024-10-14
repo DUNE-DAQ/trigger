@@ -129,7 +129,10 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       << " time_start: " << subdet_readout_window->get_time_before() << " time_after: " << subdet_readout_window->get_time_after();
   }
 
-  //Now do the configuration: dummy for now
+  // Latency related
+  m_latency_monitoring.store( mtrg->get_configuration()->get_latency_monitoring() );
+
+  // Now do the configuration: dummy for now
   m_configured_flag.store(true);
 }
 
@@ -168,6 +171,21 @@ MLTModule::generate_opmon_data()
     td_info.set_paused(counts.paused.exchange(0));
     td_info.set_inhibited(counts.inhibited.exchange(0));
     this->publish( std::move(td_info), {{"type", name}} );
+  }
+
+  // latency
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+    // TC in, TD out
+    opmon::TriggerLatency lat_info;
+    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+    this->publish(std::move(lat_info));
+
+    // vs readout window requests
+    opmon::ModuleLevelTriggerRequestLatency lat_request_info;
+    lat_request_info.set_latency_window_start( m_latency_requests_instance.get_latency_in() );
+    lat_request_info.set_latency_window_end( m_latency_requests_instance.get_latency_out() );
+    this->publish(std::move(lat_request_info));
   }
 }
 
@@ -262,6 +280,7 @@ void
 MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 {
     m_td_msg_received_count++;
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( decision.trigger_timestamp );
 
     auto trigger_types = unpack_types(decision.trigger_type);
     for ( const auto t : trigger_types ) {
@@ -289,6 +308,13 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
       TLOG_DEBUG(1) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
              << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
  	     << " number of links " << decision.components.size();
+
+      // readout window latency update
+      // TODO: The latency will be different for different components, since they might have different readout windows
+      if (m_latency_monitoring.load()) {
+        m_latency_requests_instance.update_latency_in( decision.components.front().window_begin );
+        m_latency_requests_instance.update_latency_out( decision.components.front().window_end );
+      }
 
       try {
         m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
@@ -329,6 +355,7 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
       }
 
     }
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( decision.trigger_timestamp );
     m_td_total_count++;
 }
 
