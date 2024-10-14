@@ -11,7 +11,6 @@
 
 #include "trigger/Issues.hpp"
 
-#include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
 #include "trgdataformats/Types.hpp"
 #include "dfmessages/TimeSync.hpp"
