@@ -229,6 +229,14 @@ RandomTCMakerModule::send_trigger_candidates()
   TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp;
 
   while (m_running_flag.load()) {
+    // If trigger rate is 0, just sleep. Need to use small number here because
+    // of floating point precision...
+    constexpr float epsilon = 1e-9;
+    if ( m_trigger_rate_hz.load() <= epsilon) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      continue;
+    }
+
     if (m_timestamp_estimator->wait_for_timestamp(next_trigger_timestamp, m_running_flag) ==
         utilities::TimestampEstimatorBase::kInterrupted) {
       break;
