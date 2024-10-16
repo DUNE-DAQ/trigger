@@ -70,9 +70,9 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 
   // Get the clock speed from detector configuration
   m_clock_speed_hz = mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz();
-  m_trigger_rate_hz = m_conf->get_trigger_rate_hz();
+  m_trigger_rate_hz.store(m_conf->get_trigger_rate_hz());
   TLOG() << "Clock speed is: " << m_clock_speed_hz;
-  TLOG() << "Output trigger rate is: " << m_trigger_rate_hz;
+  TLOG() << "Output trigger rate is: " << m_trigger_rate_hz.load();
 }
 
 void
@@ -132,9 +132,8 @@ RandomTCMakerModule::do_start(const nlohmann::json& obj)
   // Check if the trigger rate was changed in the starting parameters, and set it if so
   auto start_params = obj.get<rcif::cmd::StartParams>();
   if (start_params.trigger_rate > 0) {
-    TLOG() << " Changing rate: trigger_rate "
-      << start_params.trigger_rate;
-    m_trigger_rate_hz = start_params.trigger_rate;
+    TLOG() << "Changing trigger rate from " << m_trigger_rate_hz.load() << " to " << start_params.trigger_rate;
+    m_trigger_rate_hz.store(start_params.trigger_rate);
   }
 
   m_send_trigger_candidates_thread = std::thread(&RandomTCMakerModule::send_trigger_candidates, this);
@@ -166,9 +165,9 @@ RandomTCMakerModule::do_change_trigger_rate(const nlohmann::json& obj)
 {
   auto change_rate_params = obj.get<rcif::cmd::ChangeRateParams>();
 
-  TLOG() << "Changing trigger rate from " << m_trigger_rate_hz << " to " << change_rate_params.trigger_rate;
+  TLOG() << "Changing trigger rate from " << m_trigger_rate_hz.load() << " to " << change_rate_params.trigger_rate;
 
-  m_trigger_rate_hz = change_rate_params.trigger_rate;
+  m_trigger_rate_hz.store(change_rate_params.trigger_rate);
 }
 
 triggeralgs::TriggerCandidate
@@ -197,7 +196,7 @@ RandomTCMakerModule::get_interval(std::mt19937& gen)
 {
   std::string time_distribution = m_conf->get_time_distribution();
 
-  int interval = m_trigger_rate_hz * m_clock_speed_hz;
+  int interval = m_clock_speed_hz / m_trigger_rate_hz.load();
 
   if( time_distribution == "kUniform"){
     return interval;
