@@ -129,8 +129,9 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 
   m_hsi_passthrough = proc_conf->get_hsi_trigger_type_passthrough();
   m_tc_merging        = proc_conf->get_merge_overlapping_tcs();
+  m_ignore_tc_pileup = proc_conf->get_ignore_overlapping_tcs();
   m_buffer_timeout    = proc_conf->get_buffer_timeout();
-  m_send_timed_out_tds = proc_conf->get_td_out_of_timeout();
+  m_send_timed_out_tds = (m_ignore_tc_pileup) ? false : proc_conf->get_td_out_of_timeout();
   m_td_readout_limit  = proc_conf->get_td_readout_limit();
   m_ignored_tc_types = proc_conf->get_ignore_tc();
   m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
@@ -138,6 +139,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   m_use_roi_readout   = proc_conf->get_use_roi_readout();
   m_use_bitwords      = proc_conf->get_use_bitwords();
   TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
+  TLOG_DEBUG(3) << "Ignore pileup: " << m_ignore_tc_pileup;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
@@ -375,55 +377,71 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
 void
 TCProcessor::add_tc(const triggeralgs::TriggerCandidate tc)
 {
-  bool added_to_existing = false;
+  bool tc_dealt = false;
   int64_t tc_wallclock_arrived =
     std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-  if (m_tc_merging) {
+  if (m_tc_merging || m_ignore_tc_pileup) {
 
     for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
-      if (check_overlap(tc, *it)) {
-        it->contributing_tcs.push_back(tc);
-        if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
-          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
-                        << tc.time_candidate + m_readout_window_map[tc.type].second
-                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
-                        << it->readout_end;
-          it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
-                                ? it->readout_start
-                                : (tc.time_candidate - m_readout_window_map[tc.type].first);
-          it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
-                              ? (tc.time_candidate + m_readout_window_map[tc.type].second)
-                              : it->readout_end;
-        } else {
-          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
-                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
-                        << it->readout_end;
-          it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
-          it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
-        }
-        it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
-        added_to_existing = true;
+      // Don't deal with TC here if there's no overlap
+      if (!check_overlap(tc, *it)) {
+        it++;
+        continue;
+      }
+
+      // If overlap and ignoring, we drop the TC and flag it as dealt with.
+      if (m_ignore_tc_pileup) {
+        m_tds_dropped_tc_count++;
+        tc_dealt = true;
+        TLOG_DEBUG(3) << "TC overlapping with a previous TD, dropping!";
         break;
       }
-      ++it;
+
+      // If we're here, TC merging must be on, in which case we're actually
+      // going to merge the TC into the TD.    
+      it->contributing_tcs.push_back(tc);
+      if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
+        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
+                      << tc.time_candidate + m_readout_window_map[tc.type].second
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
+        it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
+                              ? it->readout_start
+                              : (tc.time_candidate - m_readout_window_map[tc.type].first);
+        it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
+                            ? (tc.time_candidate + m_readout_window_map[tc.type].second)
+                            : it->readout_end;
+      } else {
+        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
+        it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
+        it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
+      }
+      it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
+      tc_dealt = true;
+      break;
     }
   }
 
-  if (!added_to_existing) {
-    PendingTD td_candidate;
-    td_candidate.contributing_tcs.push_back(tc);
-    if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
-      td_candidate.readout_start = tc.time_candidate - m_readout_window_map[tc.type].first;
-      td_candidate.readout_end = tc.time_candidate + m_readout_window_map[tc.type].second;
-    } else {
-      td_candidate.readout_start = tc.time_start;
-      td_candidate.readout_end = tc.time_end;
-    }
-    td_candidate.walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
-    m_pending_tds.push_back(td_candidate);
+  // Don't do anything else if we've already dealt with the TC
+  if (tc_dealt) {
+    return;
   }
-  return;
+
+  // Create a new TD out of the TC
+  PendingTD td_candidate;
+  td_candidate.contributing_tcs.push_back(tc);
+  if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
+    td_candidate.readout_start = tc.time_candidate - m_readout_window_map[tc.type].first;
+    td_candidate.readout_end = tc.time_candidate + m_readout_window_map[tc.type].second;
+  } else {
+    td_candidate.readout_start = tc.time_start;
+    td_candidate.readout_end = tc.time_end;
+  }
+  td_candidate.walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
+  m_pending_tds.push_back(td_candidate);
 }
 
 void

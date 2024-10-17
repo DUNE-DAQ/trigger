@@ -205,6 +205,13 @@ ERS_DECLARE_ISSUE(trigger,
                   "TD trigger number " << tn << " time stamp  " << ts,
                   ((uint64_t)tn) ((uint64_t)ts))
 
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       MLTConfigurationProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Configuration error: " << item,
+                       ((std::string)name),
+                       ((std::string)item))
+
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_
