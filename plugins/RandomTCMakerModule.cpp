@@ -44,6 +44,7 @@ RandomTCMakerModule::RandomTCMakerModule(const std::string& name)
   register_command("start", &RandomTCMakerModule::do_start);
   register_command("stop_trigger_sources", &RandomTCMakerModule::do_stop);
   register_command("scrap", &RandomTCMakerModule::do_scrap);
+  register_command("change_rate", &RandomTCMakerModule::do_change_trigger_rate);
 }
 
 void
@@ -61,7 +62,17 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
      m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(con->UID());
   }
   m_conf = mtrg->get_configuration();
+
+  // Get the TC out configuration
+  m_tc_readout = m_conf->get_tc_readout();
+
   m_latency_monitoring.store( m_conf->get_latency_monitoring() );
+
+  // Get the clock speed from detector configuration
+  m_clock_speed_hz = mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz();
+  m_trigger_rate_hz.store(m_conf->get_trigger_rate_hz());
+  TLOG() << "Clock speed is: " << m_clock_speed_hz;
+  TLOG() << "Output trigger rate is: " << m_trigger_rate_hz.load();
 }
 
 void
@@ -105,31 +116,25 @@ RandomTCMakerModule::do_start(const nlohmann::json& obj)
   std::string timestamp_method = m_conf->get_timestamp_method();
   if (timestamp_method == "kTimeSync") {
     TLOG_DEBUG(0) << "Creating TimestampEstimator";
-    m_timestamp_estimator.reset(new utilities::TimestampEstimator(m_run_number, m_conf->get_clock_frequency_hz()));
+    m_timestamp_estimator.reset(new utilities::TimestampEstimator(m_run_number, m_clock_speed_hz));
     m_time_sync_source->add_callback(std::bind(&utilities::TimestampEstimator::timesync_callback<dfmessages::TimeSync>,
           reinterpret_cast<utilities::TimestampEstimator*>(m_timestamp_estimator.get()),
           std::placeholders::_1));
   }
   else if(timestamp_method == "kSystemClock"){
     TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
-    m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_conf->get_clock_frequency_hz()));
+    m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_clock_speed_hz));
   }
   else{
     // TODO: write some error message
   }
-  //switch (m_conf->get_timestamp_method()) {
-  //  case randomtriggercandidatemaker::timestamp_estimation::kTimeSync:
-  //    TLOG_DEBUG(0) << "Creating TimestampEstimator";
-  //    m_timestamp_estimator.reset(new utilities::TimestampEstimator(m_run_number, m_conf->get_clock_frequency_hz()));
-  //    m_time_sync_source->add_callback(std::bind(&utilities::TimestampEstimator::timesync_callback<dfmessages::TimeSync>,
-  //                                               reinterpret_cast<utilities::TimestampEstimator*>(m_timestamp_estimator.get()),
-  //                                               std::placeholders::_1));
-  //    break;
-  //  case randomtriggercandidatemaker::timestamp_estimation::kSystemClock:
-  //    TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
-  //    m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_conf->get_clock_frequency_hz()));
-  //    break;
-  //}
+
+  // Check if the trigger rate was changed in the starting parameters, and set it if so
+  auto start_params = obj.get<rcif::cmd::StartParams>();
+  if (start_params.trigger_rate > 0) {
+    TLOG() << "Changing trigger rate from " << m_trigger_rate_hz.load() << " to " << start_params.trigger_rate;
+    m_trigger_rate_hz.store(start_params.trigger_rate);
+  }
 
   m_send_trigger_candidates_thread = std::thread(&RandomTCMakerModule::send_trigger_candidates, this);
   pthread_setname_np(m_send_trigger_candidates_thread.native_handle(), "random-tc-maker");
@@ -154,15 +159,32 @@ RandomTCMakerModule::do_scrap(const nlohmann::json& /*obj*/)
   m_configured_flag.store(false);
 }
 
+
+void
+RandomTCMakerModule::do_change_trigger_rate(const nlohmann::json& obj)
+{
+  auto change_rate_params = obj.get<rcif::cmd::ChangeRateParams>();
+
+  TLOG() << "Changing trigger rate from " << m_trigger_rate_hz.load() << " to " << change_rate_params.trigger_rate;
+
+  m_trigger_rate_hz.store(change_rate_params.trigger_rate);
+}
+
 triggeralgs::TriggerCandidate
 RandomTCMakerModule::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_start = (timestamp - 1000);
-  candidate.time_end = (timestamp + 1000);
+  candidate.time_start = (timestamp - m_tc_readout->get_time_before());
+  candidate.time_end = (timestamp + m_tc_readout->get_time_after());
   candidate.time_candidate = timestamp;
   candidate.detid = { 0 };
-  candidate.type = triggeralgs::TriggerCandidate::Type::kRandom;
+  candidate.type = static_cast<triggeralgs::TriggerCandidate::Type>(m_tc_readout->get_candidate_type());
+
+  // Throw error if unknown TC type
+  if (candidate.type == triggeralgs::TriggerCandidate::Type::kUnknown) {
+            throw InvalidConfiguration(ERS_HERE);
+  }
+
   // TODO: Originally kHSIEventToTriggerCandidate
   candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kCustom;
 
@@ -174,27 +196,19 @@ RandomTCMakerModule::get_interval(std::mt19937& gen)
 {
   std::string time_distribution = m_conf->get_time_distribution();
 
+  int interval = m_clock_speed_hz / m_trigger_rate_hz.load();
+
   if( time_distribution == "kUniform"){
-    return m_conf->get_trigger_interval_ticks();
+    return interval;
   }
   else if(time_distribution == "kPoisson"){
-    std::exponential_distribution<double> d(1.0 / m_conf->get_trigger_interval_ticks());
+    std::exponential_distribution<double> d(1.0 / interval);
     return static_cast<int>(0.5 + d(gen));
   }
   else{
     TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
   }
-  return m_conf->get_trigger_interval_ticks();
-  //switch (m_conf->get_time_distribution()) {
-  //  default: // Treat an unknown distribution as kUniform, but warn
-  //    TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
-  //    // fall through
-  //  case randomtriggercandidatemaker::distribution_type::kUniform:
-  //    return m_conf->get_trigger_interval_ticks();
-  //  case randomtriggercandidatemaker::distribution_type::kPoisson:
-  //    std::exponential_distribution<double> d(1.0 / m_conf->get_trigger_interval_ticks());
-  //    return static_cast<int>(0.5 + d(gen));
-  //}
+  return interval;
 }
 
 void
@@ -215,6 +229,14 @@ RandomTCMakerModule::send_trigger_candidates()
   TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp;
 
   while (m_running_flag.load()) {
+    // If trigger rate is 0, just sleep. Need to use small number here because
+    // of floating point precision...
+    constexpr float epsilon = 1e-9;
+    if ( m_trigger_rate_hz.load() <= epsilon) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      continue;
+    }
+
     if (m_timestamp_estimator->wait_for_timestamp(next_trigger_timestamp, m_running_flag) ==
         utilities::TimestampEstimatorBase::kInterrupted) {
       break;
