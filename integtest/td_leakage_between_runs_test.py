@@ -53,20 +53,19 @@ conf_dict["trigger"]["ctcm_timestamp_method"] = "kTimeSync"
 conf_dict["trigger"]["mlt_merge_overlapping_tcs"] = True
 conf_dict["trigger"]["mlt_send_timed_out_tds"] = True
 conf_dict["trigger"]["mlt_buffer_timeout"] = 1000
-conf_dict["trigger"]["mlt_use_readout_map"] = True
 conf_dict["trigger"]["mlt_td_readout_map"] = []
 rmap_conf = {}
-rmap_conf["candidate_type"] = 1
+rmap_conf["tc_type_name"] = "kTiming"
 rmap_conf["time_before"] = readout_window_time_before
 rmap_conf["time_after"] = readout_window_time_after
 conf_dict["trigger"]["mlt_td_readout_map"].append(rmap_conf)
 rmap_conf = {}
-rmap_conf["candidate_type"] = 2
+rmap_conf["tc_type_name"] = "kTPCLowE"
 rmap_conf["time_before"] = readout_window_time_before
 rmap_conf["time_after"] = readout_window_time_after
 conf_dict["trigger"]["mlt_td_readout_map"].append(rmap_conf)
 rmap_conf = {}
-rmap_conf["candidate_type"] = 3
+rmap_conf["tc_type_name"] = "kSupernova"
 rmap_conf["time_before"] = readout_window_time_before
 rmap_conf["time_after"] = readout_window_time_after
 conf_dict["trigger"]["mlt_td_readout_map"].append(rmap_conf)
