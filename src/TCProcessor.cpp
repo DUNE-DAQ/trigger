@@ -134,31 +134,31 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   m_send_timed_out_tds = (m_ignore_tc_pileup) ? false : proc_conf->get_td_out_of_timeout();
   m_td_readout_limit  = proc_conf->get_td_readout_limit();
   m_ignored_tc_types = proc_conf->get_ignore_tc();
-  m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
-  m_use_readout_map   = proc_conf->get_use_readout_map();
-  m_use_roi_readout   = proc_conf->get_use_roi_readout();
+  m_ignoring_tc_types = !m_ignored_tc_types.empty();
   m_use_bitwords      = proc_conf->get_use_bitwords();
   TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
   TLOG_DEBUG(3) << "Ignore pileup: " << m_ignore_tc_pileup;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
-  TLOG_DEBUG(3) << "Use ROI readout?: " << m_use_roi_readout;
 
   // ROI map
-  if(m_use_roi_readout){
-    m_roi_conf_data = proc_conf->get_roi_group_conf();
+  m_roi_conf_data = proc_conf->get_roi_group_conf();
+  m_use_roi_readout = !m_roi_conf_data.empty();
+  if (m_use_roi_readout) {
     parse_roi_conf(m_roi_conf_data);
     print_roi_conf(m_roi_conf);
   }
+  TLOG_DEBUG(3) << "Use ROI readout?: " << m_use_roi_readout;
 
   // Custom readout map
-  TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
-  if(m_use_readout_map){
-    m_readout_window_map_data = proc_conf->get_tc_readout_map();
+  m_readout_window_map_data = proc_conf->get_tc_readout_map();
+  m_use_readout_map = !m_readout_window_map_data.empty();
+  if (m_use_readout_map) {
     parse_readout_map(m_readout_window_map_data);
     print_readout_map(m_readout_window_map);
   }
+  TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
 
   // Ignoring TC types
   TLOG_DEBUG(3) << "Ignoring TC types: " << m_ignoring_tc_types;
