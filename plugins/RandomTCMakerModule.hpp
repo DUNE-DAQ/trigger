@@ -72,6 +72,7 @@ public:
   void generate_opmon_data() override;
 
 private:
+  using TCType = triggeralgs::TriggerCandidate::Type;
   // Commands
   void do_configure(const nlohmann::json& obj);
   void do_start(const nlohmann::json& obj);
@@ -97,9 +98,17 @@ private:
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
-  //randomtriggercandidatemaker::Conf m_conf;
   const appmodel::RandomTCMakerConf* m_conf;
-  const appmodel::TCReadoutMap* m_tc_readout;
+
+  /// @brief Output TC type
+  TCType m_tcout_type;
+  /// @brief Output window start time, based off trigger timestamp
+  dfmessages::timestamp_t m_tcout_time_before;
+  /// @brief Output window end time, based off trigger timestamp
+  dfmessages::timestamp_t m_tcout_time_after;
+
+
+
 
   /// @brief Clock speed in hz, taken from detector configuration
   uint64_t m_clock_speed_hz;
