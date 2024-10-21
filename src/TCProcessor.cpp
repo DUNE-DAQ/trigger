@@ -91,7 +91,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 {
   auto mtrg = cfg->cast<appmodel::TriggerDataHandlerModule>();	
   if (mtrg == nullptr) {
-    throw(InvalidConfiguration(ERS_HERE));
+    throw(InvalidConfiguration(ERS_HERE, "Provided null TriggerDataHandlerModule configuration!"));
   }
   for (auto output : mtrg->get_outputs()) {
    try {
@@ -275,7 +275,7 @@ TCProcessor::create_decision(const PendingTD& pending_td)
   decision.readout_type = dfmessages::ReadoutType::kLocalized;
 
   if (m_hsi_passthrough == true) {
-    if (pending_td.contributing_tcs[m_earliest_tc_index].type == triggeralgs::TriggerCandidate::Type::kTiming) {
+    if (pending_td.contributing_tcs[m_earliest_tc_index].type == TCType::kTiming) {
       decision.trigger_type = pending_td.contributing_tcs[m_earliest_tc_index].detid & 0xff;
     } else {
       m_trigger_type_shifted = (static_cast<int>(pending_td.contributing_tcs[m_earliest_tc_index].type) << 8);
@@ -617,15 +617,23 @@ void
 TCProcessor::parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>& data)
 {
   for (auto readout_type : data) {
-    m_readout_window_map[static_cast<trgdataformats::TriggerCandidateData::Type>(readout_type->get_candidate_type())] = {
+    TCType tc_type = static_cast<TCType>(
+      dunedaq::trgdataformats::string_to_fragment_type_value(readout_type->get_tc_type_name()));
+
+      // Throw error if unknown TC type
+      if (tc_type == TCType::kUnknown) {
+        throw(InvalidConfiguration(ERS_HERE, "Provided an unknown TC type in the TCReadoutMap for the TCProcessor"));
+      }
+
+    m_readout_window_map[tc_type] = {
       readout_type->get_time_before(), readout_type->get_time_after()
     };
   }
   return;
 }
 void
-TCProcessor::print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
-                                               std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
+TCProcessor::print_readout_map(std::map<TCType,
+                                        std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
 {
   TLOG_DEBUG(3) << "MLT TD Readout map:";
   for (auto const& [key, val] : map) {
