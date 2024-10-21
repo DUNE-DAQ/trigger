@@ -64,13 +64,25 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_conf = mtrg->get_configuration();
 
   // Get the TC out configuration
-  m_tc_readout = m_conf->get_tc_readout();
+  const appmodel::TCReadoutMap* tc_readout = m_conf->get_tc_readout();
+  m_tcout_time_before = tc_readout->get_time_before();
+  m_tcout_time_after = tc_readout->get_time_after();
+  m_tcout_type = static_cast<TCType>(
+      dunedaq::trgdataformats::string_to_fragment_type_value(tc_readout->get_tc_type_name()));
+
+  // Throw error if unknown TC type
+  if (m_tcout_type == TCType::kUnknown) {
+    throw(InvalidConfiguration(ERS_HERE, "Provided an unknown TC type output to RandomTCMakerModule!"));
+  }
 
   m_latency_monitoring.store( m_conf->get_latency_monitoring() );
 
   // Get the clock speed from detector configuration
   m_clock_speed_hz = mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz();
   m_trigger_rate_hz.store(m_conf->get_trigger_rate_hz());
+  TLOG() << "RandomTCMaker will output TC of type: " << tc_readout->get_tc_type_name();
+  TLOG() << "TC window time before: " << m_tcout_time_before
+         << " time after: " << m_tcout_time_after;
   TLOG() << "Clock speed is: " << m_clock_speed_hz;
   TLOG() << "Output trigger rate is: " << m_trigger_rate_hz.load();
 }
@@ -174,16 +186,11 @@ triggeralgs::TriggerCandidate
 RandomTCMakerModule::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_start = (timestamp - m_tc_readout->get_time_before());
-  candidate.time_end = (timestamp + m_tc_readout->get_time_after());
+  candidate.time_start = (timestamp - m_tcout_time_before);
+  candidate.time_end = (timestamp + m_tcout_time_after);
   candidate.time_candidate = timestamp;
   candidate.detid = { 0 };
-  candidate.type = static_cast<triggeralgs::TriggerCandidate::Type>(m_tc_readout->get_candidate_type());
-
-  // Throw error if unknown TC type
-  if (candidate.type == triggeralgs::TriggerCandidate::Type::kUnknown) {
-            throw InvalidConfiguration(ERS_HERE);
-  }
+  candidate.type = m_tcout_type;
 
   // TODO: Originally kHSIEventToTriggerCandidate
   candidate.algorithm = triggeralgs::TriggerCandidate::Algorithm::kCustom;

@@ -28,7 +28,7 @@
 
 namespace dunedaq {
 
-ERS_DECLARE_ISSUE(trigger, InvalidConfiguration, "An invalid configuration object was received", ERS_EMPTY)
+ERS_DECLARE_ISSUE(trigger, InvalidConfiguration, "Invalid configuration error:" << conferror, ((std::string)conferror))
 ERS_DECLARE_ISSUE(trigger, TriggerActive, "Trigger is active now", ERS_EMPTY)
 ERS_DECLARE_ISSUE(trigger, TriggerPaused, "Trigger is paused", ERS_EMPTY)
 ERS_DECLARE_ISSUE(trigger, TriggerInhibited, "Trigger is inhibited in run " << runno, ((int64_t)runno))
