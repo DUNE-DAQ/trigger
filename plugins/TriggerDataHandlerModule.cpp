@@ -17,6 +17,7 @@
 #include "datahandlinglibs/models/DefaultSkipListRequestHandler.hpp"
 #include "trigger/TPRequestHandler.hpp"
 
+#include "trigger/TriggerDataHandlingModel.hpp"
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TPProcessor.hpp"
 #include "trigger/TAProcessor.hpp"
@@ -72,11 +73,12 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
   // IF TriggerPrimitive (TP)
   if (raw_dt.find("TriggerPrimitive") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitive";
-    auto readout_model = std::make_shared<rol::DataHandlingModel<
+    auto readout_model = std::make_shared<TriggerDataHandlingModel<
       TriggerPrimitiveTypeAdapter,
       TPRequestHandler,
       rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
-      TPProcessor>>(run_marker);
+      TPProcessor,
+      trigger::TPSet>>(run_marker);
     register_node("TPProcessor", readout_model); 
     readout_model->init(modconf);
     return readout_model;
@@ -85,11 +87,12 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
  // IF TriggerActivity (TA)
   if (raw_dt.find("TriggerActivity") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerActivity";
-    auto readout_model = std::make_shared<rol::DataHandlingModel<
+    auto readout_model = std::make_shared<TriggerDataHandlingModel<
       TAWrapper,
       rol::DefaultSkipListRequestHandler<trigger::TAWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TAWrapper>,
-      TAProcessor>>(run_marker);
+      TAProcessor,
+      triggeralgs::TriggerActivity>>(run_marker);
     register_node("TAProcessor", readout_model); 
     
     readout_model->init(modconf);
@@ -99,11 +102,12 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
  // No processing, only buffering to respond to data requests
   if (raw_dt.find("TriggerCandidate") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerCandidate";
-    auto readout_model = std::make_shared<rol::DataHandlingModel<
+    auto readout_model = std::make_shared<TriggerDataHandlingModel<
       TCWrapper,
       rol::DefaultSkipListRequestHandler<trigger::TCWrapper>,
       rol::SkipListLatencyBufferModel<trigger::TCWrapper>,
-      TCProcessor>>(run_marker);
+      TCProcessor,
+      triggeralgs::TriggerCandidate>>(run_marker);
     register_node("TCProcessor", readout_model); 
     
     readout_model->init(modconf);

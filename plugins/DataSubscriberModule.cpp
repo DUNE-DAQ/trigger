@@ -12,14 +12,13 @@
 #include "datahandlinglibs/DataHandlingIssues.hpp"
 #include "datahandlinglibs/models/DataSubscriberModel.hpp"
 #include "trigger/HSISourceModel.hpp"
-#include "trigger/TPSetSourceModel.hpp"
-#include "trigger/TriggerSourceModel.hpp"
 
 #include "appmodel/DataSubscriberModule.hpp"
 
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TAWrapper.hpp"
 #include "trigger/TCWrapper.hpp"
+#include "trigger/TPSet.hpp"
 #include "trgdataformats/TriggerPrimitive.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
@@ -81,21 +80,21 @@ DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
   if (raw_dt == "TPSet") {
     TLOG_DEBUG(1) << "Creating trigger primitives subscriber";
     auto source_model =
-      std::make_shared<trigger::TPSetSourceModel>();
+      std::make_shared<datahandlinglibs::DataSubscriberModel<trigger::TPSet>>();
     return source_model;
   }
 
   if (raw_dt == "TriggerActivity") {
     TLOG_DEBUG(1) << "Creating trigger activities subscriber";
     auto source_model =
-      std::make_shared<trigger::TriggerSourceModel<triggeralgs::TriggerActivity, trigger::TAWrapper>>();
+      std::make_shared<datahandlinglibs::DataSubscriberModel<triggeralgs::TriggerActivity>>();
     return source_model;
   }
 
   if (raw_dt == "TriggerCandidate") {
     TLOG_DEBUG(1) << "Creating trigger candidates subscriber";
     auto source_model =
-      std::make_shared<trigger::TriggerSourceModel<triggeralgs::TriggerCandidate, trigger::TCWrapper>>();
+      std::make_shared<datahandlinglibs::DataSubscriberModel<triggeralgs::TriggerCandidate>>();
     return source_model;
   }
 
