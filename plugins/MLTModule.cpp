@@ -43,6 +43,28 @@ MLTModule::MLTModule(const std::string& name)
   // clang-format on
 }
 
+
+std::map<std::string, int>
+MLTModule::decode_geoid(uint64_t _geoid_int)
+{
+
+  std::map<std::string, int> geoid;
+
+      // Extract stream_id (stored in the top 16 bits)
+  geoid["stream_id"] = (_geoid_int >> 48) & 0xFFFF;
+
+  // Extract slot_id (stored in the next 16 bits)
+  geoid["slot_id"] = (_geoid_int >> 32) & 0xFFFF;
+
+  // Extract crate_id (stored in the next 16 bits)
+  geoid["crate_id"] = (_geoid_int >> 16) & 0xFFFF;
+
+  // Extract det_id (stored in the lowest 16 bits)
+  geoid["detector_id"] = _geoid_int & 0xFFFF;
+
+  return geoid;
+}
+
 void
 MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
@@ -63,6 +85,47 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   for(auto con : mtrg->get_outputs()){
     if(con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>())
       m_decision_output = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
+  }
+
+  // Get the session to access the detector configuration
+  auto session = mcfg->configuration_manager()->session();
+
+  hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap = hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(session);
+
+  // Fill the SourceID -- Subdetector map
+  for (auto const& [sourceid, geoids] : geoidmap) {
+    TLOG() << "SourceID: " << sourceid;
+    for (auto const& geoid : geoids) {
+      std::map<std::string, int> gidmap = decode_geoid(geoid);
+      SubdetectorID detid = static_cast<SubdetectorID>(gidmap["detector_id"]);
+      if (m_srcid_detid_map.contains(sourceid) &&
+          !(m_srcid_detid_map[sourceid]  == detid)) {
+        throw MLTConfigurationProblem(ERS_HERE, get_name(),
+            "Multiple subdetector types for ine SourceID not suported in trigger system!");
+      }
+      m_srcid_detid_map[sourceid] = detid;
+    }
+    TLOG() << " * Subdetector type: " << m_srcid_detid_map[sourceid];
+  }
+
+  for (auto subdet_readout_window : mtrg->get_configuration()->get_subdetector_readout_map()) {
+    std::string subdetector_name = subdet_readout_window->get_subdetector();
+    SubdetectorID detid = dunedaq::detdataformats::DetID::string_to_subdetector(subdetector_name);
+    if (detid == detdataformats::DetID::Subdetector::kUnknown) {
+      throw MLTConfigurationProblem(ERS_HERE, get_name(),
+          "Unknown Subdetector supplied to MLT subdetector-readout window map");
+    }
+
+    if (m_subdetector_readout_window_map.count(detid)) {
+      throw MLTConfigurationProblem(ERS_HERE, get_name(),
+          "Supplied more than one of the same Subdetector name to MLT subdetector-readout window map");
+    }
+
+    m_subdetector_readout_window_map[detid] = std::make_pair(subdet_readout_window->get_time_before(),
+                                                             subdet_readout_window->get_time_after());
+
+    TLOG() << "[MLT] Custom readout map for subdetector: " << detid
+      << " time_start: " << subdet_readout_window->get_time_before() << " time_after: " << subdet_readout_window->get_time_after();
   }
 
   // Latency related
@@ -154,11 +217,8 @@ MLTModule::do_start(const nlohmann::json& startobj)
 
   m_inhibit_input->add_callback(std::bind(&MLTModule::dfo_busy_callback, this, std::placeholders::_1));
   m_decision_input->add_callback(std::bind(&MLTModule::trigger_decisions_callback, this, std::placeholders::_1));
-  //m_send_trigger_decisions_thread = std::thread(&MLTModule::send_trigger_decisions, this);
-  //pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-dec"); // TODO: originally mlt-trig-dec
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
-
 }
 
 void
@@ -231,6 +291,23 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
     decision.run_number = m_run_number;
     decision.trigger_number = m_last_trigger_number;
 
+    // Overwrite the component's readout window if we have custom
+    // subdetector--readout window map
+    for ( const auto& [subdetectorid, window] : m_subdetector_readout_window_map ) {
+      for (auto& request: decision.components) {
+        if (request.component.subsystem != daqdataformats::SourceID::Subsystem::kDetectorReadout) {
+          continue;
+        }
+
+        if (subdetectorid != m_srcid_detid_map[request.component]) {
+          continue;
+        }
+
+        request.window_begin = decision.trigger_timestamp - window.first;
+        request.window_end = decision.trigger_timestamp + window.second;
+      }
+    }
+
     TLOG() << "Received decision with timestamp "
              << decision.trigger_timestamp ;
     
@@ -240,6 +317,7 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
  	     << " number of links " << decision.components.size();
 
       // readout window latency update
+      // TODO: The latency will be different for different components, since they might have different readout windows
       if (m_latency_monitoring.load()) {
         m_latency_requests_instance.update_latency_in( decision.components.front().window_begin );
         m_latency_requests_instance.update_latency_out( decision.components.front().window_end );

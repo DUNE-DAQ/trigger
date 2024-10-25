@@ -59,7 +59,8 @@ protected:
 
   void make_td(const TCWrapper* tc);
 
-  private:
+private:
+  using TCType = triggeralgs::TriggerCandidate::Type;
   void send_trigger_decisions();
   std::thread m_send_trigger_decisions_thread;
 
@@ -104,6 +105,9 @@ protected:
   int m_repeat_trigger_count{ 1 };
   std::atomic<bool> m_hsi_passthrough;
   std::atomic<bool> m_tc_merging;
+
+  /// @brief Ignore TCs that overlap with already made TD
+  bool m_ignore_tc_pileup;
 
   dfmessages::trigger_number_t m_last_trigger_number;
 
@@ -153,10 +157,10 @@ protected:
   // Readout map config
   bool m_use_readout_map;
   std::vector<const appmodel::TCReadoutMap*>  m_readout_window_map_data;
-  std::map<trgdataformats::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
+  std::map<TCType, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
     m_readout_window_map;
   void parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>& data);
-  void print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
+  void print_readout_map(std::map<TCType,
                                   std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map);
 
   // Create the next trigger decision

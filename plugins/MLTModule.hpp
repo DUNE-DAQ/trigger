@@ -28,10 +28,13 @@
 #include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
+#include "appmodel/SubdetectorReadoutWindowMap.hpp"
 
 #include "confmodel/Connection.hpp"
+#include "confmodel/GeoId.hpp"
 
 #include "daqdataformats/SourceID.hpp"
+#include "hdf5libs/HDF5RawDataFile.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -59,6 +62,7 @@ namespace trigger {
 class MLTModule : public dunedaq::appfwk::DAQModule
 {
 public:
+  typedef dunedaq::detdataformats::DetID::Subdetector SubdetectorID;
   /**
    * @brief MLTModule Constructor
    * @param name Instance name for this MLTModule instance
@@ -82,6 +86,8 @@ private:
 
   void trigger_decisions_callback(dfmessages::TriggerDecision& decision);
   void dfo_busy_callback(dfmessages::TriggerInhibit& inhibit);
+
+  std::map<std::string, int> decode_geoid(uint64_t _geoid_int);
 
   // Queue sources and sinks
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerDecision>> m_decision_input;
@@ -208,6 +214,14 @@ private:
   bool m_ignoring_tc_types;
   bool check_trigger_type_ignore(unsigned int tc_type);
   */
+
+  /// @brief SourceID -- SubdetectorID map
+  std::map<dfmessages::SourceID, SubdetectorID> m_srcid_detid_map;
+
+  /// @brief Subdetector--readout-window map config
+  std::map<SubdetectorID, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
+    m_subdetector_readout_window_map;
+
   // Opmon variables
   using metric_counter_type = uint64_t ; //decltype(moduleleveltriggerinfo::Info::tc_received_count);
   std::atomic<metric_counter_type> m_td_msg_received_count{ 0 };
