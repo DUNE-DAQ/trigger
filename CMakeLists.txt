@@ -108,6 +108,7 @@ daq_add_application( generate_tpset_from_hdf5 generate_tpset_from_hdf5.cxx TEST 
 #daq_add_unit_test(TriggerZipper_test             LINK_LIBRARIES trigger)
 #daq_add_unit_test(TriggerObjectOverlay_test      LINK_LIBRARIES trigger)
 #daq_add_unit_test(AlgorithmPlugins_test          LINK_LIBRARIES trigger)
+daq_add_unit_test(TriggerTypeAdapters_test        LINK_LIBRARIES trigger)
 
 ##############################################################################
 
