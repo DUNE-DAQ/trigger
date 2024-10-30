@@ -78,7 +78,7 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
       TPRequestHandler,
       rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
       TPProcessor,
-      TriggerPrimitiveTypeAdapter>>(run_marker);
+      TriggerPrimitiveTypeAdapter::TPAArrayPair>>(run_marker);
     register_node("TPProcessor", readout_model); 
     readout_model->init(modconf);
     return readout_model;

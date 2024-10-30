@@ -80,7 +80,7 @@ DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
   if (raw_dt == "TPSet") {
     TLOG_DEBUG(1) << "Creating trigger primitives subscriber";
     auto source_model =
-      std::make_shared<datahandlinglibs::DataSubscriberModel<trigger::TPSet>>();
+      std::make_shared<datahandlinglibs::DataSubscriberModel<TriggerPrimitiveTypeAdapter::TPAArrayPair>>();
     return source_model;
   }
 
