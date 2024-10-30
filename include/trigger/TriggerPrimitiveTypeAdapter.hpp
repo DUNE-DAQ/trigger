@@ -20,7 +20,7 @@ const constexpr std::size_t kTriggerPrimitiveSize = sizeof(trgdataformats::Trigg
 struct TriggerPrimitiveTypeAdapter
 {
   using FrameType = TriggerPrimitiveTypeAdapter;
-  using TPAArrayPair = std::pair<std::unique_ptr<TriggerPrimitiveTypeAdapter[]>, std::size_t>;
+  using TPAVector = std::vector<TriggerPrimitiveTypeAdapter>;
 
   // data
   trgdataformats::TriggerPrimitive tp;

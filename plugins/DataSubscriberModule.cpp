@@ -30,6 +30,7 @@ namespace dunedaq {
 
 //DUNE_DAQ_TYPESTRING(dunedaq::trigger::TPSet, "TPSet")
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter, "TriggerPrimitive")
+DUNE_DAQ_TYPESTRING(std::vector<dunedaq::trigger::TriggerPrimitiveTypeAdapter>, "TriggerPrimitiveVector")
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TAWrapper, "TriggerActivity")
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 
@@ -80,7 +81,7 @@ DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
   if (raw_dt == "TPSet") {
     TLOG_DEBUG(1) << "Creating trigger primitives subscriber";
     auto source_model =
-      std::make_shared<datahandlinglibs::DataSubscriberModel<TriggerPrimitiveTypeAdapter::TPAArrayPair>>();
+      std::make_shared<datahandlinglibs::DataSubscriberModel<TriggerPrimitiveTypeAdapter::TPAVector>>();
     return source_model;
   }
 

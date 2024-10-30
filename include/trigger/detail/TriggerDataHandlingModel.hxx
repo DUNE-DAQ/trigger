@@ -18,25 +18,21 @@ TriggerDataHandlingModel<RDT, RHT, LBT, RPT, IDT>::TriggerDataHandlingModel(std:
 }
 
 template<class RDT, class RHT, class LBT, class RPT, class IDT>
-std::unique_ptr<RDT[]> TriggerDataHandlingModel<RDT, RHT, LBT, RPT, IDT>::transform_payload(IDT& original, std::size_t& size) const
+std::vector<RDT> TriggerDataHandlingModel<RDT, RHT, LBT, RPT, IDT>::transform_payload(IDT& original) const
 {
   if constexpr (std::is_same_v<IDT, trigger::TPSet>) {
-    size = original.objects.size();
-    auto transformed = std::make_unique_for_overwrite<RDT[]>(size);
-    for (std::size_t i = 0; i < size; ++i) {
+    std::vector<RDT> transformed(original.objects.size());
+    for (std::size_t i = 0; i < transformed.size(); ++i) {
       transformed[i].tp = std::move(original.objects[i]);
     }
     return transformed;
-  } else if constexpr (std::is_same_v<IDT, TriggerPrimitiveTypeAdapter::TPAArrayPair>) {
-    size = original.second;
-    return std::move(original.first);
+  } else if constexpr (std::is_same_v<IDT, TriggerPrimitiveTypeAdapter::TPAVector>) {
+    return std::move(original);
   } else if constexpr (std::is_same_v<IDT, triggeralgs::TriggerActivity> || std::is_same_v<IDT, triggeralgs::TriggerCandidate>) {
-    size = 1;
-    auto transformed = std::make_unique_for_overwrite<RDT[]>(size);
-    transformed[0] = RDT(std::move(original));
-    return transformed;
+    return { RDT(std::move(original)) };
+
   } else {
-    return Base::transform_payload(original, size);
+    return Base::transform_payload(original);
   }
 }
 

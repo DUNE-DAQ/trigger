@@ -35,7 +35,7 @@ public:
   explicit TriggerDataHandlingModel(std::atomic<bool>& run_marker);
 
   // Transform input data type to readout
-  std::unique_ptr<ReadoutType[]> transform_payload(IDT& original, std::size_t& size) const override;
+  std::vector<ReadoutType> transform_payload(IDT& original) const override;
 };
 
 } // namespace dunedaq::trigger
