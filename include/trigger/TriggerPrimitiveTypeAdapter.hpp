@@ -38,7 +38,7 @@ struct TriggerPrimitiveTypeAdapter
     tp.time_start = ts;
   }
 
-  void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset = 25*/) // NOLINT(build/unsigned)
+  void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset */ = 0) // NOLINT(build/unsigned)
   {
     tp.time_start = first_timestamp;
   }

@@ -14,18 +14,18 @@
 #include "triggeralgs/TriggerObjectOverlay.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
-#include "trigger/Issues.hpp"
 
 namespace dunedaq {
 namespace trigger {
     struct TCWrapper
   {
+    using FrameType = TCWrapper;
     triggeralgs::TriggerCandidate candidate;
     std::vector<uint8_t> candidate_overlay_buffer;
     // Don't really want this default ctor, but IterableQueueModel requires it
-    TCWrapper() {}
+    //TCWrapper() {}
     
-    TCWrapper(triggeralgs::TriggerCandidate c)
+    TCWrapper(triggeralgs::TriggerCandidate c = triggeralgs::TriggerCandidate())
       : candidate(c)
     {
       populate_buffer();
@@ -51,6 +51,12 @@ namespace trigger {
     void set_timestamp(uint64_t ts) // NOLINT(build/unsigned)
     {
       candidate.time_start = ts;
+    }
+
+    void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset */ = 0) // NOLINT(build/unsigned)
+    {
+      candidate.time_start = first_timestamp;
+      populate_buffer();
     }
 
     size_t get_payload_size() { return candidate_overlay_buffer.size(); }
