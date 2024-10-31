@@ -71,6 +71,20 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
   std::string raw_dt = modconf->get_module_configuration()->get_input_data_type();
   TLOG() << "Choosing specializations for DataHandlingModel with data_type:" << raw_dt << ']';
 
+  // IF TriggerPrimitiveVector (TP vector)
+  if (raw_dt.find("TriggerPrimitiveVector") != std::string::npos) {
+    TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitiveVector";
+    auto readout_model = std::make_shared<TriggerDataHandlingModel<
+      TriggerPrimitiveTypeAdapter,
+      TPRequestHandler,
+      rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
+      TPProcessor,
+      TriggerPrimitiveTypeAdapter::TPAVector>>(run_marker);
+    register_node("TPProcessor", readout_model); 
+    readout_model->init(modconf);
+    return readout_model;
+  }  
+
   // IF TriggerPrimitive (TP)
   if (raw_dt.find("TriggerPrimitive") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitive";
@@ -78,8 +92,7 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
       TriggerPrimitiveTypeAdapter,
       TPRequestHandler,
       rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
-      TPProcessor,
-      TriggerPrimitiveTypeAdapter::TPAVector>>(run_marker);
+      TPProcessor>>(run_marker);
     register_node("TPProcessor", readout_model); 
     readout_model->init(modconf);
     return readout_model;

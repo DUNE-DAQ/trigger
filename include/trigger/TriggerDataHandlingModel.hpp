@@ -18,7 +18,7 @@ template<class ReadoutType,
          class RequestHandlerType,
          class LatencyBufferType,
          class RawDataProcessorType,
-         class InputDataType>
+         class InputDataType = ReadoutType>
 class TriggerDataHandlingModel
   : public datahandlinglibs::
       DataHandlingModel<ReadoutType, RequestHandlerType, LatencyBufferType, RawDataProcessorType, InputDataType>
