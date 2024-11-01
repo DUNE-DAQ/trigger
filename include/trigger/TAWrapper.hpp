@@ -14,19 +14,21 @@
 #include "triggeralgs/TriggerObjectOverlay.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
-#include "trigger/Issues.hpp"
 
 namespace dunedaq {
 namespace trigger {
   struct TAWrapper
   {
+
+    using FrameType = TAWrapper;
+
     triggeralgs::TriggerActivity activity;
     std::vector<uint8_t> activity_overlay_buffer;
     
     // Don't really want this default ctor, but IterableQueueModel requires it
-    TAWrapper() {}
+    //TAWrapper() {}
     
-    TAWrapper(triggeralgs::TriggerActivity a)
+    TAWrapper(triggeralgs::TriggerActivity a = triggeralgs::TriggerActivity())
       : activity(a)
     {
       populate_buffer();
@@ -52,6 +54,12 @@ namespace trigger {
     void set_timestamp(uint64_t ts) // NOLINT(build/unsigned)
     {
       activity.time_start = ts;
+    }
+
+    void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset */ = 0) // NOLINT(build/unsigned)
+    {
+      activity.time_start = first_timestamp;
+      populate_buffer();
     }
 
     size_t get_payload_size() { return activity_overlay_buffer.size(); }
