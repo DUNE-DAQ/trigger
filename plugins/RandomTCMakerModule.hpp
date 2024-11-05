@@ -116,7 +116,7 @@ private:
   /// @brief Output trigger rate in hz
   std::atomic<float> m_trigger_rate_hz{ 0 };
 
-  int get_interval(std::mt19937& gen);
+  uint64_t get_interval(std::mt19937& gen);
 
   dfmessages::run_number_t m_run_number;
 
