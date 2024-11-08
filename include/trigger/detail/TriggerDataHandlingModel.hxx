@@ -18,7 +18,8 @@ TriggerDataHandlingModel<RDT, RHT, LBT, RPT, IDT>::TriggerDataHandlingModel(std:
 }
 
 template<class RDT, class RHT, class LBT, class RPT, class IDT>
-std::vector<RDT> TriggerDataHandlingModel<RDT, RHT, LBT, RPT, IDT>::transform_payload(IDT& original) const
+std::vector<RDT>
+TriggerDataHandlingModel<RDT, RHT, LBT, RPT, IDT>::transform_payload(IDT& original) const
 {
   if constexpr (std::is_same_v<IDT, trigger::TPSet>) {
     std::vector<RDT> transformed(original.objects.size());
@@ -26,9 +27,10 @@ std::vector<RDT> TriggerDataHandlingModel<RDT, RHT, LBT, RPT, IDT>::transform_pa
       transformed[i].tp = std::move(original.objects[i]);
     }
     return transformed;
-  } else if constexpr (std::is_same_v<IDT, TriggerPrimitiveTypeAdapter::TPAVector>) {
+  } else if constexpr (std::is_same_v<IDT, std::vector<TriggerPrimitiveTypeAdapter>>) {
     return std::move(original);
-  } else if constexpr (std::is_same_v<IDT, triggeralgs::TriggerActivity> || std::is_same_v<IDT, triggeralgs::TriggerCandidate>) {
+  } else if constexpr (std::is_same_v<IDT, triggeralgs::TriggerActivity> ||
+                       std::is_same_v<IDT, triggeralgs::TriggerCandidate>) {
     return { RDT(std::move(original)) };
 
   } else {

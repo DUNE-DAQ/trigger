@@ -34,7 +34,7 @@ using namespace dunedaq::datahandlinglibs::logging;
 namespace dunedaq {
 
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter, "TriggerPrimitive")
-DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter::TPAVector, "TriggerPrimitiveVector")
+DUNE_DAQ_TYPESTRING(std::vector<dunedaq::trigger::TriggerPrimitiveTypeAdapter>, "TriggerPrimitiveVector")
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TAWrapper, "TriggerActivity")
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 
@@ -79,7 +79,7 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
       TPRequestHandler,
       rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
       TPProcessor,
-      TriggerPrimitiveTypeAdapter::TPAVector>>(run_marker);
+      std::vector<TriggerPrimitiveTypeAdapter>>>(run_marker);
     register_node("TPProcessor", readout_model); 
     readout_model->init(modconf);
     return readout_model;
