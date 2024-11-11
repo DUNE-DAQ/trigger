@@ -103,7 +103,6 @@ private:
   void roi_readout_make_requests(dfmessages::TriggerDecision& decision);
 
   int m_repeat_trigger_count{ 1 };
-  std::atomic<bool> m_hsi_passthrough;
   std::atomic<bool> m_tc_merging;
 
   /// @brief Ignore TCs that overlap with already made TD
