@@ -78,7 +78,7 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_latency_monitoring.store( m_conf->get_latency_monitoring() );
 
   // Get the clock speed from detector configuration
-  m_clock_speed_hz = mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz();
+  m_clock_speed_hz = mcfg->configuration_manager()->system()->get_detector_configuration()->get_clock_speed_hz();
   m_trigger_rate_hz.store(m_conf->get_trigger_rate_hz());
   TLOG() << "RandomTCMaker will output TC of type: " << tc_readout->get_tc_type_name();
   TLOG() << "TC window time before: " << m_tcout_time_before

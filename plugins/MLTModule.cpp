@@ -87,10 +87,10 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       m_decision_output = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
   }
 
-  // Get the session to access the detector configuration
-  auto session = mcfg->configuration_manager()->session();
+  // Get the system to access the detector configuration
+  auto system = mcfg->configuration_manager()->system();
 
-  hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap = hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(session);
+  hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap = hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(system);
 
   // Fill the SourceID -- Subdetector map
   for (auto const& [sourceid, geoids] : geoidmap) {

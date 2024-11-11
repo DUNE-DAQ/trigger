@@ -12,7 +12,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/ModuleConfiguration.hpp"
 #include "confmodel/Connection.hpp"
-#include "confmodel/Session.hpp"
+#include "confmodel/System.hpp"
 #include "confmodel/DetectorConfig.hpp"
 
 #include "appmodel/RandomTCMakerConf.hpp"
