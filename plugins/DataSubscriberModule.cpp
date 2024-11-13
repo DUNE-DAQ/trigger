@@ -71,13 +71,6 @@ DataSubscriberModule::do_stop(const nlohmann::json& /*args*/) {
   m_source_concept->stop();
 }
 
-// void
-// DataSubscriberModule::get_info(opmonlib::InfoCollector& ci, int level)
-// {
-//   m_source_concept->get_info(ci, level);
-// }
-
-
 std::shared_ptr<datahandlinglibs::SourceConcept>
 DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
 {

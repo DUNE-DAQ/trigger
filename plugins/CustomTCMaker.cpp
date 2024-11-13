@@ -11,7 +11,6 @@
 
 #include "trigger/Issues.hpp"
 
-#include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
 #include "trgdataformats/Types.hpp"
 #include "dfmessages/TimeSync.hpp"
@@ -41,7 +40,6 @@ sortbysec(const std::pair<int, dunedaq::dfmessages::timestamp_t>& a,
 }
 
 namespace dunedaq {
-DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 
 namespace trigger {
 
@@ -64,7 +62,7 @@ CustomTCMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   try {
     // Get the outputs
     for(auto con: mtrg->get_outputs()){
-        m_trigger_candidate_sink = get_iom_sender<trigger::TCWrapper>(con->UID());
+        m_trigger_candidate_sink = get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
     }
   } catch (const ers::Issue& excpt) {
     throw dunedaq::trigger::InvalidQueueFatalError(ERS_HERE, get_name(), "input/output", excpt);
@@ -86,6 +84,7 @@ CustomTCMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   // Currently precalculates events for the next 60 seconds
   m_sorting_size_limit = 60 * m_conf->get_clock_frequency_hz();
 
+  m_latency_monitoring.store( m_conf->get_latency_monitoring() );
 }
 
 //void
@@ -97,15 +96,25 @@ CustomTCMaker::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 //  //  get_iom_sender<triggeralgs::TriggerCandidate>(appfwk::connection_uid(obj, "trigger_candidate_sink"));
 //}
 
-// void
-// CustomTCMaker::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-// {
-//   customtriggercandidatemakerinfo::Info i;
+void 
+CustomTCMaker::generate_opmon_data()
+{
+  opmon::CustomTCMakerInfo info;
 
-//   i.tc_sent_count = m_tc_sent_count.load();
+  info.set_tc_made_count( m_tc_made_count.load() );
+  info.set_tc_sent_count( m_tc_sent_count.load() );
+  info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );  
 
-//   ci.add(i);
-// }
+  this->publish(std::move(info));
+
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) { 
+    opmon::TriggerLatencyStandalone lat_info;
+
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+    this->publish(std::move(lat_info));
+  }
+}
 
 void
 CustomTCMaker::do_configure(const nlohmann::json& /*obj*/)
@@ -129,6 +138,11 @@ void
 CustomTCMaker::do_start(const nlohmann::json& obj)
 {
   m_running_flag.store(true);
+
+  // OpMon.
+  m_tc_made_count.store(0);
+  m_tc_sent_count.store(0);
+  m_tc_failed_sent_count.store(0);
 
   auto start_params = obj.get<rcif::cmd::StartParams>();
 
@@ -176,6 +190,7 @@ CustomTCMaker::do_stop(const nlohmann::json& /*obj*/)
   m_time_sync_source->remove_callback();
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
 
+  print_opmon_stats();
   // Prints final counts of each used TC type
   print_final_tc_counts(m_tc_sent_count_type);
 }
@@ -234,14 +249,20 @@ CustomTCMaker::send_trigger_candidates()
     }
 
     triggeralgs::TriggerCandidate candidate = create_candidate(m_next_trigger_timestamp, m_tc_timestamps.front().first);
+    m_tc_made_count++;
 
     TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
 
-    TCWrapper tcw(candidate);
-    m_trigger_candidate_sink->send(std::move(tcw), std::chrono::milliseconds(10));
-    m_tc_sent_count++;
-    m_tc_sent_count_type[m_tc_timestamps.front().first] += 1;
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
+    try {
+      m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
+      m_tc_sent_count++;
+      m_tc_sent_count_type[m_tc_timestamps.front().first] += 1;
+    } catch (const ers::Issue& e) {
+      ers::error(e);
+      m_tc_failed_sent_count++;
+    }
 
     // Need to record last used TS for calculation of next ones
     m_last_timestamps_of_type[m_tc_timestamps.front().first] = m_tc_timestamps.front().second;
@@ -346,6 +367,17 @@ CustomTCMaker::print_timestamps_vector(std::vector<std::pair<int, dfmessages::ti
     TLOG_DEBUG(3) << "TC type: " << it->first << ", timestamp: " << it->second;
   }
   return;
+}
+
+void
+CustomTCMaker::print_opmon_stats()
+{
+  TLOG() << "CustomTCMaker opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "Made TCs: \t\t" << m_tc_made_count;
+  TLOG() << "Sent TCs: \t\t" << m_tc_sent_count;
+  TLOG() << "Failed to send TCs: \t" << m_tc_failed_sent_count;
+  TLOG();
 }
 
 void

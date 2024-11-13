@@ -18,8 +18,11 @@
 
 #include "trigger/Issues.hpp"
 #include "trigger/TAWrapper.hpp"
-#include "triggeralgs/TriggerCandidate.hpp"
+#include "trigger/Latency.hpp"
+#include "trigger/opmon/taprocessor_info.pb.h"
+#include "trigger/opmon/latency_info.pb.h"
 
+#include "triggeralgs/TriggerCandidate.hpp"
 #include "triggeralgs/Types.hpp"
 #include "triggeralgs/TriggerCandidateMaker.hpp"
 
@@ -35,7 +38,7 @@ public:
   using consttaptr = const TAWrapper*;
 
 
-  explicit TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry);
+  explicit TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
 
   ~TAProcessor();
 
@@ -45,7 +48,7 @@ public:
 
   void conf(const appmodel::DataHandlerModule* conf) override;
 
-  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 protected:
   // Internals
@@ -66,8 +69,20 @@ protected:
 
   daqdataformats::SourceID m_sourceid;
 
-  std::atomic<uint64_t> m_new_tcs{ 0 };  // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tcs_dropped{ 0 };
+  using metric_counter_type = uint64_t;
+  std::atomic<metric_counter_type> m_ta_received_count{ 0 };  // NOLINT(build/unsigned)
+  std::atomic<metric_counter_type> m_tc_made_count{ 0 };
+  std::atomic<metric_counter_type> m_tc_sent_count{ 0 };
+  std::atomic<metric_counter_type> m_tc_failed_sent_count{ 0 };
+  void print_opmon_stats();
+
+  // Create an instance of the Latency class
+  std::atomic<bool> m_running_flag{ false };
+  std::atomic<bool> m_latency_monitoring{ false };
+  dunedaq::trigger::Latency m_latency_instance;
+  std::atomic<metric_counter_type> m_latency_in{ 0 };
+  std::atomic<metric_counter_type> m_latency_out{ 0 };
+
 };
 
 } // namespace trigger

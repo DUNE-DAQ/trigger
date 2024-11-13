@@ -89,6 +89,11 @@ TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
 
   m_running_flag.store(true);
 
+  // Reset opmon
+  m_tp_made_count.store(0);
+  m_tp_set_made_count.store(0);
+  m_tp_set_failed_sent_count.store(0);
+
   // We need the wall-clock time at which we'll send out the TPSet
   // with the earliest timestamp, so we can keep all of the output
   // streams in sync. We pick "now" plus a bit, to allow time for all
@@ -131,6 +136,18 @@ TriggerPrimitiveMaker::do_scrap(const nlohmann::json& /*args*/)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
   m_tp_streams.clear();
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
+}
+
+void
+TriggerPrimitiveMaker::generate_opmon_data()
+{
+  opmon::TriggerPrimitiveMakerInfo info;
+
+  info.set_tp_made_count( m_tp_made_count );
+  info.set_tp_set_made_count( m_tp_set_made_count );
+  info.set_tp_set_failed_sent_count( m_tp_set_failed_sent_count );
+
+  this->publish(std::move(info));
 }
 
 std::vector<TPSet>
@@ -220,9 +237,6 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   uint64_t current_iteration = 0; // NOLINT(build/unsigned)
-  size_t generated_count = 0;
-  size_t push_failed_count = 0;
-  size_t generated_tp_count = 0;
 
   uint64_t prev_tpset_start_time = 0; // NOLINT(build/unsigned)
   auto prev_tpset_send_time = std::chrono::steady_clock::now();
@@ -279,14 +293,14 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
       prev_tpset_send_time = next_tpset_send_time;
       prev_tpset_start_time = tpset.start_time;
 
-      ++generated_count;
-      generated_tp_count += tpset.objects.size();
+      m_tp_set_made_count++;
+      m_tp_made_count += tpset.objects.size();
       try {
         TPSet tpset_copy(tpset);
         tpset_sink->send(std::move(tpset_copy), m_queue_timeout);
       } catch (const dunedaq::iomanager::TimeoutExpired& e) {
         ers::warning(e);
-        ++push_failed_count;
+	m_tp_set_failed_sent_count++;
       }
 
       tpset.run_number = m_run_number;
@@ -308,10 +322,10 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
 
   auto run_end_time = std::chrono::steady_clock::now();
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - run_start_time).count();
-  float rate_hz = 1e3 * static_cast<float>(generated_count) / time_ms;
+  float rate_hz = 1e3 * static_cast<float>(m_tp_set_made_count) / time_ms;
 
-  TLOG() << "Generated " << generated_count << " TP sets (" << generated_tp_count << " TPs) in " << time_ms << " ms. ("
-         << rate_hz << " TPSets/s). " << push_failed_count << " failed to push";
+  TLOG() << "Generated " << m_tp_set_made_count << " TP sets (" << m_tp_made_count << " TPs) in " << time_ms << " ms. ("
+         << rate_hz << " TPSets/s). " << m_tp_set_failed_sent_count << " TPSets failed to push";
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }

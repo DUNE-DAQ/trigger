@@ -38,7 +38,6 @@ public:
   DataSubscriberModule& operator=(DataSubscriberModule&&) = delete;      ///< DataSubscriberModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> cfg) override;
-  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   std::shared_ptr<datahandlinglibs::SourceConcept> create_data_subscriber(const confmodel::DaqModule* cfg);
 private:

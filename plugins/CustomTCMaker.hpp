@@ -25,7 +25,9 @@
 #include "iomanager/Sender.hpp"
 #include "utilities/TimestampEstimator.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
-#include "trigger/TCWrapper.hpp"
+#include "trigger/Latency.hpp"
+#include "trigger/opmon/customtcmaker_info.pb.h"
+#include "trigger/opmon/latency_info.pb.h"
 
 #include <memory>
 #include <random>
@@ -60,7 +62,7 @@ public:
     delete; ///< CustomTCMaker is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  //void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 private:
   // Commands
@@ -79,7 +81,7 @@ private:
 
   // Queue sources and sinks
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
-  std::shared_ptr<iomanager::SenderConcept<trigger::TCWrapper>> m_trigger_candidate_sink;
+  std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
   // Config parameters
   const appmodel::CustomTCMakerConf* m_conf;
@@ -110,8 +112,16 @@ private:
   std::atomic<bool> m_configured_flag{ false };
 
   // OpMon variables
-  using metric_counter_type = uint64_t; //decltype(customtriggercandidatemakerinfo::Info::tc_sent_count);
+  using metric_counter_type = uint64_t;
+  std::atomic<metric_counter_type> m_tc_made_count{ 0 };
   std::atomic<metric_counter_type> m_tc_sent_count{ 0 };
+  std::atomic<metric_counter_type> m_tc_failed_sent_count{ 0 };
+  void print_opmon_stats();
+
+  // Create an instance of the Latency class
+  std::atomic<bool> m_latency_monitoring{ false };
+  dunedaq::trigger::Latency m_latency_instance;
+  std::atomic<metric_counter_type> m_latency_out{ 0 };
 };
 } // namespace trigger
 } // namespace dunedaq

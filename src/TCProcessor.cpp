@@ -15,7 +15,6 @@
 #include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/models/IterableQueueModel.hpp"
 #include "datahandlinglibs/utils/ReusableThread.hpp"
-
 #include "trigger/TCWrapper.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
@@ -31,8 +30,8 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 namespace dunedaq {
 namespace trigger {
 
-TCProcessor::TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
-  : datahandlinglibs::TaskRawDataProcessorModel<TCWrapper>(error_registry)
+TCProcessor::TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled)
+  : datahandlinglibs::TaskRawDataProcessorModel<TCWrapper>(error_registry, post_processing_enabled)
 {
 }
 
@@ -47,8 +46,19 @@ TCProcessor::start(const nlohmann::json& args)
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-dec"); // TODO: originally mlt-trig-dec
 
   // Reset stats
-  m_new_tds = 0;
-  m_tds_dropped = 0;
+  m_tds_created_count.store(0);
+  m_tds_sent_count.store(0);
+  m_tds_dropped_count.store(0);
+  m_tds_failed_bitword_count.store(0);
+  m_tds_cleared_count.store(0);
+  // per TC
+  m_tc_received_count.store(0);
+  m_tds_created_tc_count.store(0);
+  m_tds_sent_tc_count.store(0);
+  m_tds_dropped_tc_count.store(0);
+  m_tds_failed_bitword_tc_count.store(0);
+  m_tds_cleared_tc_count.store(0);
+  m_tc_ignored_count.store(0);
   inherited::start(args);
 }
 
@@ -57,12 +67,22 @@ TCProcessor::stop(const nlohmann::json& args)
 {
   inherited::stop(args);
   m_running_flag.store(false);
+
+  // Make sure condition_variable knows we flipped running flag
+  {
+    std::lock_guard<std::mutex> lock(m_td_vector_mutex);
+    m_cv.notify_all();
+  }
+
+  // Wait for the TD-sending thread to stop
   m_send_trigger_decisions_thread.join();
 
   // Drop all TDs in vectors at run stage change. Have to do this
   // after joining m_send_trigger_decisions_thread so we don't
   // concurrently access the vectors
   clear_td_vectors();
+
+  print_opmon_stats();
 
 }
 
@@ -71,7 +91,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 {
   auto mtrg = cfg->cast<appmodel::TriggerDataHandlerModule>();	
   if (mtrg == nullptr) {
-    throw(InvalidConfiguration(ERS_HERE));
+    throw(InvalidConfiguration(ERS_HERE, "Provided null TriggerDataHandlerModule configuration!"));
   }
   for (auto output : mtrg->get_outputs()) {
    try {
@@ -100,44 +120,53 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
         link->get_sid()});
   }
 
-
-    // TODO: Group links!
+  // TODO: Group links!
   //m_group_links_data = conf->get_groups_links();
   parse_group_links(m_group_links_data);
   print_group_links();
   m_total_group_links = m_group_links.size();
   TLOG_DEBUG(3) << "Total group links: " << m_total_group_links;
 
-  m_hsi_passthrough = proc_conf->get_hsi_trigger_type_passthrough();
   m_tc_merging        = proc_conf->get_merge_overlapping_tcs();
+  m_ignore_tc_pileup = proc_conf->get_ignore_overlapping_tcs();
   m_buffer_timeout    = proc_conf->get_buffer_timeout();
-  m_send_timed_out_tds = proc_conf->get_td_out_of_timeout();
+  m_send_timed_out_tds = (m_ignore_tc_pileup) ? false : proc_conf->get_td_out_of_timeout();
   m_td_readout_limit  = proc_conf->get_td_readout_limit();
   m_ignored_tc_types = proc_conf->get_ignore_tc();
-  m_ignoring_tc_types = (m_ignored_tc_types.size() > 0) ? true : false;
-  m_use_readout_map   = proc_conf->get_use_readout_map();
-  m_use_roi_readout   = proc_conf->get_use_roi_readout();
-  m_use_bitwords      = proc_conf->get_use_bitwords();
+  m_ignoring_tc_types = !m_ignored_tc_types.empty();
+
+  // Trigger bitwords
+  std::vector<std::string> bitwords = proc_conf->get_trigger_bitwords();
+  m_use_bitwords = !bitwords.empty();
+  if(m_use_bitwords){
+    // TODO: Print_bitword_flags(m_trigger_bitwords)
+    set_trigger_bitwords(bitwords);
+    print_trigger_bitwords(m_trigger_bitwords);
+  }
+  TLOG_DEBUG(3) << "Use bitwords: " << m_use_bitwords;
   TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
+  TLOG_DEBUG(3) << "Ignore pileup: " << m_ignore_tc_pileup;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
   TLOG_DEBUG(3) << "Should send timed out TDs: " << m_send_timed_out_tds;
   TLOG_DEBUG(3) << "TD readout limit: " << m_td_readout_limit;
-  TLOG_DEBUG(3) << "Use ROI readout?: " << m_use_roi_readout;
 
   // ROI map
-  if(m_use_roi_readout){
-    m_roi_conf_data = proc_conf->get_roi_group_conf();
+  m_roi_conf_data = proc_conf->get_roi_group_conf();
+  m_use_roi_readout = !m_roi_conf_data.empty();
+  if (m_use_roi_readout) {
     parse_roi_conf(m_roi_conf_data);
     print_roi_conf(m_roi_conf);
   }
+  TLOG_DEBUG(3) << "Use ROI readout?: " << m_use_roi_readout;
 
   // Custom readout map
-  TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
-  if(m_use_readout_map){
-    m_readout_window_map_data = proc_conf->get_tc_readout_map();
+  m_readout_window_map_data = proc_conf->get_tc_readout_map();
+  m_use_readout_map = !m_readout_window_map_data.empty();
+  if (m_use_readout_map) {
     parse_readout_map(m_readout_window_map_data);
     print_readout_map(m_readout_window_map);
   }
+  TLOG_DEBUG(3) << "Use readout map: " << m_use_readout_map;
 
   // Ignoring TC types
   TLOG_DEBUG(3) << "Ignoring TC types: " << m_ignoring_tc_types;
@@ -148,28 +177,41 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
       ++it;
     }
   }
-
-  // Trigger bitwords
-  TLOG_DEBUG(3) << "Use bitwords: " << m_use_bitwords;
-  if(m_use_bitwords){
-    std::vector<std::string> bitwords = proc_conf->get_trigger_bitwords();
-    // TODO: Print_bitword_flags(m_trigger_bitwords)
-    set_trigger_bitwords(bitwords);
-    print_trigger_bitwords(m_trigger_bitwords);
-  }
+  m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::add_postprocess_task(std::bind(&TCProcessor::make_td, this, std::placeholders::_1));
 
   inherited::conf(mtrg);
 }
 
-// void
-// TCProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-// {
+void
+TCProcessor::generate_opmon_data()
+{
+  opmon::TCProcessorInfo info;
 
-//   inherited::get_info(ci, level);
-//   //ci.add(info);
-// }
+  info.set_tds_created_count( m_tds_created_count.load() );  
+  info.set_tds_sent_count( m_tds_sent_count.load() );
+  info.set_tds_dropped_count( m_tds_dropped_count.load() );
+  info.set_tds_failed_bitword_count( m_tds_failed_bitword_count.load() );
+  info.set_tds_cleared_count( m_tds_cleared_count.load() );
+  info.set_tc_received_count( m_tc_received_count.load() );
+  info.set_tc_ignored_count( m_tc_ignored_count.load() );
+  info.set_tds_created_tc_count( m_tds_created_tc_count.load() );
+  info.set_tds_sent_tc_count( m_tds_sent_tc_count.load() );
+  info.set_tds_dropped_tc_count( m_tds_dropped_tc_count.load() );
+  info.set_tds_failed_bitword_tc_count( m_tds_failed_bitword_tc_count.load() );
+  info.set_tds_cleared_tc_count( m_tds_cleared_tc_count.load() );
 
+  this->publish(std::move(info));
+
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+    opmon::TriggerLatency lat_info;
+
+    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+    this->publish(std::move(lat_info));
+  }
+}
 
 /**
  * Pipeline Stage 2.: put valid TCs in a vector for grouping and forming of TDs
@@ -179,6 +221,8 @@ TCProcessor::make_td(const TCWrapper* tcw)
 {
 	
   auto tc = tcw->candidate;
+  if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( tc.time_start );
+  m_tc_received_count++;
 
   if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ) {
     TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc.type) << ", timestamp " << tc.time_candidate
@@ -207,6 +251,7 @@ TCProcessor::make_td(const TCWrapper* tcw)
   else {
     std::lock_guard<std::mutex> lock(m_td_vector_mutex);
     add_tc(tc);
+    m_cv.notify_one();
     TLOG_DEBUG(10) << "pending tds size: " << m_pending_tds.size();
   }
   return;
@@ -228,19 +273,14 @@ TCProcessor::create_decision(const PendingTD& pending_td)
   decision.trigger_timestamp = pending_td.contributing_tcs[m_earliest_tc_index].time_candidate;
   decision.readout_type = dfmessages::ReadoutType::kLocalized;
 
-  if (m_hsi_passthrough == true) {
-    if (pending_td.contributing_tcs[m_earliest_tc_index].type == triggeralgs::TriggerCandidate::Type::kTiming) {
-      decision.trigger_type = pending_td.contributing_tcs[m_earliest_tc_index].detid & 0xff;
-    } else {
-      m_trigger_type_shifted = (static_cast<int>(pending_td.contributing_tcs[m_earliest_tc_index].type) << 8);
-      decision.trigger_type = m_trigger_type_shifted;
-    }
-  } else {
-    decision.trigger_type = 1; // m_trigger_type;
-  }
+  m_TD_bitword = get_TD_bitword(pending_td);
+  TLOG_DEBUG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " "
+                                     << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
+  decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
 
-  TLOG_DEBUG(3) << "HSI passthrough: " << m_hsi_passthrough
-                << ", TC detid: " << pending_td.contributing_tcs[m_earliest_tc_index].detid
+    //decision.trigger_type = 1; // m_trigger_type;
+
+  TLOG_DEBUG(3) << ", TC detid: " << pending_td.contributing_tcs[m_earliest_tc_index].detid
                 << ", TC type: " << static_cast<int>(pending_td.contributing_tcs[m_earliest_tc_index].type)
                 << ", TC cont number: " << pending_td.contributing_tcs.size()
                 << ", DECISION trigger type: " << decision.trigger_type
@@ -262,15 +302,23 @@ TCProcessor::create_decision(const PendingTD& pending_td)
     roi_readout_make_requests(decision);
   }
 
+  m_tds_created_count++;
+  m_tds_created_tc_count += pending_td.contributing_tcs.size();
+
   return decision;
 }
 
 
 void
 TCProcessor::send_trigger_decisions() {
+ // A unique lock that can be locked and unlocked
+ std::unique_lock<std::mutex> lock(m_td_vector_mutex);
 
  while (m_running_flag) {
-    std::lock_guard<std::mutex> lock(m_td_vector_mutex);
+    // Either there are pending TDs, or wait for a bit
+    m_cv.wait(lock, [this] {
+        return !m_pending_tds.empty() || !m_running_flag;
+    });
     auto ready_tds = get_ready_tds(m_pending_tds);
     TLOG_DEBUG(10) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size();
 
@@ -289,6 +337,10 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
     // Check trigger bitwords
     m_TD_bitword = get_TD_bitword(pending_td);
     m_bitword_check = check_trigger_bitwords();
+    if (m_bitword_check == false) {
+      m_tds_failed_bitword_count++;
+      m_tds_failed_bitword_tc_count += pending_td.contributing_tcs.size();
+    }
   }
 
   if ((!m_use_bitwords) || (m_bitword_check)) {
@@ -297,12 +349,15 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
     auto tn = decision.trigger_number;
     auto td_ts = decision.trigger_timestamp;
 
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( pending_td.contributing_tcs.front().time_start );
     if(!m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
-        ers::warning(TDDropped(ERS_HERE, tn, td_ts));
-        m_tds_dropped++;
+      ers::warning(TDDropped(ERS_HERE, tn, td_ts));
+      m_tds_dropped_count++;
+      m_tds_dropped_tc_count += pending_td.contributing_tcs.size();
     }
     else {
-	m_new_tds++;
+      m_tds_sent_count++;
+      m_tds_sent_tc_count += pending_td.contributing_tcs.size();
     }
   } 
 }
@@ -311,55 +366,71 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
 void
 TCProcessor::add_tc(const triggeralgs::TriggerCandidate tc)
 {
-  bool added_to_existing = false;
+  bool tc_dealt = false;
   int64_t tc_wallclock_arrived =
     std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-  if (m_tc_merging) {
+  if (m_tc_merging || m_ignore_tc_pileup) {
 
     for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
-      if (check_overlap(tc, *it)) {
-        it->contributing_tcs.push_back(tc);
-        if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
-          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
-                        << tc.time_candidate + m_readout_window_map[tc.type].second
-                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
-                        << it->readout_end;
-          it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
-                                ? it->readout_start
-                                : (tc.time_candidate - m_readout_window_map[tc.type].first);
-          it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
-                              ? (tc.time_candidate + m_readout_window_map[tc.type].second)
-                              : it->readout_end;
-        } else {
-          TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
-                        << " overlaps with pending TD with start/end times " << it->readout_start << "/"
-                        << it->readout_end;
-          it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
-          it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
-        }
-        it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
-        added_to_existing = true;
+      // Don't deal with TC here if there's no overlap
+      if (!check_overlap(tc, *it)) {
+        it++;
+        continue;
+      }
+
+      // If overlap and ignoring, we drop the TC and flag it as dealt with.
+      if (m_ignore_tc_pileup) {
+        m_tds_dropped_tc_count++;
+        tc_dealt = true;
+        TLOG_DEBUG(3) << "TC overlapping with a previous TD, dropping!";
         break;
       }
-      ++it;
+
+      // If we're here, TC merging must be on, in which case we're actually
+      // going to merge the TC into the TD.    
+      it->contributing_tcs.push_back(tc);
+      if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
+        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
+                      << tc.time_candidate + m_readout_window_map[tc.type].second
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
+        it->readout_start = ((tc.time_candidate - m_readout_window_map[tc.type].first) >= it->readout_start)
+                              ? it->readout_start
+                              : (tc.time_candidate - m_readout_window_map[tc.type].first);
+        it->readout_end = ((tc.time_candidate + m_readout_window_map[tc.type].second) >= it->readout_end)
+                            ? (tc.time_candidate + m_readout_window_map[tc.type].second)
+                            : it->readout_end;
+      } else {
+        TLOG_DEBUG(3) << "TC with start/end times " << tc.time_start << "/" << tc.time_end
+                      << " overlaps with pending TD with start/end times " << it->readout_start << "/"
+                      << it->readout_end;
+        it->readout_start = (tc.time_start >= it->readout_start) ? it->readout_start : tc.time_start;
+        it->readout_end = (tc.time_end >= it->readout_end) ? tc.time_end : it->readout_end;
+      }
+      it->walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
+      tc_dealt = true;
+      break;
     }
   }
 
-  if (!added_to_existing) {
-    PendingTD td_candidate;
-    td_candidate.contributing_tcs.push_back(tc);
-    if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
-      td_candidate.readout_start = tc.time_candidate - m_readout_window_map[tc.type].first;
-      td_candidate.readout_end = tc.time_candidate + m_readout_window_map[tc.type].second;
-    } else {
-      td_candidate.readout_start = tc.time_start;
-      td_candidate.readout_end = tc.time_end;
-    }
-    td_candidate.walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
-    m_pending_tds.push_back(td_candidate);
+  // Don't do anything else if we've already dealt with the TC
+  if (tc_dealt) {
+    return;
   }
-  return;
+
+  // Create a new TD out of the TC
+  PendingTD td_candidate;
+  td_candidate.contributing_tcs.push_back(tc);
+  if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
+    td_candidate.readout_start = tc.time_candidate - m_readout_window_map[tc.type].first;
+    td_candidate.readout_end = tc.time_candidate + m_readout_window_map[tc.type].second;
+  } else {
+    td_candidate.readout_start = tc.time_start;
+    td_candidate.readout_end = tc.time_end;
+  }
+  td_candidate.walltime_expiration = tc_wallclock_arrived + m_buffer_timeout;
+  m_pending_tds.push_back(td_candidate);
 }
 
 void
@@ -451,6 +522,15 @@ void
 TCProcessor::clear_td_vectors()
 {
   std::lock_guard<std::mutex> lock(m_td_vector_mutex);
+  m_tds_cleared_count += m_pending_tds.size();
+  // Use std::accumulate to sum up the sizes of all contributing_tcs vectors
+  size_t tds_cleared_tc_count = std::accumulate(
+    m_pending_tds.begin(), m_pending_tds.end(), 0,
+    [](size_t sum, const PendingTD& ptd) {
+      return sum + ptd.contributing_tcs.size();
+    }
+  );
+  m_tds_cleared_tc_count += tds_cleared_tc_count;
   m_pending_tds.clear();
 }
 bool
@@ -467,26 +547,8 @@ TCProcessor::check_trigger_type_ignore(unsigned int tc_type)
   return ignore;
 }
 
-std::bitset<16>
-TCProcessor::get_TD_bitword(const PendingTD& ready_td)
-{
-  // get only unique types
-  std::vector<int> tc_types;
-  for (auto tc : ready_td.contributing_tcs) {
-    tc_types.push_back(static_cast<int>(tc.type));
-  }
-  tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
-
-  // form TD bitword
-  std::bitset<16> td_bitword = 0b0000000000000000;
-  for (auto tc_type : tc_types) {
-    td_bitword.set(tc_type);
-  }
-  return td_bitword;
-}
-
 void
-TCProcessor::print_trigger_bitwords(std::vector<std::bitset<16>> trigger_bitwords)
+TCProcessor::print_trigger_bitwords(std::vector<std::bitset<64>> trigger_bitwords)
 {
   TLOG_DEBUG(3) << "Configured trigger words:";
   for (auto bitword : trigger_bitwords) {
@@ -524,7 +586,7 @@ void
 TCProcessor::set_trigger_bitwords()
 {
   for (auto flag : m_trigger_bitwords_json) {
-    std::bitset<16> temp_bitword = 0b0000000000000000;
+    std::bitset<64> temp_bitword = 0b0000000000000000;
     for (auto bit : flag) {
       temp_bitword.set(bit);
     }
@@ -544,15 +606,23 @@ void
 TCProcessor::parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>& data)
 {
   for (auto readout_type : data) {
-    m_readout_window_map[static_cast<trgdataformats::TriggerCandidateData::Type>(readout_type->get_candidate_type())] = {
+    TCType tc_type = static_cast<TCType>(
+      dunedaq::trgdataformats::string_to_fragment_type_value(readout_type->get_tc_type_name()));
+
+      // Throw error if unknown TC type
+      if (tc_type == TCType::kUnknown) {
+        throw(InvalidConfiguration(ERS_HERE, "Provided an unknown TC type in the TCReadoutMap for the TCProcessor"));
+      }
+
+    m_readout_window_map[tc_type] = {
       readout_type->get_time_before(), readout_type->get_time_after()
     };
   }
   return;
 }
 void
-TCProcessor::print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
-                                               std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
+TCProcessor::print_readout_map(std::map<TCType,
+                                        std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
 {
   TLOG_DEBUG(3) << "MLT TD Readout map:";
   for (auto const& [key, val] : map) {
@@ -730,6 +800,39 @@ TCProcessor::roi_readout_make_requests(dfmessages::TriggerDecision& decision)
   return;
 }
 
+std::bitset<64>
+TCProcessor::get_TD_bitword(const PendingTD& ready_td)
+{
+  // get only unique types
+  std::vector<int> tc_types;
+  for (auto tc : ready_td.contributing_tcs) {
+    tc_types.push_back(static_cast<int>(tc.type));
+  }
+  tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
+
+  // form TD bitword
+  std::bitset<64> td_bitword;
+  for (auto tc_type : tc_types) {
+    td_bitword.set(tc_type);
+  }
+  return td_bitword;
+}
+
+void
+TCProcessor::print_opmon_stats()
+{
+  TLOG() << "TCProcessor opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "TDs created: \t\t" << m_tds_created_count << " \t(" << m_tds_created_tc_count << " TCs)";
+  TLOG() << "TDs sent: \t\t\t" << m_tds_sent_count << " \t(" << m_tds_sent_tc_count << " TCs)";
+  TLOG() << "TDs dropped: \t\t" << m_tds_dropped_count << " \t(" << m_tds_dropped_tc_count << " TCs)";
+  TLOG() << "TDs failed bitword check: \t" << m_tds_failed_bitword_count << " \t(" << m_tds_failed_bitword_tc_count << " TCs)";
+  TLOG() << "TDs cleared: \t\t" << m_tds_cleared_count << " \t(" << m_tds_cleared_tc_count << " TCs)";
+  TLOG() << "------------------------------";
+  TLOG() << "TCs received: \t" << m_tc_received_count;
+  TLOG() << "TCs ignored: \t" << m_tc_ignored_count;
+  TLOG();
+}
 
 } // namespace fdreadoutlibs
 } // namespace dunedaq

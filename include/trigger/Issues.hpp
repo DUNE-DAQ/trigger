@@ -28,7 +28,7 @@
 
 namespace dunedaq {
 
-ERS_DECLARE_ISSUE(trigger, InvalidConfiguration, "An invalid configuration object was received", ERS_EMPTY)
+ERS_DECLARE_ISSUE(trigger, InvalidConfiguration, "Invalid configuration error:" << conferror, ((std::string)conferror))
 ERS_DECLARE_ISSUE(trigger, TriggerActive, "Trigger is active now", ERS_EMPTY)
 ERS_DECLARE_ISSUE(trigger, TriggerPaused, "Trigger is paused", ERS_EMPTY)
 ERS_DECLARE_ISSUE(trigger, TriggerInhibited, "Trigger is inhibited in run " << runno, ((int64_t)runno))
@@ -204,6 +204,13 @@ ERS_DECLARE_ISSUE(trigger,
                   TDDropped,
                   "TD trigger number " << tn << " time stamp  " << ts,
                   ((uint64_t)tn) ((uint64_t)ts))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       MLTConfigurationProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Configuration error: " << item,
+                       ((std::string)name),
+                       ((std::string)item))
 
 } // namespace dunedaq
 

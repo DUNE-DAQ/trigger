@@ -17,7 +17,6 @@
 #include "datahandlinglibs/models/IterableQueueModel.hpp"
 #include "datahandlinglibs/utils/ReusableThread.hpp"
 
-
 #include "triggeralgs/TriggerActivity.hpp"
 
 #include "trigger/AlgorithmPlugins.hpp"
@@ -35,8 +34,8 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter, "TriggerPrimi
 namespace dunedaq {
 namespace trigger {
 
-TPProcessor::TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
-  : TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>(error_registry)
+TPProcessor::TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled)
+  : TaskRawDataProcessorModel<TriggerPrimitiveTypeAdapter>(error_registry, post_processing_enabled)
 {
 }
 
@@ -48,8 +47,13 @@ TPProcessor::start(const nlohmann::json& args)
 {
 
   // Reset stats
-  m_new_tas = 0;
-  m_tas_dropped = 0;
+  m_tp_received_count.store(0);
+  m_ta_made_count.store(0);
+  m_ta_sent_count.store(0);
+  m_ta_failed_sent_count.store(0);
+
+  m_running_flag.store(true);
+
   inherited::start(args);
 }
 
@@ -57,6 +61,8 @@ void
 TPProcessor::stop(const nlohmann::json& args)
 {
   inherited::stop(args);
+  m_running_flag.store(false);
+  print_opmon_stats();
 }
 
 void
@@ -78,7 +84,7 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
   std::vector<const appmodel::TAAlgorithm*> ta_algorithms;
   auto dp = conf->get_module_configuration()->get_data_processor();
   auto proc_conf = dp->cast<appmodel::TPDataProcessor>();
-  if (proc_conf != nullptr && proc_conf->get_mask_processing() == false) {
+  if (proc_conf != nullptr && m_post_processing_enabled) {
     ta_algorithms = proc_conf->get_algorithms();
     }
 
@@ -93,17 +99,32 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
     inherited::add_postprocess_task(std::bind(&TPProcessor::find_ta, this, std::placeholders::_1, maker));
     m_tams.push_back(maker);
   }
+  m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::conf(conf);
+
 }
 
-// void
-// TPProcessor::get_info(opmonlib::InfoCollector& ci, int level)
-// {
-//   //TLOG() << "Generated TAs = " << m_new_tas << ", dropped TAs = " << m_tas_dropped;
-//   inherited::get_info(ci, level);
-//   //ci.add(info);
-// }
+void
+TPProcessor::generate_opmon_data()
+{
+  opmon::TPProcessorInfo info;
 
+  info.set_tp_received_count( m_tp_received_count.load() );
+  info.set_ta_made_count( m_ta_made_count.load() );
+  info.set_ta_sent_count( m_ta_sent_count.load() );
+  info.set_ta_failed_sent_count( m_ta_failed_sent_count.load() );
+
+  this->publish(std::move(info));
+
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+    opmon::TriggerLatency lat_info;
+
+    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+    this->publish(std::move(lat_info));
+  }
+}
 
 /**
  * Pipeline Stage 2.: Do software TPG
@@ -111,19 +132,35 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
 void
 TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<triggeralgs::TriggerActivityMaker> taa)
 {
-	
+  if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( tp->tp.time_start ); // time_start or time_peak ?
+  m_tp_received_count++;	
   std::vector<triggeralgs::TriggerActivity> tas;
   taa->operator()(tp->tp, tas);
 
   while (tas.size()) {
+      m_ta_made_count++;
+      if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( tas.back().time_start );
       if (!m_ta_sink->try_send(std::move(tas.back()), iomanager::Sender::s_no_block)) {
         ers::warning(TADropped(ERS_HERE, tp->tp.time_start, m_sourceid.id));
-        m_tas_dropped++;
+        m_ta_failed_sent_count++;
+      } else {
+        m_ta_sent_count++;
       }
-      m_new_tas++;
       tas.pop_back();
   }
   return;
+}
+
+void
+TPProcessor::print_opmon_stats()
+{
+  TLOG() << "TPProcessor opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "TPs received: \t\t" << m_tp_received_count;
+  TLOG() << "TAs made: \t\t\t" << m_ta_made_count;
+  TLOG() << "TAs sent: \t\t\t" << m_ta_sent_count;
+  TLOG() << "TAs failed to send: \t" << m_ta_failed_sent_count;
+  TLOG();
 }
 
 } // namespace fdreadoutlibs

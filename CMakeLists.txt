@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(trigger VERSION 2.0.3)
+project(trigger VERSION 2.1.2)
 
 find_package(daq-cmake REQUIRED)
 
@@ -22,6 +22,8 @@ find_package(hdf5libs REQUIRED)
 find_package(datahandlinglibs REQUIRED)
 find_package(appmodel REQUIRED)
 find_package(CLI11 REQUIRED)
+
+daq_protobuf_codegen( opmon/*.proto )
 
 ##############################################################################
 # Main library 
@@ -106,6 +108,7 @@ daq_add_application( generate_tpset_from_hdf5 generate_tpset_from_hdf5.cxx TEST 
 #daq_add_unit_test(TriggerZipper_test             LINK_LIBRARIES trigger)
 #daq_add_unit_test(TriggerObjectOverlay_test      LINK_LIBRARIES trigger)
 #daq_add_unit_test(AlgorithmPlugins_test          LINK_LIBRARIES trigger)
+daq_add_unit_test(TriggerTypeAdapters_test        LINK_LIBRARIES trigger)
 
 ##############################################################################
 

@@ -21,6 +21,9 @@
 
 #include "trigger/Issues.hpp"
 #include "trigger/TCWrapper.hpp"
+#include "trigger/Latency.hpp"
+#include "trigger/opmon/tcprocessor_info.pb.h"
+#include "trigger/opmon/latency_info.pb.h"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -40,7 +43,7 @@ public:
   using tcptr = TCWrapper*;
   using consttcptr = const TCWrapper*;
 
-  explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry);
+  explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
 
   ~TCProcessor();
 
@@ -50,13 +53,14 @@ public:
 
   void conf(const appmodel::DataHandlerModule* conf) override;
 
-  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 protected:
 
   void make_td(const TCWrapper* tc);
 
-  private:
+private:
+  using TCType = triggeralgs::TriggerCandidate::Type;
   void send_trigger_decisions();
   std::thread m_send_trigger_decisions_thread;
 
@@ -99,8 +103,10 @@ protected:
   void roi_readout_make_requests(dfmessages::TriggerDecision& decision);
 
   int m_repeat_trigger_count{ 1 };
-  std::atomic<bool> m_hsi_passthrough;
   std::atomic<bool> m_tc_merging;
+
+  /// @brief Ignore TCs that overlap with already made TD
+  bool m_ignore_tc_pileup;
 
   dfmessages::trigger_number_t m_last_trigger_number;
 
@@ -118,6 +124,7 @@ protected:
   };
   std::vector<PendingTD> m_pending_tds;
   std::mutex m_td_vector_mutex;
+  std::condition_variable m_cv;
 
   void add_tc(const triggeralgs::TriggerCandidate tc);
   void add_tc_ignored(const triggeralgs::TriggerCandidate tc);
@@ -137,10 +144,10 @@ protected:
   bool m_use_bitwords;
   nlohmann::json m_trigger_bitwords_json;
   bool m_bitword_check;
-  std::bitset<16> m_TD_bitword;
-  std::vector<std::bitset<16>> m_trigger_bitwords;
-  std::bitset<16> get_TD_bitword(const PendingTD& ready_td);
-  void print_trigger_bitwords(std::vector<std::bitset<16>> trigger_bitwords);
+  std::bitset<64> m_TD_bitword;
+  std::vector<std::bitset<64>> m_trigger_bitwords;
+  std::bitset<64> get_TD_bitword(const PendingTD& ready_td);
+  void print_trigger_bitwords(std::vector<std::bitset<64>> trigger_bitwords);
   bool check_trigger_bitwords();
   void print_bitword_flags(nlohmann::json m_trigger_bitwords_json);
   void set_trigger_bitwords();
@@ -149,10 +156,10 @@ protected:
   // Readout map config
   bool m_use_readout_map;
   std::vector<const appmodel::TCReadoutMap*>  m_readout_window_map_data;
-  std::map<trgdataformats::TriggerCandidateData::Type, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
+  std::map<TCType, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
     m_readout_window_map;
   void parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>& data);
-  void print_readout_map(std::map<trgdataformats::TriggerCandidateData::Type,
+  void print_readout_map(std::map<TCType,
                                   std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map);
 
   // Create the next trigger decision
@@ -169,11 +176,29 @@ protected:
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerDecision>> m_td_sink;
 
   // opmon
-  std::atomic<uint64_t> m_new_tds{ 0 };  // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tds_dropped{ 0 };
-  std::atomic<uint64_t> m_td_dropped_tc_count{ 0 };
-  std::atomic<uint64_t> m_tc_ignored_count{ 0 };
+  using metric_counter_type = uint64_t; 
+  std::atomic<metric_counter_type> m_tds_created_count{ 0 };  // NOLINT(build/unsigned)
+  std::atomic<metric_counter_type> m_tds_sent_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_dropped_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_failed_bitword_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_cleared_count{ 0 };
 
+  // opmon: per TC
+  std::atomic<metric_counter_type> m_tc_received_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_created_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_sent_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_dropped_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_failed_bitword_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tds_cleared_tc_count{ 0 };
+  std::atomic<metric_counter_type> m_tc_ignored_count{ 0 };
+
+  // latency
+  std::atomic<bool> m_latency_monitoring{ false };
+  dunedaq::trigger::Latency m_latency_instance;
+  std::atomic<metric_counter_type> m_latency_in{ 0 };
+  std::atomic<metric_counter_type> m_latency_out{ 0 };
+
+  void print_opmon_stats();
 };
 
 } // namespace trigger

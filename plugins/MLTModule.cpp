@@ -17,7 +17,6 @@
 #include "trigger/Issues.hpp"
 #include "trigger/LivetimeCounter.hpp"
 
-#include "appfwk/app/Nljs.hpp"
 #include "appmodel/DFOApplication.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -32,7 +31,7 @@ namespace trigger {
 
 MLTModule::MLTModule(const std::string& name)
   : DAQModule(name)
-  , m_last_trigger_number(0)
+  , m_last_trigger_number(1)
   , m_run_number(0)
 {
   // clang-format off
@@ -44,6 +43,28 @@ MLTModule::MLTModule(const std::string& name)
 //  register_command("scrap",  &MLTModule::do_scrap);
   register_command("enable_dfo", &MLTModule::do_enable_dfo);
   // clang-format on
+}
+
+
+std::map<std::string, int>
+MLTModule::decode_geoid(uint64_t _geoid_int)
+{
+
+  std::map<std::string, int> geoid;
+
+      // Extract stream_id (stored in the top 16 bits)
+  geoid["stream_id"] = (_geoid_int >> 48) & 0xFFFF;
+
+  // Extract slot_id (stored in the next 16 bits)
+  geoid["slot_id"] = (_geoid_int >> 32) & 0xFFFF;
+
+  // Extract crate_id (stored in the next 16 bits)
+  geoid["crate_id"] = (_geoid_int >> 16) & 0xFFFF;
+
+  // Extract det_id (stored in the lowest 16 bits)
+  geoid["detector_id"] = _geoid_int & 0xFFFF;
+
+  return geoid;
 }
 
 void
@@ -72,66 +93,124 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   if (initial_active_dfo != nullptr) {
     m_active_dfo = initial_active_dfo->UID();
   }
+  
+  // Get the session to access the detector configuration
+  auto session = mcfg->configuration_manager()->session();
+
+  hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap = hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(session);
+
+  // Fill the SourceID -- Subdetector map
+  for (auto const& [sourceid, geoids] : geoidmap) {
+    TLOG() << "SourceID: " << sourceid;
+    for (auto const& geoid : geoids) {
+      std::map<std::string, int> gidmap = decode_geoid(geoid);
+      SubdetectorID detid = static_cast<SubdetectorID>(gidmap["detector_id"]);
+      if (m_srcid_detid_map.contains(sourceid) &&
+          !(m_srcid_detid_map[sourceid]  == detid)) {
+        throw MLTConfigurationProblem(ERS_HERE, get_name(),
+            "Multiple subdetector types for ine SourceID not suported in trigger system!");
+      }
+      m_srcid_detid_map[sourceid] = detid;
+    }
+    TLOG() << " * Subdetector type: " << m_srcid_detid_map[sourceid];
+  }
+
+  for (auto subdet_readout_window : mtrg->get_configuration()->get_subdetector_readout_map()) {
+    std::string subdetector_name = subdet_readout_window->get_subdetector();
+    SubdetectorID detid = dunedaq::detdataformats::DetID::string_to_subdetector(subdetector_name);
+    if (detid == detdataformats::DetID::Subdetector::kUnknown) {
+      throw MLTConfigurationProblem(ERS_HERE, get_name(),
+          "Unknown Subdetector supplied to MLT subdetector-readout window map");
+    }
+
+    if (m_subdetector_readout_window_map.count(detid)) {
+      throw MLTConfigurationProblem(ERS_HERE, get_name(),
+          "Supplied more than one of the same Subdetector name to MLT subdetector-readout window map");
+    }
+
+    m_subdetector_readout_window_map[detid] = std::make_pair(subdet_readout_window->get_time_before(),
+                                                             subdet_readout_window->get_time_after());
+
+    TLOG() << "[MLT] Custom readout map for subdetector: " << detid
+      << " time_start: " << subdet_readout_window->get_time_before() << " time_after: " << subdet_readout_window->get_time_after();
+  }
+
+  // Latency related
+  m_latency_monitoring.store( mtrg->get_configuration()->get_latency_monitoring() );
+
   // Now do the configuration: dummy for now
   m_configured_flag.store(true);
 }
 
-// void
-// MLTModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-// {
-//   moduleleveltriggerinfo::Info i;
+void
+MLTModule::generate_opmon_data()
+{
+  opmon::ModuleLevelTriggerInfo info;
 
-//   i.tc_received_count = m_tc_received_count.load();
-//   i.tc_ignored_count = m_tc_ignored_count.load();
-//   i.td_sent_count = m_td_sent_count.load();
-//   i.new_td_sent_count = m_new_td_sent_count.exchange(0);
-//   i.td_sent_tc_count = m_td_sent_tc_count.load();
-//   i.td_inhibited_count = m_td_inhibited_count.load();
-//   i.new_td_inhibited_count = m_new_td_inhibited_count.exchange(0);
-//   i.td_inhibited_tc_count = m_td_inhibited_tc_count.load();
-//   i.td_paused_count = m_td_paused_count.load();
-//   i.td_paused_tc_count = m_td_paused_tc_count.load();
-//   i.td_dropped_count = m_td_dropped_count.load();
-//   i.td_dropped_tc_count = m_td_dropped_tc_count.load();
-//   i.td_cleared_count = m_td_cleared_count.load();
-//   i.td_cleared_tc_count = m_td_cleared_tc_count.load();
-//   i.td_not_triggered_count = m_td_not_triggered_count.load();
-//   i.td_not_triggered_tc_count = m_td_not_triggered_tc_count.load();
-//   i.td_total_count = m_td_total_count.load();
-//   i.new_td_total_count = m_new_td_total_count.exchange(0);
+  info.set_td_msg_received_count( m_td_msg_received_count.load() );
+  info.set_td_sent_count( m_td_sent_count.load() );
+  info.set_td_inhibited_count( m_td_inhibited_count.load() );
+  info.set_td_paused_count( m_td_paused_count.load() );
+  info.set_td_queue_timeout_expired_err_count( m_td_queue_timeout_expired_err_count.load() );
+  info.set_td_total_count( m_td_total_count.load() );
 
-//   if (m_livetime_counter.get() != nullptr) {
-//     i.lc_kLive = m_livetime_counter->get_time(LivetimeCounter::State::kLive);
-//     i.lc_kPaused = m_livetime_counter->get_time(LivetimeCounter::State::kPaused);
-//     i.lc_kDead = m_livetime_counter->get_time(LivetimeCounter::State::kDead);
-//   }
+  if (m_lc_started) {
+    info.set_lc_klive( m_livetime_counter->get_time(LivetimeCounter::State::kLive) );
+    info.set_lc_kpaused( m_livetime_counter->get_time(LivetimeCounter::State::kPaused) );
+    info.set_lc_kdead( m_livetime_counter->get_time(LivetimeCounter::State::kDead) );
+  } else {
+    info.set_lc_klive( m_lc_kLive);
+    info.set_lc_kpaused( m_lc_kPaused );
+    info.set_lc_kdead( m_lc_kDead );
+  }
 
-//   ci.add(i);
-// }
+  this->publish(std::move(info));
+
+  // per TC type
+  std::lock_guard<std::mutex>   guard(m_trigger_mutex);
+  for ( auto & [type, counts] : m_trigger_counters ) {
+    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
+    opmon::TriggerDecisionInfo td_info;
+    td_info.set_received(counts.received.exchange(0));
+    td_info.set_sent(counts.sent.exchange(0));
+    td_info.set_failed_send(counts.failed_send.exchange(0));
+    td_info.set_paused(counts.paused.exchange(0));
+    td_info.set_inhibited(counts.inhibited.exchange(0));
+    this->publish( std::move(td_info), {{"type", name}} );
+  }
+
+  // latency
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+    // TC in, TD out
+    opmon::TriggerLatency lat_info;
+    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+    this->publish(std::move(lat_info));
+
+    // vs readout window requests
+    opmon::ModuleLevelTriggerRequestLatency lat_request_info;
+    lat_request_info.set_latency_window_start( m_latency_requests_instance.get_latency_in() );
+    lat_request_info.set_latency_window_end( m_latency_requests_instance.get_latency_out() );
+    this->publish(std::move(lat_request_info));
+  }
+}
 
 void
 MLTModule::do_start(const nlohmann::json& startobj)
 {
   m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
   // We get here at start of run, so reset the trigger number
-  m_last_trigger_number = 0;
+  m_last_trigger_number = 1;
 
   // OpMon.
-  m_tc_received_count.store(0);
-  m_tc_ignored_count.store(0);
+  m_td_msg_received_count.store(0);
   m_td_sent_count.store(0);
-  m_td_sent_tc_count.store(0);
-  m_td_inhibited_count.store(0);
-  m_td_inhibited_tc_count.store(0);
-  m_td_paused_count.store(0);
-  m_td_paused_tc_count.store(0);
-  m_td_dropped_count.store(0);
-  m_td_dropped_tc_count.store(0);
-  m_td_cleared_count.store(0);
-  m_td_cleared_tc_count.store(0);
-  m_td_not_triggered_count.store(0);
-  m_td_not_triggered_tc_count.store(0);
   m_td_total_count.store(0);
+  // OpMon DFO
+  m_td_inhibited_count.store(0);
+  m_td_paused_count.store(0);
+  m_td_queue_timeout_expired_err_count.store(0);
+  // OpMon Livetime counter
   m_lc_kLive.store(0);
   m_lc_kPaused.store(0);
   m_lc_kDead.store(0);
@@ -141,14 +220,12 @@ MLTModule::do_start(const nlohmann::json& startobj)
   m_dfo_is_busy.store(false);
 
   m_livetime_counter.reset(new LivetimeCounter(LivetimeCounter::State::kPaused));
+  m_lc_started = true;
 
   m_inhibit_input->add_callback(std::bind(&MLTModule::dfo_busy_callback, this, std::placeholders::_1));
   m_decision_input->add_callback(std::bind(&MLTModule::trigger_decisions_callback, this, std::placeholders::_1));
-  //m_send_trigger_decisions_thread = std::thread(&MLTModule::send_trigger_decisions, this);
-  //pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-dec"); // TODO: originally mlt-trig-dec
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
-
 }
 
 void
@@ -170,6 +247,9 @@ MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
 
   TLOG(3) << "LivetimeCounter - total deadtime+paused: " << m_lc_deadtime << std::endl;
   m_livetime_counter.reset(); // Calls LivetimeCounter dtor?
+  m_lc_started = false; 
+
+  print_opmon_stats();
 
   ers::info(TriggerEndOfRun(ERS_HERE, m_run_number));
 }
@@ -194,6 +274,7 @@ MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
   ers::info(TriggerActive(ERS_HERE));
   TLOG() << "******* Triggers RESUMED! in run " << m_run_number << " *********";
   m_livetime_counter->set_state(LivetimeCounter::State::kLive);
+  m_lc_started = true;
   m_paused.store(false);
   TLOG_DEBUG(5) << "TS Start: "
                 << std::chrono::duration_cast<std::chrono::microseconds>(
@@ -213,10 +294,35 @@ MLTModule::do_enable_dfo(const nlohmann::json& args)
 void
 MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
 {
+    m_td_msg_received_count++;
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( decision.trigger_timestamp );
+
+    auto trigger_types = unpack_types(decision.trigger_type);
+    for ( const auto t : trigger_types ) {
+      ++get_trigger_counter(t).received;
+    }
+
     auto ts = decision.trigger_timestamp;
     auto tt = decision.trigger_type;
     decision.run_number = m_run_number;
     decision.trigger_number = m_last_trigger_number;
+
+    // Overwrite the component's readout window if we have custom
+    // subdetector--readout window map
+    for ( const auto& [subdetectorid, window] : m_subdetector_readout_window_map ) {
+      for (auto& request: decision.components) {
+        if (request.component.subsystem != daqdataformats::SourceID::Subsystem::kDetectorReadout) {
+          continue;
+        }
+
+        if (subdetectorid != m_srcid_detid_map[request.component]) {
+          continue;
+        }
+
+        request.window_begin = decision.trigger_timestamp - window.first;
+        request.window_end = decision.trigger_timestamp + window.second;
+      }
+    }
 
     TLOG() << "Received decision with timestamp "
              << decision.trigger_timestamp ;
@@ -226,13 +332,21 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
              << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
  	     << " number of links " << decision.components.size();
 
-      //using namespace std::chrono;
-      // uint64_t end_lat_prescale = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+      // readout window latency update
+      // TODO: The latency will be different for different components, since they might have different readout windows
+      if (m_latency_monitoring.load()) {
+        m_latency_requests_instance.update_latency_in( decision.components.front().window_begin );
+        m_latency_requests_instance.update_latency_out( decision.components.front().window_end );
+      }
+
       try {
         m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
         m_td_sent_count++;
-        m_new_td_sent_count++;
-//        m_td_sent_tc_count += pending_td.contributing_tcs.size();
+
+        for ( const auto t : trigger_types ) {
+          ++get_trigger_counter(t).sent;
+        }
+
         m_last_trigger_number++;
 //        add_td(pending_td);
       } catch (const ers::Issue& e) {
@@ -240,12 +354,18 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
         TLOG_DEBUG(1) << "The network is misbehaving: TD send failed for "
                       << m_last_trigger_number;
         m_td_queue_timeout_expired_err_count++;
-        //m_td_queue_timeout_expired_err_tc_count += pending_td.contributing_tcs.size();
+
+        for ( const auto t : trigger_types ) {
+          ++get_trigger_counter(t).failed_send;
+        }
       }
 
     } else if (m_paused.load()) {
       ++m_td_paused_count;
-      //m_td_paused_tc_count += pending_td.contributing_tcs.size();
+      for ( const auto t : trigger_types ) {
+        ++get_trigger_counter(t).paused;
+      }
+
       TLOG_DEBUG(1) << "Triggers are paused. Not sending a TriggerDecision for TD with timestamp and type "
                     << ts << "/" << tt;
     } else {
@@ -253,12 +373,13 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
       TLOG_DEBUG(1) << "The DFO is busy. Not sending a TriggerDecision with timestamp and type "
                     << ts << "/" << tt;
       m_td_inhibited_count++;
-      m_new_td_inhibited_count++;
-      //m_td_inhibited_tc_count += pending_td.contributing_tcs.size();
+      for ( const auto t : trigger_types ) {
+        ++get_trigger_counter(t).inhibited;
+      }
+
     }
+    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( decision.trigger_timestamp );
     m_td_total_count++;
-    m_new_td_total_count++;
-   
 }
 
 void
@@ -270,10 +391,28 @@ MLTModule::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
     TLOG_DEBUG(18) << "Changing our flag for the DFO busy state from " << m_dfo_is_busy.load() << " to "
                    << inhibit.busy;
     m_dfo_is_busy = inhibit.busy;
-    m_livetime_counter->set_state(LivetimeCounter::State::kDead);
+    LivetimeCounter::State state = (inhibit.busy) ? LivetimeCounter::State::kDead : LivetimeCounter::State::kLive;
+    m_livetime_counter->set_state(state);
   }
 }
 
+void
+MLTModule::print_opmon_stats()
+{
+  TLOG() << "MLT opmon counters summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "Received TD messages: \t" << m_td_msg_received_count;
+  TLOG() << "Sent TDs: \t\t\t" << m_td_sent_count;
+  TLOG() << "Inhibited TDs: \t\t" << m_td_inhibited_count;
+  TLOG() << "Paused TDs: \t\t\t" << m_td_paused_count;
+  TLOG() << "Queue timeout TDs: \t\t" << m_td_queue_timeout_expired_err_count;
+  TLOG() << "Total TDs: \t\t\t" << m_td_total_count;
+  TLOG() << "------------------------------";
+  TLOG() << "Livetime::Live: \t" << m_lc_kLive;
+  TLOG() << "Livetime::Paused: \t" << m_lc_kPaused;
+  TLOG() << "Livetime::Dead: \t" << m_lc_kDead;
+  TLOG();
+}
 
 } // namespace trigger
 } // namespace dunedaq

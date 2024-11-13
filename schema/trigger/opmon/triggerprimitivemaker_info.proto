@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package dunedaq.trigger.opmon;
+
+// Message representing Trigger Primitive Maker Information
+message TriggerPrimitiveMakerInfo {
+  uint32 tp_made_count = 1;            // Number of TPs read/made from file
+  uint32 tp_set_made_count = 2;        // Number of TP Sets read/made from file
+  uint32 tp_set_failed_sent_count = 3; // Number of TP Sets that failed to send
+}
