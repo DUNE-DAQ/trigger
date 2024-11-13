@@ -9,3 +9,4 @@ pytest -s td_leakage_between_runs_test.py [--nanorc-option partition-number 2] [
 
 For reference, here are the ideas behind the existing tests:
 * `td_leakage_between_runs_test.py` - tests whether TriggerDecision messages received by the DFO have the correct run number in certain special conditions
+* `change_rate_test.py` - Tests whether the change-rate command properly changes the rate of the RTCM and not the FakeHSI
