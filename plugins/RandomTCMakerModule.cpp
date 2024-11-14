@@ -159,7 +159,10 @@ RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 
   m_send_trigger_candidates_thread.join();
 
-  m_time_sync_source->remove_callback();
+  if (m_conf->get_timestamp_method() == "kTimeSync") {
+    m_time_sync_source->remove_callback();
+  }
+
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
 
   print_opmon_stats();
@@ -167,9 +170,7 @@ RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 
 void
 RandomTCMakerModule::do_scrap(const nlohmann::json& /*obj*/)
-{
-  m_configured_flag.store(false);
-}
+{}
 
 
 void
