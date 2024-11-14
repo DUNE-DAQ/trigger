@@ -198,19 +198,19 @@ RandomTCMakerModule::create_candidate(dfmessages::timestamp_t timestamp)
   return candidate;
 }
 
-int
+uint64_t
 RandomTCMakerModule::get_interval(std::mt19937& gen)
 {
   std::string time_distribution = m_conf->get_time_distribution();
 
-  int interval = m_clock_speed_hz / m_trigger_rate_hz.load();
+  uint64_t interval = m_clock_speed_hz / m_trigger_rate_hz.load();
 
   if( time_distribution == "kUniform"){
     return interval;
   }
   else if(time_distribution == "kPoisson"){
     std::exponential_distribution<double> d(1.0 / interval);
-    return static_cast<int>(0.5 + d(gen));
+    return static_cast<uint64_t>(0.5 + d(gen));
   }
   else{
     TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
