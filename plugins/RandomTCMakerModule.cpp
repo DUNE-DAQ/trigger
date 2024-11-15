@@ -68,7 +68,7 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_tcout_time_before = tc_readout->get_time_before();
   m_tcout_time_after = tc_readout->get_time_after();
   m_tcout_type = static_cast<TCType>(
-      dunedaq::trgdataformats::string_to_fragment_type_value(tc_readout->get_tc_type_name()));
+      dunedaq::trgdataformats::string_to_trigger_candidate_type(tc_readout->get_tc_type_name()));
 
   // Throw error if unknown TC type
   if (m_tcout_type == TCType::kUnknown) {

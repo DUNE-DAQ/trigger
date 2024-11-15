@@ -607,7 +607,7 @@ TCProcessor::parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>&
 {
   for (auto readout_type : data) {
     TCType tc_type = static_cast<TCType>(
-      dunedaq::trgdataformats::string_to_fragment_type_value(readout_type->get_tc_type_name()));
+      dunedaq::trgdataformats::string_to_trigger_candidate_type(readout_type->get_tc_type_name()));
 
       // Throw error if unknown TC type
       if (tc_type == TCType::kUnknown) {
