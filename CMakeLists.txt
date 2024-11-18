@@ -53,19 +53,7 @@ daq_add_library(
 ## us all changing it.  Please keep one file per line to give git
 ## merge a chance to succeed.
 daq_codegen(
-#  faketpcreatorheartbeatmaker.jsonnet
-#  moduleleveltrigger.jsonnet
-#  randomtriggercandidatemaker.jsonnet
-#  customtriggercandidatemaker.jsonnet
-#  timingtriggercandidatemaker.jsonnet
   triggerprimitivemaker.jsonnet
-#  triggeractivitymaker.jsonnet
-#  triggercandidatemaker.jsonnet
-#  triggerdecisionmaker.jsonnet
-#  triggerzipper.jsonnet
-#  tpsetbuffercreator.jsonnet
-#  tasetsink.jsonnet
-#  tpchannelfilter.jsonnet
   TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 
 #daq_codegen(
@@ -76,16 +64,9 @@ daq_codegen(
 
 daq_add_plugin(DataSubscriberModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDataHandlerModule duneDAQModule LINK_LIBRARIES trigger)
-#daq_add_plugin(TimingTriggerCandidateMaker duneDAQModule SCHEMA LINK_LIBRARIES trigger)
 daq_add_plugin(RandomTCMakerModule duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(CustomTCMaker duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(MLTModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerPrimitiveMaker duneDAQModule LINK_LIBRARIES trigger)
-#daq_add_plugin(TriggerActivityMaker duneDAQModule LINK_LIBRARIES trigger)
-#daq_add_plugin(TriggerCandidateMaker duneDAQModule LINK_LIBRARIES trigger)
-#daq_add_plugin(FakeTPCreatorHeartbeatMaker duneDAQModule LINK_LIBRARIES trigger)
-#daq_add_plugin(TPChannelFilter duneDAQModule LINK_LIBRARIES trigger)
-
 
 # Algorithm plugins
 #daq_add_plugin(TriggerDecisionMakerSupernovaPlugin duneTDMaker LINK_LIBRARIES trigger)
