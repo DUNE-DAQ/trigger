@@ -99,7 +99,7 @@ The trigger data objects are defined as C++ structures, which could potentially 
 The trgdataformats repository contains the C++ structures that hold the trigger data formats, and various overlays that extend the trigger objects to be continous in memory to allow them to be stored in the buffers and saved as fragments.
 
 ### appmodel ([link](https://github.com/DUNE-DAQ/appmodel)) <a name="appmodel"></a>
-The appmodel repository contains the configuration schema for all the trigger (an more) objects, together with functions that generate the trigger application out the xml data that follows those schemas. This includes configuration of the trigger algorithms, setup of the external triggers, creating queues between different `DAQModules` etc.
+The appmodel repository contains the configuration schema for all the trigger objects (and more), together with functions that generate the trigger application out of xml data that follows those schemas. This includes configuration of the trigger algorithms, setup of the external triggers, creating queues between different `DAQModules` etc.
 
 ## Running
 ### online
