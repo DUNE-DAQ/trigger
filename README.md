@@ -1,6 +1,6 @@
 # Trigger
 
-*(Last updated July 2023, MiR + AS)*
+*(Last updated Nov 2024, MiR, AO & AS)*
 
 The `trigger` package contains the modules that make up the DUNE FD DAQ trigger system. Implementations of the physics algorithms that produce data selection objects (trigger primitive, trigger activity and trigger candidates) live in the [`tpglibs`](https://github.com/DUNE-DAQ/tpglibs) and [`triggeralgs`](https://github.com/DUNE-DAQ/triggeralgs) packages. The configuration schema & code that generates trigger application live in [`appmodel`](https://github.com/DUNE-DAQ/appmodel)
 <hr>
@@ -58,11 +58,11 @@ The trigger is designed hierarchically. The minimal (extremely simplified) flow:
   <img src="docs/minimal.svg" />
 </p>
 
-The hits-on-wire, in the form of Trigger Primitives, are merged at the scale of one TDAQ unit (such as an APA or CRP) into a cluster representing some type of Trigger Activity. Multiple Trigger Activity outputs can then be merged into a single Trigger Candidate that may include information spanning multiple TDAQ units or multiple slices of time (say, many APAs or many seconds) for a single system. Finally, multiple Trigger Candidates can be merged across systems (e.g. TPC and PDS) in the MLT into a Trigger Decision, a request to save the data.
+The hits-on-channel, in the form of Trigger Primitives, are merged at the scale of one TDAQ unit (such as an APA or CRP) into a cluster representing some type of Trigger Activity. Multiple Trigger Activity outputs can then be merged into a single Trigger Candidate that may include information spanning multiple TDAQ units or multiple slices of time (say, many APAs or many seconds) for a single system. Finally, multiple Trigger Candidates can be merged across systems (e.g. TPC and PDS) in the MLT into a Trigger Decision, a request to save the data.
 
 ### Terminology:
 #### Main objects:
-* **Trigger Primitive (TP)**: The Simplest signal waveform representation (wire hit). These are generated using hit finding algorithms in the readout subsystem.
+* **Trigger Primitive (TP)**: The Simplest signal waveform representation (channel hit). These are generated using hit finding algorithms in the readout subsystem.
 * **Trigger Activity (TA)**: Cluster of hit(s) (TP(s)) that have been deemed fit to be sent up to the next level in the trigger hierarchy. Typically these will be tracks/showers or other outstanding physics activity within the box (sub-detector).
 * **Trigger Candidate (TC)**: Cluster of TAs across all sub-detectors.
 * **Trigger Decision (TD)**: A trigger request issued by Module Level Trigger (MLT) to the Data Flow Orchestrator (DFO) in order to request the raw data of the relevant detector channels over specified time windows from the readout subsystem that should be permanently stored for later analysis.
@@ -115,7 +115,7 @@ The instructions for running with real hardware change often. Please follow:
 
 ## Development
 * [Development workflow](https://dune-daq-sw.readthedocs.io/en/latest/packages/daq-release/development_workflow_gitflow/)
-* [Setting up DUNE DAQ development area (v5.3)](https://github.com/DUNE-DAQ/daqconf/wiki/Setting-up-a-fddaq%E2%80%90v5.3.0-development-area)
+* [Setting up DUNE DAQ development area](https://github.com/DUNE-DAQ/daqconf/wiki)
 * [Writing trigger algorithm](https://dune-daq-sw.readthedocs.io/en/latest/packages/trigger/trigger-alg-howto/)
 * [DAQ buildtools](https://dune-daq-sw.readthedocs.io/en/latest/packages/daq-buildtools/)
 * [Coding styleguide](https://dune-daq-sw.readthedocs.io/en/latest/packages/styleguide/)
