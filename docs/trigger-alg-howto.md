@@ -46,7 +46,7 @@ where `TRACE_NAME` is the string `"TAMakerPrescaleAlgorithm"`, and should be def
 
 ## Configuration
 
-Your algorithm has to take a configuration parameters at run time (e.g., a minimum number of hits or ADC to form a trigger activity, or a verbosity level). This means you have to write an xml configuration schema for your algorithm in `appmodel` repository. Here is an example for `ADCSimpleWindow` algorithm, defined in [`appmodel/schema/appmodel/trigger.schema.xml`](https://github.com/DUNE-DAQ/appmodel/blob/develop/schema/appmodel/trigger.schema.xm).
+Your algorithm has to take configuration parameters at run time (e.g., a minimum number of hits or ADC to form a trigger activity, or a verbosity level). This means you have to write an xml configuration schema for your algorithm in the `appmodel` repository. Here is an example for `ADCSimpleWindow` algorithm, defined in [`appmodel/schema/appmodel/trigger.schema.xml`](https://github.com/DUNE-DAQ/appmodel/blob/develop/schema/appmodel/trigger.schema.xml).
 
 ```xml
  <class name="TAMakerADCSimpleWindowAlgorithm">
