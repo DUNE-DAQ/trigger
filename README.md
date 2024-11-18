@@ -83,7 +83,7 @@ There currently does not exist an up-to-date representation of the trigger syste
   <img src="docs/trigger.png" />
 </p>
 
-The diagram above shows the **DAQModules** and connections in an example trigger and readout app. Blue rounded rectangles are the **TriggerDataHandler** **DAQModules**, red rectangle are the external trigger inputs, the orange rectangle represents the readout application, and the purple represents the **ModuleLevelTrigger**, handling the trigger candidates. Each **DataHandler** module (here called **ReadoutModel**) receives one type of data (e.g. TriggerActivity), runs pre-processing tasks on it, inserts it into a latency buffer (that is handled by the LatencyBufferHandler), and runs post-processing tasks generating a new object (e.g. TriggerCandidate).
+The diagram above shows the **DAQModules** and connections in an example trigger and readout app. Blue rounded rectangles are the **TriggerDataHandler** **DAQModules**, red rectangles are the external trigger inputs, the orange rectangle represents the readout application, and the purple represents the **ModuleLevelTrigger**, handling the trigger candidates. Each **DataHandler** module (here called **ReadoutModel**) receives one type of data (e.g. TriggerActivity), runs pre-processing tasks on it, inserts it into a latency buffer (that is handled by the LatencyBufferHandler), and runs post-processing tasks generating a new object (e.g. TriggerCandidate).
 
 ## Links to other repositories
 
