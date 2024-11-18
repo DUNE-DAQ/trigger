@@ -88,7 +88,7 @@ The diagram above shows the **DAQModules** and connections in an example trigger
 ## Links to other repositories
 
 ### tpglibs ([link](https://github.com/DUNE-DAQ/tpglibs)) <a name="tpglibs"></a>
-Repository that holds the algorithms that generate the TriggerPrimitives out of the continously-supplied waveforms, from each wire/channel. It is used by the readout application, and includes both the naive and AVX implementations of the TPG algorithms.
+Repository that holds the algorithms that generate the TriggerPrimitives out of the continously-supplied waveforms, from each channel. It is used by the readout application, and includes both the native and AVX implementations of the TPG algorithms.
 
 ### triggeralgs ([link](https://github.com/DUNE-DAQ/triggeralgs)) <a name="triggeralgs"></a>
 The triggeralgs package contains implementations of the algorithms that produce TAs from TPs and TCs from TAs. They are in a separate package to allow the algorithms to be built outside of the DAQ software stack and used in the offline software, enabling a completely-independent development of the trigger algorithms. Trigger algorithms are easliely loaded dynamically only knowing their name, through a factory method: [AlgorithmPlugins.hpp](https://github.com/DUNE-DAQ/trigger/blob/develop/include/trigger/AlgorithmPlugins.hpp).
