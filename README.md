@@ -124,7 +124,7 @@ For trigger code development, please:
 
 * **Follow the styleguide** linked above.
 * **Never push directly to the `develop` branch**. Create a branch (name should contain an easily recognisable name and reflect the purpose of the feature/fix, e.g. `name/new_feature`.) and make a **pull request** to the appropriate branch. At least one reviewer is required (more for big changes). General rule of thumb: don't merge your own PR.
-* **Always use integration tests.** A selection is available at [daq-systemtest integration tests](https://github.com/DUNE-DAQ/daqsystemtest/tree/develop/integtest). As a minimum, the `minimal_system_quick_test`, `fake_data_producer_test` and `3ru_3df_multirun_test` tests should be run (the more the better of course). Some tests require more powerful machines (available at np04).
+* **Always use integration tests.** A selection is available at [daq-systemtest integration tests](https://github.com/DUNE-DAQ/daqsystemtest/tree/develop/integtest). At a minimum, the `minimal_system_quick_test`, `fake_data_producer_test` and `3ru_3df_multirun_test` tests should be run (the more the better of course). Some tests require more powerful machines (available at np04).
 * No `warnings` when building.
 * *clang formatting*: there is an inbuilt script available (from dbt) to apply Clang-Format code style: `dbt-clang-format.sh`. Run without arguments for usage information.
 
