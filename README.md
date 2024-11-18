@@ -70,7 +70,7 @@ The hits-on-wire, in the form of Trigger Primitives, are merged at the scale of 
 
 #### Modules-Makers:
 * **Trigger Primitive Generator (TPG)**: An algorithm that sees the continous waveform on a channel, and detects "hits", generating Trigger Primitive (TP) object.
-* **Trigger Activity Maker (TAM)**: A module processing the incoming stream of TPs and finding a localised activity at the granularity of single APA/CRPs (and PDS detector units in the future). TAMs has associated algorithms, that define the search for activity (e.g. based on clustering). The TAs that the TAM produces are sent to the TCM.
+* **Trigger Activity Maker (TAM)**: A module processing the incoming stream of TPs and finding localised activity at the granularity of single APA/CRPs (and PDS detector units in the future). TAMs have associated algorithms that define the search for activity (e.g. based on clustering). The TAs that a TAM produces are sent to the TCM.
 * **Trigger Candidate Maker (TCM)**: A module that identifies clusters of TAs across many APAs/CRPs, e.g. a cathode crossing muon in ProtoDUNE, with a track on two opposite facing APAs. As with TAMs, TCMs have associated algorithms with the TA-merging logic.
 * **Module Level Trigger (MLT)**: A module that handles TCs and produces data readout signals (Trigger Decisions) based on those. This may include merging overlapping events, deciding on the readout windows, ROI (in the future) etc.
 
