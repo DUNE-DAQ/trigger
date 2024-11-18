@@ -30,7 +30,7 @@ virtual void flush(timestamp_t until, std::vector<TriggerActivity>& output_ta)
 The reason this function exists is to handle the case where there is a large gap between trigger primitives (or, more likely, between trigger activities). During this gap, `operator()` is not called, and so your algorithm cannot send its output, even if such a long time has passed that you know that any trigger activities currently in progress can be completed and sent out. In this case, the data selection framework calls your implementation of `flush(until, output_ta)` to inform you that no more trigger primitives have occurred between the last one for which `operator()` was called and timestamp `until`. If this causes your algorithm to complete any trigger activities, you can add them to the `output_ta` vector.
 --->
 
-Finally, you must register the `TriggerActivityMaker` in the Trigger Activity Factory. This allows it to be accessed in this repository and used when running on `nanorc`. In the case of `TAMakerPrescaleAlgorithm`, the macro call is:
+Finally, you must register the `TriggerActivityMaker` in the Trigger Activity Factory. This allows it to be accessed in this repository and used when running on `drunc`. In the case of `TAMakerPrescaleAlgorithm`, the macro call is:
 
 ```cpp
 REGISTER_TRIGGER_ACTIVITY_MAKER(TRACE_NAME, TAMakerPrescaleAlgorithm)
