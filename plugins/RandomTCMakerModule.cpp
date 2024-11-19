@@ -52,14 +52,20 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   auto mtrg = mcfg->module<appmodel::RandomTCMakerModule>(get_name());
 
+  // Get the output connections
   for(auto con: mtrg->get_outputs()){
     TLOG() << "TC sink is " << con->class_name() << "@" << con->UID();
     m_trigger_candidate_sink =
         get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
   }
+
+  // Get the input connections
   for(auto con: mtrg->get_inputs()) {
-  // Get the time sync source
-     m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(con->UID());
+    // Get the time sync source
+    TLOG() << "Timestamp receiver connection is " << con->class_name() << "@"
+           << con->UID() << " with tag " << get_name();
+    m_time_sync_source =
+      get_iomanager()->get_receiver<dfmessages::TimeSync>(con->UID(), get_name());
   }
   m_conf = mtrg->get_configuration();
 
