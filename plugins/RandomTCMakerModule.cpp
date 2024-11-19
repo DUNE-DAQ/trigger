@@ -62,7 +62,7 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   // Get the input connections
   for(auto con: mtrg->get_inputs()) {
     // Get the time sync source
-    TLOG() << "Timestamp receiver connection is " << con->class_name() << "@"
+    TLOG() << "TimeSync receiver connection is " << con->class_name() << "@"
            << con->UID() << " with tag " << get_name();
     m_time_sync_source =
       get_iomanager()->get_receiver<dfmessages::TimeSync>(con->UID(), get_name());
