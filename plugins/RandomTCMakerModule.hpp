@@ -107,23 +107,18 @@ private:
   /// @brief Output window end time, based off trigger timestamp
   dfmessages::timestamp_t m_tcout_time_after;
 
-
-
-
   /// @brief Clock speed in hz, taken from detector configuration
   uint64_t m_clock_speed_hz;
 
   /// @brief Output trigger rate in hz
   std::atomic<float> m_trigger_rate_hz{ 0 };
 
-  int get_interval(std::mt19937& gen);
+  uint64_t get_interval(std::mt19937& gen);
 
   dfmessages::run_number_t m_run_number;
 
   // Are we in the RUNNING state?
   std::atomic<bool> m_running_flag{ false };
-  // Are we in a configured state, ie after conf and before scrap?
-  std::atomic<bool> m_configured_flag{ false };
 
   // OpMon variables
   using metric_counter_type = uint64_t; //decltype(randomtriggercandidatemakerinfo::Info::tc_sent_count);
@@ -135,7 +130,6 @@ private:
   // Create an instance of the Latency class
   std::atomic<bool> m_latency_monitoring{ false };
   dunedaq::trigger::Latency m_latency_instance;
-  std::atomic<metric_counter_type> m_latency_out{ 0 };
 };
 } // namespace trigger
 } // namespace dunedaq

@@ -77,7 +77,7 @@ public:
     for (auto win : hsi_conf->get_signals()) {
       triggeralgs::TriggerCandidate::Type tc_type;
       tc_type = static_cast<triggeralgs::TriggerCandidate::Type>(
-          dunedaq::trgdataformats::string_to_fragment_type_value(win->get_tc_type_name()));
+          dunedaq::trgdataformats::string_to_trigger_candidate_type(win->get_tc_type_name()));
 
       // Throw error if unknown TC type
       if (tc_type == triggeralgs::TriggerCandidate::Type::kUnknown) {

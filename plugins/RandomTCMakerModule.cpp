@@ -52,14 +52,20 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   auto mtrg = mcfg->module<appmodel::RandomTCMakerModule>(get_name());
 
+  // Get the output connections
   for(auto con: mtrg->get_outputs()){
     TLOG() << "TC sink is " << con->class_name() << "@" << con->UID();
     m_trigger_candidate_sink =
         get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
   }
+
+  // Get the input connections
   for(auto con: mtrg->get_inputs()) {
-  // Get the time sync source
-     m_time_sync_source = get_iom_receiver<dfmessages::TimeSync>(con->UID());
+    // Get the time sync source
+    TLOG() << "TimeSync receiver connection is " << con->class_name() << "@"
+           << con->UID() << " with tag " << get_name();
+    m_time_sync_source =
+      get_iomanager()->get_receiver<dfmessages::TimeSync>(con->UID(), get_name());
   }
   m_conf = mtrg->get_configuration();
 
@@ -68,7 +74,7 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_tcout_time_before = tc_readout->get_time_before();
   m_tcout_time_after = tc_readout->get_time_after();
   m_tcout_type = static_cast<TCType>(
-      dunedaq::trgdataformats::string_to_fragment_type_value(tc_readout->get_tc_type_name()));
+      dunedaq::trgdataformats::string_to_trigger_candidate_type(tc_readout->get_tc_type_name()));
 
   // Throw error if unknown TC type
   if (m_tcout_type == TCType::kUnknown) {
@@ -159,7 +165,10 @@ RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 
   m_send_trigger_candidates_thread.join();
 
-  m_time_sync_source->remove_callback();
+  if (m_conf->get_timestamp_method() == "kTimeSync") {
+    m_time_sync_source->remove_callback();
+  }
+
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
 
   print_opmon_stats();
@@ -167,9 +176,7 @@ RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 
 void
 RandomTCMakerModule::do_scrap(const nlohmann::json& /*obj*/)
-{
-  m_configured_flag.store(false);
-}
+{}
 
 
 void
@@ -198,19 +205,19 @@ RandomTCMakerModule::create_candidate(dfmessages::timestamp_t timestamp)
   return candidate;
 }
 
-int
+uint64_t
 RandomTCMakerModule::get_interval(std::mt19937& gen)
 {
   std::string time_distribution = m_conf->get_time_distribution();
 
-  int interval = m_clock_speed_hz / m_trigger_rate_hz.load();
+  uint64_t interval = m_clock_speed_hz / m_trigger_rate_hz.load();
 
   if( time_distribution == "kUniform"){
     return interval;
   }
   else if(time_distribution == "kPoisson"){
     std::exponential_distribution<double> d(1.0 / interval);
-    return static_cast<int>(0.5 + d(gen));
+    return static_cast<uint64_t>(0.5 + d(gen));
   }
   else{
     TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";

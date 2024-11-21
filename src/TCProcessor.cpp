@@ -127,7 +127,6 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   m_total_group_links = m_group_links.size();
   TLOG_DEBUG(3) << "Total group links: " << m_total_group_links;
 
-  m_hsi_passthrough = proc_conf->get_hsi_trigger_type_passthrough();
   m_tc_merging        = proc_conf->get_merge_overlapping_tcs();
   m_ignore_tc_pileup = proc_conf->get_ignore_overlapping_tcs();
   m_buffer_timeout    = proc_conf->get_buffer_timeout();
@@ -135,7 +134,16 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   m_td_readout_limit  = proc_conf->get_td_readout_limit();
   m_ignored_tc_types = proc_conf->get_ignore_tc();
   m_ignoring_tc_types = !m_ignored_tc_types.empty();
-  m_use_bitwords      = proc_conf->get_use_bitwords();
+
+  // Trigger bitwords
+  std::vector<std::string> bitwords = proc_conf->get_trigger_bitwords();
+  m_use_bitwords = !bitwords.empty();
+  if(m_use_bitwords){
+    // TODO: Print_bitword_flags(m_trigger_bitwords)
+    set_trigger_bitwords(bitwords);
+    print_trigger_bitwords(m_trigger_bitwords);
+  }
+  TLOG_DEBUG(3) << "Use bitwords: " << m_use_bitwords;
   TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
   TLOG_DEBUG(3) << "Ignore pileup: " << m_ignore_tc_pileup;
   TLOG_DEBUG(3) << "Buffer timeout: " << m_buffer_timeout;
@@ -168,15 +176,6 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
       TLOG_DEBUG(3) << *it;
       ++it;
     }
-  }
-
-  // Trigger bitwords
-  TLOG_DEBUG(3) << "Use bitwords: " << m_use_bitwords;
-  if(m_use_bitwords){
-    std::vector<std::string> bitwords = proc_conf->get_trigger_bitwords();
-    // TODO: Print_bitword_flags(m_trigger_bitwords)
-    set_trigger_bitwords(bitwords);
-    print_trigger_bitwords(m_trigger_bitwords);
   }
   m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::add_postprocess_task(std::bind(&TCProcessor::make_td, this, std::placeholders::_1));
@@ -274,24 +273,14 @@ TCProcessor::create_decision(const PendingTD& pending_td)
   decision.trigger_timestamp = pending_td.contributing_tcs[m_earliest_tc_index].time_candidate;
   decision.readout_type = dfmessages::ReadoutType::kLocalized;
 
-  if (m_hsi_passthrough == true) {
-    if (pending_td.contributing_tcs[m_earliest_tc_index].type == TCType::kTiming) {
-      decision.trigger_type = pending_td.contributing_tcs[m_earliest_tc_index].detid & 0xff;
-    } else {
-      m_trigger_type_shifted = (static_cast<int>(pending_td.contributing_tcs[m_earliest_tc_index].type) << 8);
-      decision.trigger_type = m_trigger_type_shifted;
-    }
-  } else {
-    m_TD_bitword = get_TD_bitword(pending_td);
-    TLOG_DEBUG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " "
-                                       << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
-    decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
+  m_TD_bitword = get_TD_bitword(pending_td);
+  TLOG_DEBUG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " "
+                                     << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
+  decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
 
     //decision.trigger_type = 1; // m_trigger_type;
-  }
 
-  TLOG_DEBUG(3) << "HSI passthrough: " << m_hsi_passthrough
-                << ", TC detid: " << pending_td.contributing_tcs[m_earliest_tc_index].detid
+  TLOG_DEBUG(3) << ", TC detid: " << pending_td.contributing_tcs[m_earliest_tc_index].detid
                 << ", TC type: " << static_cast<int>(pending_td.contributing_tcs[m_earliest_tc_index].type)
                 << ", TC cont number: " << pending_td.contributing_tcs.size()
                 << ", DECISION trigger type: " << decision.trigger_type
@@ -618,7 +607,7 @@ TCProcessor::parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>&
 {
   for (auto readout_type : data) {
     TCType tc_type = static_cast<TCType>(
-      dunedaq::trgdataformats::string_to_fragment_type_value(readout_type->get_tc_type_name()));
+      dunedaq::trgdataformats::string_to_trigger_candidate_type(readout_type->get_tc_type_name()));
 
       // Throw error if unknown TC type
       if (tc_type == TCType::kUnknown) {
