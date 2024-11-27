@@ -7,10 +7,10 @@ from pprint import pprint
 # Load configuration types
 import moo.otypes
 
-moo.otypes.load_types('trigger/triggerprimitivemaker.jsonnet')
+moo.otypes.load_types('trigger/triggerprimitivemakerpds.jsonnet')
 
 # Import new types
-import dunedaq.trigger.triggerprimitivemaker as tpm
+import dunedaq.trigger.triggerprimitivemakerpds as tpm
 
 from daqconf.core.app import App, ModuleGraph
 from daqconf.core.daqmodule import DAQModule
@@ -41,7 +41,7 @@ def get_replay_app(INPUT_FILES: [str],
     modules.append(
         DAQModule(
             name = "tpm",
-            plugin = "TriggerPrimitiveMaker",
+            plugin = "TriggerPrimitiveMakerPDS",
             conf = tpm.ConfParams(
                 tp_streams = tp_streams,
                 number_of_loops=NUMBER_OF_LOOPS,
@@ -59,7 +59,7 @@ def get_replay_app(INPUT_FILES: [str],
         # mgraph.add_endpoint(f"tpsets_rulocalhost_{istream}_link0", f"tpm.output{istream}", Direction.OUT, topic=["TPSets"])
         mgraph.add_endpoint(
             external_name = f"tpsets_tplink{istream}",
-            data_type = 'TPSet',
+            data_type = 'TPSetPDS',
             internal_name = f"tpm.output{istream}",
             inout = Direction.OUT,
             is_pubsub = True
