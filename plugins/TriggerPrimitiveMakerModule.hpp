@@ -1,19 +1,28 @@
 /**
- * @file TriggerPrimitiveMaker.hpp
+ * @file TriggerPrimitiveMakerModule.hpp
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#ifndef TRIGGER_PLUGINS_TRIGGERPRIMITIVEMAKER_HPP_
-#define TRIGGER_PLUGINS_TRIGGERPRIMITIVEMAKER_HPP_
+#ifndef TRIGGER_PLUGINS_TRIGGERPRIMITIVEMAKERMODULE_HPP_
+#define TRIGGER_PLUGINS_TRIGGERPRIMITIVEMAKERMODULE_HPP_
 
 #include "trigger/TPSet.hpp"
-#include "trigger/triggerprimitivemaker/Nljs.hpp"
+#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/opmon/triggerprimitivemaker_info.pb.h"
 
+#include "appmodel/TriggerPrimitiveMakerModule.hpp"
+#include "appmodel/TriggerPrimitiveMakerModuleConf.hpp"
+#include "appmodel/TPStreamConf.hpp"
+
 #include "appfwk/DAQModule.hpp"
+#include "appfwk/ModuleConfiguration.hpp"
+#include "confmodel/Connection.hpp"
+#include "confmodel/Session.hpp"
+#include "confmodel/DetectorConfig.hpp"
+
 #include "daqdataformats/SourceID.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
 #include "iomanager/Sender.hpp"
@@ -25,26 +34,31 @@
 #include <string>
 #include <vector>
 
+using TriggerPrimitive = dunedaq::trgdataformats::TriggerPrimitive;
+
 namespace dunedaq {
 namespace trigger {
-class TriggerPrimitiveMaker : public dunedaq::appfwk::DAQModule
+class TriggerPrimitiveMakerModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
    * @brief RandomDataListGenerator Constructor
    * @param name Instance name for this RandomDataListGenerator instance
    */
-  explicit TriggerPrimitiveMaker(const std::string& name);
+  explicit TriggerPrimitiveMakerModule(const std::string& name);
 
-  TriggerPrimitiveMaker(const TriggerPrimitiveMaker&) = delete; ///< TriggerPrimitiveMaker is not copy-constructible
-  TriggerPrimitiveMaker& operator=(const TriggerPrimitiveMaker&) =
-    delete;                                                ///< TriggerPrimitiveMaker is not copy-assignable
-  TriggerPrimitiveMaker(TriggerPrimitiveMaker&&) = delete; ///< TriggerPrimitiveMaker is not move-constructible
-  TriggerPrimitiveMaker& operator=(TriggerPrimitiveMaker&&) = delete; ///< TriggerPrimitiveMaker is not move-assignable
+  TriggerPrimitiveMakerModule(const TriggerPrimitiveMakerModule&) = delete; ///< TriggerPrimitiveMakerModule is not copy-constructible
+  TriggerPrimitiveMakerModule& operator=(const TriggerPrimitiveMakerModule&) =
+    delete;                                                ///< TriggerPrimitiveMakerModule is not copy-assignable
+  TriggerPrimitiveMakerModule(TriggerPrimitiveMakerModule&&) = delete; ///< TriggerPrimitiveMakerModule is not move-constructible
+  TriggerPrimitiveMakerModule& operator=(TriggerPrimitiveMakerModule&&) = delete; ///< TriggerPrimitiveMakerModule is not move-assignable
+
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void generate_opmon_data() override;
 
 private:
   // Commands
-  void do_configure(const nlohmann::json& obj);
+  void do_configure(const nlohmann::json& /*obj*/);
   void do_start(const nlohmann::json& obj);
   void do_stop(const nlohmann::json& obj);
   void do_scrap(const nlohmann::json& obj);
@@ -52,27 +66,24 @@ private:
   // Threading
   void do_work(std::atomic<bool>&,
                std::vector<TPSet>& tpsets,
-               std::shared_ptr<iomanager::SenderConcept<TPSet>>& tpset_sink,
+               std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>>& tpset_sink,
                std::chrono::steady_clock::time_point earliest_timestamp_time);
   std::vector<std::unique_ptr<std::thread>> m_threads;
   std::atomic<bool> m_running_flag;
 
-  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
-
   std::vector<TPSet> read_tpsets(std::string filename, int element);
 
   // Configuration
-  triggerprimitivemaker::ConfParams m_conf;
+  const appmodel::TriggerPrimitiveMakerModuleConf* m_conf;
+  uint64_t clocks_per_us;
 
   daqdataformats::run_number_t m_run_number{ daqdataformats::TypeDefaults::s_invalid_run_number };
 
   nlohmann::json m_init_obj; // Stash this so we know name -> instance mappings
 
-  void generate_opmon_data() override;
-
   struct TPStream
   {
-    std::shared_ptr<iomanager::SenderConcept<TPSet>> tpset_sink;
+    std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>> tpset_sink;
     std::vector<TPSet> tpsets;
   };
 
@@ -93,4 +104,4 @@ private:
 } // namespace trigger
 } // namespace dunedaq
 
-#endif // TRIGGER_PLUGINS_TRIGGERPRIMITIVEMAKER_HPP_
+#endif // TRIGGER_PLUGINS_TRIGGERPRIMITIVEMAKERMODULE_HPP_

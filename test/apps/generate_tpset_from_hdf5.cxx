@@ -8,7 +8,7 @@
  */
 #include "CLI/CLI.hpp"
 
-#include "../../plugins/TriggerPrimitiveMaker.hpp"
+#include "../../plugins/TriggerPrimitiveMakerModule.hpp"
 #include "trgdataformats/TriggerPrimitive.hpp"
 
 #include "daqdataformats/Fragment.hpp"

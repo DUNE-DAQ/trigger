@@ -52,9 +52,9 @@ daq_add_library(
 ## As a one liner, this call is a major source of git conflicts due to
 ## us all changing it.  Please keep one file per line to give git
 ## merge a chance to succeed.
-daq_codegen(
-  triggerprimitivemaker.jsonnet
-  TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+#daq_codegen(
+#  triggerprimitivemaker.jsonnet
+#  TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 
 #daq_codegen(
 #  txbuffer.jsonnet DEP_PKGS datahandlinglibs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
@@ -66,7 +66,7 @@ daq_add_plugin(DataSubscriberModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDataHandlerModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(RandomTCMakerModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(MLTModule duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerPrimitiveMaker duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(TriggerPrimitiveMakerModule duneDAQModule LINK_LIBRARIES trigger)
 
 # Algorithm plugins
 #daq_add_plugin(TriggerDecisionMakerSupernovaPlugin duneTDMaker LINK_LIBRARIES trigger)

@@ -1,16 +1,17 @@
 /**
- * @file TriggerPrimitiveMaker.cpp
+ * @file TriggerPrimitiveMakerModule.cpp
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "TriggerPrimitiveMaker.hpp"
+#include "TriggerPrimitiveMakerModule.hpp"
 
 #include "trigger/Issues.hpp" // For TLVL_*
+#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 
-#include "appfwk/cmd/Nljs.hpp"
+// #include "appfwk/cmd/Nljs.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
@@ -26,33 +27,28 @@
 
 using namespace triggeralgs;
 
+DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter, "TriggerPrimitive")
+DUNE_DAQ_TYPESTRING(std::vector<dunedaq::trigger::TriggerPrimitiveTypeAdapter>, "TriggerPrimitiveVector")
+
 namespace dunedaq::trigger {
 
-TriggerPrimitiveMaker::TriggerPrimitiveMaker(const std::string& name)
-  : dunedaq::appfwk::DAQModule(name)
+TriggerPrimitiveMakerModule::TriggerPrimitiveMakerModule(const std::string& name)
+  : DAQModule(name)
   , m_queue_timeout(100)
 {
   // clang-format off
-  register_command("conf",  &TriggerPrimitiveMaker::do_configure);
-  register_command("start", &TriggerPrimitiveMaker::do_start);
-  register_command("stop_trigger_sources",  &TriggerPrimitiveMaker::do_stop);
-  register_command("scrap", &TriggerPrimitiveMaker::do_scrap);
+  register_command("conf",  &TriggerPrimitiveMakerModule::do_configure);
+  register_command("start", &TriggerPrimitiveMakerModule::do_start);
+  register_command("stop_trigger_sources",  &TriggerPrimitiveMakerModule::do_stop);
+  register_command("scrap", &TriggerPrimitiveMakerModule::do_scrap);
   // clang-format on
 }
 void 
-TriggerPrimitiveMaker::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
-{}
-
-//void
-//TriggerPrimitiveMaker::init(const nlohmann::json& obj)
-//{
-//  m_init_obj = obj;
-//}
-
-void
-TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
+TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  m_conf = obj.get<triggerprimitivemaker::ConfParams>();
+  auto mtrg = mcfg->module<appmodel::TriggerPrimitiveMakerModule>(get_name());
+  m_conf = mtrg->get_configuration();
+  clocks_per_us = mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz();
 
   // For each of the streams that are specified in the config, we read
   // the input file, and create an outgoing sink. We also keep track
@@ -60,15 +56,23 @@ TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
   // the timestamps of the multiple streams in sync when replaying,
   // even when they don't all start or end at the same time
 
+  auto con = mtrg->get_outputs();
+
+  TLOG() << "CONNECTIONS";
+  for(auto icon : con){
+    TLOG() << icon;
+  }
+
   m_earliest_first_tpset_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
   m_latest_last_tpset_timestamp = 0;
 
-  // TODO: Delete, reimplement as oks
-  for (auto& stream : m_conf.tp_streams) {
+  int iter = 0;
+  for (auto& stream : m_conf->get_tp_streams()) {
     TPStream this_stream;
-    //this_stream.tpset_sink = get_iom_sender<TPSet>(appfwk::connection_uid(m_init_obj, stream.output_sink_name));
+    TLOG() << "TP sink is " << con[iter]->class_name() << "@" << con[iter]->UID();
+    this_stream.tpset_sink = get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[iter]->UID());
 
-    this_stream.tpsets = read_tpsets(stream.filename, stream.element_id);
+    this_stream.tpsets = read_tpsets(stream->get_filename(), stream->get_element_id());
 
     m_earliest_first_tpset_timestamp =
       std::min(m_earliest_first_tpset_timestamp, this_stream.tpsets.front().start_time);
@@ -76,11 +80,17 @@ TriggerPrimitiveMaker::do_configure(const nlohmann::json& obj)
     m_latest_last_tpset_timestamp = std::max(m_latest_last_tpset_timestamp, this_stream.tpsets.back().start_time);
 
     m_tp_streams.push_back(std::move(this_stream));
+    iter++;
   }
 }
 
 void
-TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
+TriggerPrimitiveMakerModule::do_configure(const nlohmann::json& /*obj*/)
+{
+}
+
+void
+TriggerPrimitiveMakerModule::do_start(const nlohmann::json& args)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
@@ -101,7 +111,7 @@ TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
   auto earliest_timestamp_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(10);
 
   for (auto& stream : m_tp_streams) {
-    m_threads.push_back(std::make_unique<std::thread>(&TriggerPrimitiveMaker::do_work,
+    m_threads.push_back(std::make_unique<std::thread>(&TriggerPrimitiveMakerModule::do_work,
                                                       this,
                                                       std::ref(m_running_flag),
                                                       std::ref(stream.tpsets),
@@ -117,7 +127,7 @@ TriggerPrimitiveMaker::do_start(const nlohmann::json& args)
 }
 
 void
-TriggerPrimitiveMaker::do_stop(const nlohmann::json& /*args*/)
+TriggerPrimitiveMakerModule::do_stop(const nlohmann::json& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_running_flag.store(false);
@@ -131,7 +141,7 @@ TriggerPrimitiveMaker::do_stop(const nlohmann::json& /*args*/)
 }
 
 void
-TriggerPrimitiveMaker::do_scrap(const nlohmann::json& /*args*/)
+TriggerPrimitiveMakerModule::do_scrap(const nlohmann::json& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
   m_tp_streams.clear();
@@ -139,7 +149,7 @@ TriggerPrimitiveMaker::do_scrap(const nlohmann::json& /*args*/)
 }
 
 void
-TriggerPrimitiveMaker::generate_opmon_data()
+TriggerPrimitiveMakerModule::generate_opmon_data()
 {
   opmon::TriggerPrimitiveMakerInfo info;
 
@@ -151,7 +161,7 @@ TriggerPrimitiveMaker::generate_opmon_data()
 }
 
 std::vector<TPSet>
-TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
+TriggerPrimitiveMakerModule::read_tpsets(std::string filename, int element)
 {
   TPSet tpset;
   std::vector<TPSet> tpsets;
@@ -190,18 +200,19 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
 
     for (size_t i(0); i < num_tps; i++) {
       auto& tp = tp_array[i];
-      if (tp.time_start < old_time_start) {
-        ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
-        continue;
-      }
+      //TLOG() << tp.time_start;
+      //if (tp.time_start < old_time_start) {
+      //  ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
+      //  continue;
+      //}
       // NOLINTNEXTLINE(build/unsigned)
-      uint64_t current_tpset_number = (tp.time_start + m_conf.tpset_time_offset) / m_conf.tpset_time_width;
+      uint64_t current_tpset_number = (tp.time_start + m_conf->get_tpset_time_offset()) / m_conf->get_tpset_time_width();
       old_time_start = tp.time_start;
 
       // If we crossed a time boundary, push the current TPSet and reset it
       if (current_tpset_number > prev_tpset_number) {
-        tpset.start_time = prev_tpset_number * m_conf.tpset_time_width + m_conf.tpset_time_offset;
-        tpset.end_time = tpset.start_time + m_conf.tpset_time_width;
+        tpset.start_time = prev_tpset_number * m_conf->get_tpset_time_width() + m_conf->get_tpset_time_offset();
+        tpset.end_time = tpset.start_time + m_conf->get_tpset_time_width();
         tpset.seqno = seqno;
         ++seqno;
 
@@ -230,9 +241,9 @@ TriggerPrimitiveMaker::read_tpsets(std::string filename, int element)
 }
 
 void
-TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
+TriggerPrimitiveMakerModule::do_work(std::atomic<bool>& running_flag,
                                std::vector<TPSet>& tpsets,
-                               std::shared_ptr<iomanager::SenderConcept<TPSet>>& tpset_sink,
+                               std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>>& tpset_sink,
                                std::chrono::steady_clock::time_point earliest_timestamp_time)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
@@ -247,10 +258,10 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
 
   uint32_t seqno = 0; // NOLINT(build/unsigned)
 
-  auto const clocks_per_us = m_conf.clock_frequency_hz / 1'000'000;
+  //auto const clocks_per_us = m_conf->get_clock_frequency_hz() / 1'000'000;
 
   while (running_flag.load()) {
-    if (m_conf.number_of_loops > 0 && current_iteration >= m_conf.number_of_loops) {
+    if (m_conf->get_number_of_loops() > 0 && current_iteration >= m_conf->get_number_of_loops()) {
       break;
     }
 
@@ -275,9 +286,10 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
       }
 
       // check running_flag periodically so we can stop punctually
-      auto slice_period = std::chrono::microseconds(m_conf.maximum_wait_time_us);
+      auto slice_period = std::chrono::microseconds(m_conf->get_maximum_wait_time_us());
       auto next_slice_send_time = prev_tpset_send_time + slice_period;
       bool break_flag = false;
+
       while (next_tpset_send_time > next_slice_send_time + slice_period) {
         if (!running_flag.load()) {
           TLOG() << "while waiting to send next TP, negative running flag detected.";
@@ -287,6 +299,7 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
         std::this_thread::sleep_until(next_slice_send_time);
         next_slice_send_time = next_slice_send_time + slice_period;
       }
+
       if (!break_flag) {
         std::this_thread::sleep_until(next_tpset_send_time);
       }
@@ -296,8 +309,16 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
       m_tp_set_made_count++;
       m_tp_made_count += tpset.objects.size();
       try {
-        TPSet tpset_copy(tpset);
-        tpset_sink->send(std::move(tpset_copy), m_queue_timeout);
+        //TPSet tpset_copy(tpset);
+        //tpset_sink->try_send(std::move(tpset), m_queue_timeout);
+	std::vector<trigger::TriggerPrimitiveTypeAdapter> tpa_vec;
+	for (TriggerPrimitive tp : tpset.objects) {
+	  trigger::TriggerPrimitiveTypeAdapter tpa;
+          tpa.tp = tp;
+	  tpa_vec.push_back(tpa);
+	  //tpset_sink->try_send(std::move(tpa), std::chrono::milliseconds(100));
+	}
+	tpset_sink->try_send(std::move(tpa_vec), std::chrono::milliseconds(100));
       } catch (const dunedaq::iomanager::TimeoutExpired& e) {
         ers::warning(e);
 	m_tp_set_failed_sent_count++;
@@ -332,4 +353,4 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
 
 } // namespace dunedaq::trigger
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::TriggerPrimitiveMaker)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::TriggerPrimitiveMakerModule)
