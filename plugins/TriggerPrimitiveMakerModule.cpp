@@ -58,21 +58,17 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
 
   auto con = mtrg->get_outputs();
 
-  TLOG() << "CONNECTIONS";
-  for(auto icon : con){
-    TLOG() << icon;
-  }
-
   m_earliest_first_tpset_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
   m_latest_last_tpset_timestamp = 0;
 
   int iter = 0;
   for (auto& stream : m_conf->get_tp_streams()) {
     TPStream this_stream;
-    TLOG() << "TP sink is " << con[iter]->class_name() << "@" << con[iter]->UID();
+    TLOG() << "TP sink is " << con[iter]->class_name() << "@" << con[iter]->UID() << "; file: " << stream->get_filename();
     this_stream.tpset_sink = get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[iter]->UID());
 
-    this_stream.tpsets = read_tpsets(stream->get_filename(), stream->get_element_id());
+    //this_stream.tpsets = read_tpsets(stream->get_filename(), stream->get_element_id());
+    this_stream.tpsets = read_tpsets(stream->get_filename(), 0);
 
     m_earliest_first_tpset_timestamp =
       std::min(m_earliest_first_tpset_timestamp, this_stream.tpsets.front().start_time);
@@ -82,6 +78,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
     m_tp_streams.push_back(std::move(this_stream));
     iter++;
   }
+  TLOG() << "[TPMM] Total of " << m_tp_streams.size() << " TP streams";
 }
 
 void
@@ -118,11 +115,13 @@ TriggerPrimitiveMakerModule::do_start(const nlohmann::json& args)
                                                       std::ref(stream.tpset_sink),
                                                       earliest_timestamp_time));
   }
-  for (size_t i = 0; i < m_threads.size(); ++i) {
+
+  for (size_t i = 0; i < m_threads.size(); i++) {
     std::string name("replay");
     name += std::to_string(i);
     pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
   }
+  TLOG() << "[TPMM] Total of " << m_threads.size() << " replay threads";
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -259,7 +258,6 @@ TriggerPrimitiveMakerModule::do_work(std::atomic<bool>& running_flag,
   uint32_t seqno = 0; // NOLINT(build/unsigned)
 
   //auto const clocks_per_us = m_conf->get_clock_frequency_hz() / 1'000'000;
-
   while (running_flag.load()) {
     if (m_conf->get_number_of_loops() > 0 && current_iteration >= m_conf->get_number_of_loops()) {
       break;
@@ -305,7 +303,6 @@ TriggerPrimitiveMakerModule::do_work(std::atomic<bool>& running_flag,
       }
       prev_tpset_send_time = next_tpset_send_time;
       prev_tpset_start_time = tpset.start_time;
-
       m_tp_set_made_count++;
       m_tp_made_count += tpset.objects.size();
       try {
@@ -314,26 +311,29 @@ TriggerPrimitiveMakerModule::do_work(std::atomic<bool>& running_flag,
 	std::vector<trigger::TriggerPrimitiveTypeAdapter> tpa_vec;
 	for (TriggerPrimitive tp : tpset.objects) {
 	  trigger::TriggerPrimitiveTypeAdapter tpa;
+	  tp.time_start += total_stream_duration;
+          tp.time_peak += total_stream_duration;
           tpa.tp = tp;
 	  tpa_vec.push_back(tpa);
 	  //tpset_sink->try_send(std::move(tpa), std::chrono::milliseconds(100));
 	}
+
 	tpset_sink->try_send(std::move(tpa_vec), std::chrono::milliseconds(100));
       } catch (const dunedaq::iomanager::TimeoutExpired& e) {
         ers::warning(e);
 	m_tp_set_failed_sent_count++;
       }
 
-      tpset.run_number = m_run_number;
+      //tpset.run_number = m_run_number;
       // Increase seqno and the timestamps in the TPSet and TPs so they don't
       // repeat when we do multiple loops over the file
-      tpset.start_time += total_stream_duration;
-      tpset.end_time += total_stream_duration;
-      for (auto& tp : tpset.objects) {
-        tp.time_start += total_stream_duration;
-        tp.time_peak += total_stream_duration;
-      }
-      tpset.seqno = seqno;
+      //tpset.start_time += total_stream_duration;
+      //tpset.end_time += total_stream_duration;
+      //for (auto& tp : tpset.objects) {
+      //  tp.time_start += total_stream_duration;
+      //  tp.time_peak += total_stream_duration;
+      //}
+      //tpset.seqno = seqno;
       ++seqno;
 
     } // end loop over tpsets
