@@ -57,7 +57,7 @@ private:
   std::vector<std::unique_ptr<std::thread>> m_threads;
   std::atomic<bool> m_running_flag;
 
-  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ConfigurationManager>) override;
 
   std::vector<TPSet> read_tpsets(std::string filename, int element);
 

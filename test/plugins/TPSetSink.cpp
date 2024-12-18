@@ -28,7 +28,7 @@ TPSetSink::TPSetSink(const std::string& name)
 }
 
 void 
-TPSetSink::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+TPSetSink::init(std::shared_ptr<dunedaq::appfwk::ConfigurationManager>)
 {};
 
 //void
