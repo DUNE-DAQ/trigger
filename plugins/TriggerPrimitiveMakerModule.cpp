@@ -27,9 +27,6 @@
 
 using namespace triggeralgs;
 
-DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter, "TriggerPrimitive")
-DUNE_DAQ_TYPESTRING(std::vector<dunedaq::trigger::TriggerPrimitiveTypeAdapter>, "TriggerPrimitiveVector")
-
 namespace dunedaq::trigger {
 
 TriggerPrimitiveMakerModule::TriggerPrimitiveMakerModule(const std::string& name)
@@ -43,12 +40,39 @@ TriggerPrimitiveMakerModule::TriggerPrimitiveMakerModule(const std::string& name
   register_command("scrap", &TriggerPrimitiveMakerModule::do_scrap);
   // clang-format on
 }
-void 
+void
 TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   auto mtrg = mcfg->module<appmodel::TriggerPrimitiveMakerModule>(get_name());
   m_conf = mtrg->get_configuration();
-  clocks_per_us = mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz();
+  clocks_per_us =
+    mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000;
+
+  // Get channel map
+  m_channel_map_name = m_conf->get_channel_map();
+  TLOG() << "Will use channel map: " << m_channel_map_name;
+  try {
+    m_channel_map = dunedaq::detchannelmaps::make_map(m_channel_map_name);
+  } catch (const std::exception& e) {
+    // TODO: proper warning here, also add check for whether hdf5 file exists
+    TLOG() << "Couldn't load channel map: " << e.what();
+  } catch (...) {
+    TLOG() << "Couldn't load channel map, uknown exception";
+  }
+
+  // Plane filtering
+  for (auto& plane_wrap : m_conf->get_filter_out_plane()) {
+    m_filter_planes_ids.push_back(plane_wrap->get_plane());
+  }
+  m_filter_planes = (m_filter_planes_ids.size() > 0) ? true : false;
+
+  TLOG() << "Plane filtering: " << m_filter_planes;
+  if (m_filter_planes) {
+    TLOG() << "Planes to filter: ";
+    for (auto plane : m_filter_planes_ids) {
+      TLOG() << plane;
+    }
+  }
 
   // For each of the streams that are specified in the config, we read
   // the input file, and create an outgoing sink. We also keep track
@@ -58,27 +82,27 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
 
   auto con = mtrg->get_outputs();
 
-  m_earliest_first_tpset_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
-  m_latest_last_tpset_timestamp = 0;
+  m_earliest_first_tp_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
+  m_latest_last_tp_timestamp = 0;
 
   int iter = 0;
   for (auto& stream : m_conf->get_tp_streams()) {
     TPStream this_stream;
-    TLOG() << "TP sink is " << con[iter]->class_name() << "@" << con[iter]->UID() << "; file: " << stream->get_filename();
-    this_stream.tpset_sink = get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[iter]->UID());
+    TLOG() << "[TPPM] Stream: " << iter << "; TP sink is " << con[iter]->class_name() << "@" << con[iter]->UID()
+           << "; file: " << stream->get_filename();
+    this_stream.tp_sink = get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[iter]->UID());
 
-    //this_stream.tpsets = read_tpsets(stream->get_filename(), stream->get_element_id());
-    this_stream.tpsets = read_tpsets(stream->get_filename(), 0);
+    this_stream.tpvs = read_tps(stream->get_filename());
 
-    m_earliest_first_tpset_timestamp =
-      std::min(m_earliest_first_tpset_timestamp, this_stream.tpsets.front().start_time);
+    m_earliest_first_tp_timestamp =
+      std::min(m_earliest_first_tp_timestamp, this_stream.tpvs.front().front().tp.time_start);
 
-    m_latest_last_tpset_timestamp = std::max(m_latest_last_tpset_timestamp, this_stream.tpsets.back().start_time);
+    m_latest_last_tp_timestamp = std::max(m_latest_last_tp_timestamp, this_stream.tpvs.back().back().tp.time_start);
 
     m_tp_streams.push_back(std::move(this_stream));
     iter++;
   }
-  TLOG() << "[TPMM] Total of " << m_tp_streams.size() << " TP streams";
+  TLOG() << "[TPMM] Total of " << m_tp_streams.size() << " TP streams.";
 }
 
 void
@@ -98,30 +122,31 @@ TriggerPrimitiveMakerModule::do_start(const nlohmann::json& args)
 
   // Reset opmon
   m_tp_made_count.store(0);
-  m_tp_set_made_count.store(0);
-  m_tp_set_failed_sent_count.store(0);
+  m_tpv_made_count.store(0);
+  m_tpv_failed_sent_count.store(0);
 
-  // We need the wall-clock time at which we'll send out the TPSet
+  // We need the wall-clock time at which we'll send out the TPs
   // with the earliest timestamp, so we can keep all of the output
   // streams in sync. We pick "now" plus a bit, to allow time for all
   // of the threads to start up
-  auto earliest_timestamp_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(10);
+  auto earliest_timestamp_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(100);
+  m_run_start_time = std::chrono::steady_clock::now();
 
   for (auto& stream : m_tp_streams) {
     m_threads.push_back(std::make_unique<std::thread>(&TriggerPrimitiveMakerModule::do_work,
                                                       this,
                                                       std::ref(m_running_flag),
-                                                      std::ref(stream.tpsets),
-                                                      std::ref(stream.tpset_sink),
+                                                      std::ref(stream.tpvs),
+                                                      std::ref(stream.tp_sink),
                                                       earliest_timestamp_time));
   }
 
   for (size_t i = 0; i < m_threads.size(); i++) {
-    std::string name("replay");
+    std::string name("replay-");
     name += std::to_string(i);
     pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
   }
-  TLOG() << "[TPMM] Total of " << m_threads.size() << " replay threads";
+  TLOG() << "[TPMM] Total of " << m_threads.size() << " replay threads.";
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -136,6 +161,15 @@ TriggerPrimitiveMakerModule::do_stop(const nlohmann::json& /*args*/)
     }
   }
   m_threads.clear();
+
+  auto run_end_time = std::chrono::steady_clock::now();
+  auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - m_run_start_time).count();
+  float rate_hz = 1e3 * static_cast<float>(m_tpv_made_count) / time_ms;
+
+  TLOG() << "[TPMM] TOTAL: Generated " << m_tpv_made_count << " TP vectors (" << m_tp_made_count << " TPs) in "
+         << time_ms << " ms. (" << rate_hz << " TP vectors/s). " << m_tpv_failed_sent_count
+         << " TP vectors failed to push.";
+
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
@@ -152,22 +186,19 @@ TriggerPrimitiveMakerModule::generate_opmon_data()
 {
   opmon::TriggerPrimitiveMakerInfo info;
 
-  info.set_tp_made_count( m_tp_made_count );
-  info.set_tp_set_made_count( m_tp_set_made_count );
-  info.set_tp_set_failed_sent_count( m_tp_set_failed_sent_count );
+  info.set_tp_made_count(m_tp_made_count);
+  info.set_tp_set_made_count(m_tpv_made_count);
+  info.set_tp_set_failed_sent_count(m_tpv_failed_sent_count);
 
   this->publish(std::move(info));
 }
 
-std::vector<TPSet>
-TriggerPrimitiveMakerModule::read_tpsets(std::string filename, int element)
+std::vector<std::vector<TriggerPrimitiveTypeAdapter>>
+TriggerPrimitiveMakerModule::read_tps(std::string filename)
 {
-  TPSet tpset;
-  std::vector<TPSet> tpsets;
-
-  uint64_t prev_tpset_number = 0; // NOLINT(build/unsigned)
-  uint32_t seqno = 0;             // NOLINT(build/unsigned)
-  uint64_t old_time_start = 0;    // NOLINT(build/unsigned)
+  std::vector<std::vector<TriggerPrimitiveTypeAdapter>> all_tpvs;
+  int tps_counter = 0;
+  int vectors_counter = 0;
 
   // Prepare input file
   std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
@@ -178,13 +209,20 @@ TriggerPrimitiveMakerModule::read_tpsets(std::string filename, int element)
   }
 
   std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
+  std::vector<std::string> filtered_fragment_paths;
 
-  // Read in the file and place the TPs in TPSets. TPSets have time
-  // boundaries ( n*tpset_time_width + tpset_time_offset ), and TPs are placed
-  // in TPSets based on the TP start time
-  //
+  // Filter planes
+  if (m_filter_planes) {
+    filtered_fragment_paths = filter_fragments(fragment_paths);
+  } else {
+    filtered_fragment_paths = fragment_paths;
+  }
+
+  TLOG() << "Will use " << filtered_fragment_paths.size() << " out of " << fragment_paths.size();
+
+  // Read in the file, convert TPs to TPTypeAdapters and place them in vector.
   // This loop assumes the input file is sorted by TP start time
-  for (std::string& fragment_path : fragment_paths) {
+  for (std::string& fragment_path : filtered_fragment_paths) {
     std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(fragment_path);
     // Make sure this fragment is a TriggerPrimitive
     if (frag->get_fragment_type() != daqdataformats::FragmentType::kTriggerPrimitive)
@@ -197,73 +235,67 @@ TriggerPrimitiveMakerModule::read_tpsets(std::string filename, int element)
 
     trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
 
+    std::vector<TriggerPrimitiveTypeAdapter> tps;
     for (size_t i(0); i < num_tps; i++) {
       auto& tp = tp_array[i];
-      //TLOG() << tp.time_start;
-      //if (tp.time_start < old_time_start) {
-      //  ers::warning(UnsortedTP(ERS_HERE, get_name(), tp.time_start));
-      //  continue;
-      //}
-      // NOLINTNEXTLINE(build/unsigned)
-      uint64_t current_tpset_number = (tp.time_start + m_conf->get_tpset_time_offset()) / m_conf->get_tpset_time_width();
-      old_time_start = tp.time_start;
-
-      // If we crossed a time boundary, push the current TPSet and reset it
-      if (current_tpset_number > prev_tpset_number) {
-        tpset.start_time = prev_tpset_number * m_conf->get_tpset_time_width() + m_conf->get_tpset_time_offset();
-        tpset.end_time = tpset.start_time + m_conf->get_tpset_time_width();
-        tpset.seqno = seqno;
-        ++seqno;
-
-        // 12-Jul-2021, KAB: setting origin fields from configuration
-        tpset.origin.id = element;
-
-        tpset.type = TPSet::Type::kPayload;
-
-        if (!tpset.objects.empty()) {
-          // We don't send empty TPSets, so there's no point creating them
-          tpsets.push_back(tpset);
-        }
-        prev_tpset_number = current_tpset_number;
-
-        tpset.objects.clear();
-      }
-      tpset.objects.push_back(tp);
+      trigger::TriggerPrimitiveTypeAdapter tpa;
+      tpa.tp = tp;
+      tps.push_back(tpa);
+      tps_counter++;
+    }
+    if (tps.size() > 0) {
+      all_tpvs.push_back(tps);
+      vectors_counter++;
     }
   }
-  if (!tpset.objects.empty()) {
-    // We don't send empty TPSets, so there's no point creating them
-    tpsets.push_back(tpset);
-  }
-  TLOG_DEBUG(0) << "Read " << seqno << " TPs into " << tpsets.size() << " TPSets, from file " << filename;
-  return tpsets;
+
+  // Final check for orderliness
+  // Sort the outer vector using stable_sort, comparing based on the time_start of the first element of each inner
+  // vector
+  std::stable_sort(
+    all_tpvs.begin(),
+    all_tpvs.end(),
+    [](const std::vector<TriggerPrimitiveTypeAdapter>& a, const std::vector<TriggerPrimitiveTypeAdapter>& b) {
+      return a.front().tp.time_start < b.front().tp.time_start;
+    });
+
+  // TODO: some check for empty vector here
+  TLOG() << "[TPPM] Read " << tps_counter << " TPs, stored in " << vectors_counter << " vectors, from file "
+         << filename;
+  return all_tpvs;
 }
 
 void
-TriggerPrimitiveMakerModule::do_work(std::atomic<bool>& running_flag,
-                               std::vector<TPSet>& tpsets,
-                               std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>>& tpset_sink,
-                               std::chrono::steady_clock::time_point earliest_timestamp_time)
+TriggerPrimitiveMakerModule::do_work(
+  std::atomic<bool>& running_flag,
+  std::vector<std::vector<TriggerPrimitiveTypeAdapter>>& tpvs,
+  std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>>& tp_sink,
+  std::chrono::steady_clock::time_point earliest_timestamp_time)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   uint64_t current_iteration = 0; // NOLINT(build/unsigned)
 
-  uint64_t prev_tpset_start_time = 0; // NOLINT(build/unsigned)
-  auto prev_tpset_send_time = std::chrono::steady_clock::now();
+  uint64_t prev_tpv_start_time = 0; // NOLINT(build/unsigned)
+  auto prev_tpv_send_time = std::chrono::steady_clock::now();
 
-  auto const total_stream_duration = m_latest_last_tpset_timestamp - m_earliest_first_tpset_timestamp;
+  auto const total_stream_duration = m_latest_last_tp_timestamp - m_earliest_first_tp_timestamp;
 
   auto run_start_time = std::chrono::steady_clock::now();
 
-  uint32_t seqno = 0; // NOLINT(build/unsigned)
+  // local counters
+  int local_tp_made = 0;
+  int local_tpv_made = 0;
+  int local_tpv_failed = 0;
 
-  //auto const clocks_per_us = m_conf->get_clock_frequency_hz() / 1'000'000;
   while (running_flag.load()) {
     if (m_conf->get_number_of_loops() > 0 && current_iteration >= m_conf->get_number_of_loops()) {
       break;
     }
 
-    for (auto& tpset : tpsets) {
+    int local_iter = 0;
+    for (auto& tpv : tpvs) {
+
+      local_iter++;
 
       if (!running_flag.load()) {
         break;
@@ -271,70 +303,54 @@ TriggerPrimitiveMakerModule::do_work(std::atomic<bool>& running_flag,
 
       // The argument `earliest_timestamp_time` is the wall-clock time
       // of the earliest first tpset timestamp in _any_ of the input
-      // streams. So for the first TPSet we send out, we wait until
+      // streams. So for the first TP vector we send out, we wait until
       // _this_ stream's first timestamp comes up
       auto wait_time_us = 0;
-      std::chrono::steady_clock::time_point next_tpset_send_time;
-      if (prev_tpset_start_time == 0) {
-        wait_time_us = (tpset.start_time - m_earliest_first_tpset_timestamp) / clocks_per_us;
-        next_tpset_send_time = earliest_timestamp_time + std::chrono::microseconds(wait_time_us);
+      std::chrono::steady_clock::time_point next_tpv_send_time;
+      if (prev_tpv_start_time == 0) {
+        wait_time_us = (tpv.front().tp.time_start - m_earliest_first_tp_timestamp) / clocks_per_us;
+        next_tpv_send_time = earliest_timestamp_time + std::chrono::microseconds(wait_time_us);
       } else {
-        wait_time_us = (tpset.start_time - prev_tpset_start_time) / clocks_per_us;
-        next_tpset_send_time = prev_tpset_send_time + std::chrono::microseconds(wait_time_us);
+        wait_time_us = (tpv.front().tp.time_start - prev_tpv_start_time) / clocks_per_us;
+        next_tpv_send_time = prev_tpv_send_time + std::chrono::microseconds(wait_time_us);
       }
 
       // check running_flag periodically so we can stop punctually
       auto slice_period = std::chrono::microseconds(m_conf->get_maximum_wait_time_us());
-      auto next_slice_send_time = prev_tpset_send_time + slice_period;
+      auto next_slice_send_time = prev_tpv_send_time + slice_period;
       bool break_flag = false;
-
-      while (next_tpset_send_time > next_slice_send_time + slice_period) {
+      while (next_tpv_send_time > next_slice_send_time + slice_period) {
         if (!running_flag.load()) {
-          TLOG() << "while waiting to send next TP, negative running flag detected.";
           break_flag = true;
           break;
         }
         std::this_thread::sleep_until(next_slice_send_time);
         next_slice_send_time = next_slice_send_time + slice_period;
       }
-
       if (!break_flag) {
-        std::this_thread::sleep_until(next_tpset_send_time);
+        std::this_thread::sleep_until(next_tpv_send_time);
       }
-      prev_tpset_send_time = next_tpset_send_time;
-      prev_tpset_start_time = tpset.start_time;
-      m_tp_set_made_count++;
-      m_tp_made_count += tpset.objects.size();
-      try {
-        //TPSet tpset_copy(tpset);
-        //tpset_sink->try_send(std::move(tpset), m_queue_timeout);
-	std::vector<trigger::TriggerPrimitiveTypeAdapter> tpa_vec;
-	for (TriggerPrimitive tp : tpset.objects) {
-	  trigger::TriggerPrimitiveTypeAdapter tpa;
-	  tp.time_start += total_stream_duration;
-          tp.time_peak += total_stream_duration;
-          tpa.tp = tp;
-	  tpa_vec.push_back(tpa);
-	  //tpset_sink->try_send(std::move(tpa), std::chrono::milliseconds(100));
-	}
+      prev_tpv_send_time = next_tpv_send_time;
+      prev_tpv_start_time = tpv.front().tp.time_start;
 
-	tpset_sink->try_send(std::move(tpa_vec), std::chrono::milliseconds(100));
+      m_tpv_made_count++;
+      m_tp_made_count += tpv.size();
+      local_tpv_made++;
+      local_tp_made += tpv.size();
+      try {
+        tp_sink->send(std::move(tpv), m_queue_timeout);
       } catch (const dunedaq::iomanager::TimeoutExpired& e) {
         ers::warning(e);
-	m_tp_set_failed_sent_count++;
+        m_tpv_failed_sent_count++;
+        local_tpv_failed++;
       }
 
-      //tpset.run_number = m_run_number;
-      // Increase seqno and the timestamps in the TPSet and TPs so they don't
+      // Increase timestamps in the TPs so they don't
       // repeat when we do multiple loops over the file
-      //tpset.start_time += total_stream_duration;
-      //tpset.end_time += total_stream_duration;
-      //for (auto& tp : tpset.objects) {
-      //  tp.time_start += total_stream_duration;
-      //  tp.time_peak += total_stream_duration;
-      //}
-      //tpset.seqno = seqno;
-      ++seqno;
+      for (auto& tpa : tpv) {
+        tpa.tp.time_start += total_stream_duration;
+        tpa.tp.time_peak += total_stream_duration;
+      }
 
     } // end loop over tpsets
     ++current_iteration;
@@ -343,12 +359,56 @@ TriggerPrimitiveMakerModule::do_work(std::atomic<bool>& running_flag,
 
   auto run_end_time = std::chrono::steady_clock::now();
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - run_start_time).count();
-  float rate_hz = 1e3 * static_cast<float>(m_tp_set_made_count) / time_ms;
+  float rate_hz = 1e3 * static_cast<float>(local_tpv_made) / time_ms;
 
-  TLOG() << "Generated " << m_tp_set_made_count << " TP sets (" << m_tp_made_count << " TPs) in " << time_ms << " ms. ("
-         << rate_hz << " TPSets/s). " << m_tp_set_failed_sent_count << " TPSets failed to push";
+  TLOG() << "[TPMM] LOCAL: Generated " << local_tpv_made << " TP vectors (" << local_tp_made << " TPs) in " << time_ms
+         << " ms. (" << rate_hz << " TP vectors/s). " << local_tpv_failed << " TP vectors failed to push.";
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+}
+
+int
+TriggerPrimitiveMakerModule::extract_plane_number(const std::string& str)
+{
+
+  // Find the position of the substring "Trigger_0x"
+  size_t startPos = str.find("Trigger_0x");
+  if (startPos != std::string::npos) {
+    startPos += 10; // Move past "Trigger_0x"
+
+    // Extract the 8 characters representing the hex number
+    std::string hexPart = str.substr(startPos, 8);
+
+    // Convert the hex string to an integer
+    int hexValue;
+    std::stringstream ss;
+    ss << std::hex << hexPart;
+    ss >> hexValue;
+
+    // Return the last digit of the integer value
+    return hexValue % 10;
+  }
+
+  // Return -1 if the pattern was not found
+  return -1;
+}
+
+std::vector<std::string>
+TriggerPrimitiveMakerModule::filter_fragments(const std::vector<std::string>& fragment_paths)
+{
+  std::vector<std::string> filtered_fragments;
+  for (const auto& path : fragment_paths) {
+    int plane = extract_plane_number(path);
+
+    // Check if plane is in m_filter_planes_ids
+    if (std::find(m_filter_planes_ids.begin(), m_filter_planes_ids.end(), plane) != m_filter_planes_ids.end()) {
+      continue; // Skip this fragment if plane is in m_filter_planes_ids
+    }
+
+    // Otherwise, add to filtered_fragments
+    filtered_fragments.push_back(path);
+  }
+  return filtered_fragments;
 }
 
 } // namespace dunedaq::trigger
