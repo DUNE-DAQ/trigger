@@ -53,11 +53,9 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
   TLOG() << "Will use channel map: " << m_channel_map_name;
   try {
     m_channel_map = dunedaq::detchannelmaps::make_map(m_channel_map_name);
-  } catch (const std::exception& e) {
-    // TODO: proper warning here, also add check for whether hdf5 file exists
-    TLOG() << "Couldn't load channel map: " << e.what();
-  } catch (...) {
-    TLOG() << "Couldn't load channel map, uknown exception";
+  } catch (const detchannelmaps::ChannelMapCreationFailed& e) {
+    ers::error(e);
+    throw dunedaq::trigger::ReplayChannelMapProblem(ERS_HERE, get_name(), m_channel_map_name);
   }
 
   // Plane filtering
@@ -201,11 +199,16 @@ TriggerPrimitiveMakerModule::read_tps(std::string filename)
   int vectors_counter = 0;
 
   // Prepare input file
-  std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
+  std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file;
+  try {
+    input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
+  } catch (const hdf5libs::FileOpenFailed& e) {
+    throw dunedaq::trigger::ReplayFileProblem(ERS_HERE, get_name(), filename);
+  }
 
   // Check that the file is a TimeSlice type
   if (!input_file->is_timeslice_type()) {
-    throw BadTPInputFile(ERS_HERE, get_name(), filename);
+    throw dunedaq::trigger::BadTPInputFile(ERS_HERE, get_name(), filename);
   }
 
   std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();

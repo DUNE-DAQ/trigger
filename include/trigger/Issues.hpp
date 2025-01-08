@@ -212,6 +212,20 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((std::string)name),
                        ((std::string)item))
 
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayChannelMapProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Specified channel map: " << item << " does not exist!",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayFileProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Specified HDF5 file: " << item << " does not exist!",
+                       ((std::string)name),
+                       ((std::string)item))
+
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_
