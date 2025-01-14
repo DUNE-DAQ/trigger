@@ -79,7 +79,7 @@ private:
   std::vector<std::unique_ptr<std::thread>> m_threads;
   std::atomic<bool> m_running_flag;
 
-  std::vector<std::vector<TriggerPrimitiveTypeAdapter>> read_tps(std::vector<std::string> filenames);
+  std::vector<std::vector<TriggerPrimitiveTypeAdapter>> read_tps(std::vector<std::string> filenames, std::string rou);
 
   // Configuration
   const appmodel::TriggerPrimitiveMakerModuleConf* m_conf;
@@ -103,8 +103,9 @@ private:
   bool m_filter_planes;
   std::vector<int> m_filter_planes_ids;
   std::string extract_readout_unit(const std::string& filename);
+  std::pair<int, int> extract_run_and_bit(const std::string& filename);
   int extract_plane_number(const std::string& str);
-  std::vector<std::string> filter_fragments(const std::vector<std::string>& fragment_paths);
+  std::vector<std::string> filter_fragments(const std::vector<std::string>& fragment_paths, std::string rou);
 
   std::chrono::milliseconds m_queue_timeout;
 

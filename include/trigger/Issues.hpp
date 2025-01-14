@@ -226,6 +226,48 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((std::string)name),
                        ((std::string)item))
 
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayNoFragments,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Specified HDF5 file: " << item << " does not contain valid paths!",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayEmptyFrag,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Fragment from file: " << item << " is empty!",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayROUError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Cannot retrieve ROU from file: " << item << " !",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayNoValidFiles,
+                       appfwk::GeneralDAQModuleIssue,
+                       "No valid files to use!",
+                       ((std::string)name),
+		       ERS_EMPTY)
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayNoValidTPs,
+                       appfwk::GeneralDAQModuleIssue,
+                       "File: " << item << " does not contain valid TPs!",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayNoDataAfterFilter,
+                       appfwk::GeneralDAQModuleIssue,
+                       "File: " << item << ", no TPs found after plane filtering!",
+                       ((std::string)name),
+                       ((std::string)item))
+
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_
