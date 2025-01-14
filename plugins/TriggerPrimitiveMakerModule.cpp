@@ -50,6 +50,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
 
   // Get channel map
   m_channel_map_name = m_conf->get_channel_map();
+  TLOG() << "### REPLAY CONFIGURATION ###";
   TLOG() << "Will use channel map: " << m_channel_map_name;
   try {
     m_channel_map = dunedaq::detchannelmaps::make_map(m_channel_map_name);
@@ -111,17 +112,18 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
   }
 
   // Print grouped files
+  TLOG() << "Files to use:";
   for (const auto& entry : grouped_files) {
-    std::cout << "ROU: " << entry.first << "\nFiles:\n";
+    TLOG() << "ROU: " << entry.first << "\nFiles:\n";
     for (const auto& file : entry.second) {
-      std::cout << "  " << file << "\n";
+      TLOG() << "  " << file << "\n";
     }
   }
 
   int iter = 0;
   for (auto it = grouped_files.begin(); it != grouped_files.end(); ++it) {
     TPStream this_stream;
-    TLOG() << "[TPPM] Stream: " << iter << "; TP sink is " << con[iter]->class_name() << "@" << con[iter]->UID()
+    TLOG() << "Stream: " << iter << "; TP sink is " << con[iter]->class_name() << "@" << con[iter]->UID()
            << "; first file: " << it->second[0];
     this_stream.tp_sink = get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[iter]->UID());
 
@@ -135,7 +137,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
     m_tp_streams.push_back(std::move(this_stream));
     iter++;
   }
-  TLOG() << "[TPMM] Total of " << m_tp_streams.size() << " TP streams.";
+  TLOG() << "Total of " << m_tp_streams.size() << " TP streams.";
 }
 
 void
@@ -179,7 +181,7 @@ TriggerPrimitiveMakerModule::do_start(const nlohmann::json& args)
     name += std::to_string(i);
     pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
   }
-  TLOG() << "[TPMM] Total of " << m_threads.size() << " replay threads.";
+  TLOG() << "Total of " << m_threads.size() << " replay threads.";
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -199,7 +201,7 @@ TriggerPrimitiveMakerModule::do_stop(const nlohmann::json& /*args*/)
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - m_run_start_time).count();
   float rate_hz = 1e3 * static_cast<float>(m_tpv_made_count) / time_ms;
 
-  TLOG() << "[TPMM] TOTAL: Generated " << m_tpv_made_count << " TP vectors (" << m_tp_made_count << " TPs) in "
+  TLOG() << "TOTAL: Generated " << m_tpv_made_count << " TP vectors (" << m_tp_made_count << " TPs) in "
          << time_ms << " ms. (" << rate_hz << " TP vectors/s). " << m_tpv_failed_sent_count
          << " TP vectors failed to push.";
 
@@ -299,10 +301,10 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
     if (all_tpvs.size() == 0) {
       ers::error(dunedaq::trigger::ReplayNoValidTPs(ERS_HERE, get_name(), filename));
     }
-    TLOG() << "[TPPM] Read " << tps_counter << " TPs, stored in " << vectors_counter << " vectors, from file "
+    TLOG() << "Read " << tps_counter << " TPs, stored in " << vectors_counter << " vectors, from file "
            << filename;
   }
-  TLOG() << "[TPPM] Done with all files for this ROU. Total of " << tps_counter << " TPs, stored in " << vectors_counter
+  TLOG() << "Done with all files for this ROU (" << rou << "). Total of " << tps_counter << " TPs, stored in " << vectors_counter
          << " vectors.";
   return all_tpvs;
 }
@@ -403,7 +405,7 @@ TriggerPrimitiveMakerModule::do_work(
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - run_start_time).count();
   float rate_hz = 1e3 * static_cast<float>(local_tpv_made) / time_ms;
 
-  TLOG() << "[TPMM] LOCAL: Generated " << local_tpv_made << " TP vectors (" << local_tp_made << " TPs) in " << time_ms
+  TLOG() << "LOCAL: Generated " << local_tpv_made << " TP vectors (" << local_tp_made << " TPs) in " << time_ms
          << " ms. (" << rate_hz << " TP vectors/s). " << local_tpv_failed << " TP vectors failed to push.";
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
@@ -472,6 +474,7 @@ TriggerPrimitiveMakerModule::extract_readout_unit(const std::string& filename)
     return ROU;
   } catch (...) {
     ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
+    throw;
   }
 }
 
