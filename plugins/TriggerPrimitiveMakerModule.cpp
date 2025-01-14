@@ -91,7 +91,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
     grouped_files[rou].push_back(stream->get_filename());
   }
 
-  if (grouped_files.empty()){
+  if (grouped_files.empty()) {
     ers::error(dunedaq::trigger::ReplayNoValidFiles(ERS_HERE, get_name()));
   }
 
@@ -100,11 +100,12 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
     // Sort each vector of filenames by run number and bit using a custom comparator
     std::sort(files.begin(), files.end(), [this](const std::string& a, const std::string& b) {
       // Capture 'this' to access the member function
-      auto [run_a, bit_a] = this->extract_run_and_bit(a);  // Call the member function with 'this'
+      auto [run_a, bit_a] = this->extract_run_and_bit(a); // Call the member function with 'this'
       auto [run_b, bit_b] = this->extract_run_and_bit(b);
 
       // First compare by run number, then by bit
-      if (run_a != run_b) return run_a < run_b;
+      if (run_a != run_b)
+        return run_a < run_b;
       return bit_a < bit_b;
     });
   }
@@ -249,8 +250,8 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
       filtered_fragment_paths = fragment_paths;
     }
 
-    if (filtered_fragment_paths.size() == 0){
-      ers::error(dunedaq::trigger::ReplayNoDataAfterFilter(ERS_HERE, get_name(), filename) ); 
+    if (filtered_fragment_paths.size() == 0) {
+      ers::error(dunedaq::trigger::ReplayNoDataAfterFilter(ERS_HERE, get_name(), filename));
     }
 
     TLOG() << "Will use " << filtered_fragment_paths.size() << " out of " << fragment_paths.size();
@@ -295,13 +296,14 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
       });
 
     // check for empty vector here
-    if (all_tpvs.size() == 0){
-      ers::error(dunedaq::trigger::ReplayNoValidTPs(ERS_HERE, get_name(), filename));  
+    if (all_tpvs.size() == 0) {
+      ers::error(dunedaq::trigger::ReplayNoValidTPs(ERS_HERE, get_name(), filename));
     }
     TLOG() << "[TPPM] Read " << tps_counter << " TPs, stored in " << vectors_counter << " vectors, from file "
            << filename;
   }
-  TLOG() << "[TPPM] Done with all files for this ROU. Total of " << tps_counter << " TPs, stored in " << vectors_counter << " vectors." ;
+  TLOG() << "[TPPM] Done with all files for this ROU. Total of " << tps_counter << " TPs, stored in " << vectors_counter
+         << " vectors.";
   return all_tpvs;
 }
 
@@ -437,7 +439,7 @@ std::string
 TriggerPrimitiveMakerModule::extract_readout_unit(const std::string& filename)
 {
   std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file;
-  
+
   // Check file exists
   try {
     input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
@@ -449,9 +451,9 @@ TriggerPrimitiveMakerModule::extract_readout_unit(const std::string& filename)
   if (!input_file->is_timeslice_type()) {
     ers::error(dunedaq::trigger::BadTPInputFile(ERS_HERE, get_name(), filename));
   }
-   
+
   std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
-  if (fragment_paths.size() == 0){
+  if (fragment_paths.size() == 0) {
     ers::error(dunedaq::trigger::ReplayNoFragments(ERS_HERE, get_name(), filename));
   }
 
@@ -460,9 +462,9 @@ TriggerPrimitiveMakerModule::extract_readout_unit(const std::string& filename)
   std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(fragment_paths[0]);
 
   auto frag_data_size = frag->get_data_size();
-  if (frag_data_size == 0){
-    ers::error(dunedaq::trigger::ReplayEmptyFrag(ERS_HERE, get_name(), filename)) ;
-  } 
+  if (frag_data_size == 0) {
+    ers::error(dunedaq::trigger::ReplayEmptyFrag(ERS_HERE, get_name(), filename));
+  }
   trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
   auto& tp = tp_array[0];
   try {
@@ -470,7 +472,7 @@ TriggerPrimitiveMakerModule::extract_readout_unit(const std::string& filename)
     return ROU;
   } catch (...) {
     ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
-  } 
+  }
 }
 
 std::vector<std::string>
@@ -480,9 +482,11 @@ TriggerPrimitiveMakerModule::filter_fragments(const std::vector<std::string>& fr
   for (const auto& path : fragment_paths) {
     int plane = extract_plane_number(path);
 
-    // hack for APA1, basically making plane 1 collection plane :/ 
-    if (rou == "APA_P02SU"){
-      if (plane == 1) {plane = 2;}
+    // hack for APA1, basically making plane 1 collection plane :/
+    if (rou == "APA_P02SU") {
+      if (plane == 1) {
+        plane = 2;
+      }
     }
 
     // Check if plane is in m_filter_planes_ids
@@ -497,19 +501,20 @@ TriggerPrimitiveMakerModule::filter_fragments(const std::vector<std::string>& fr
 }
 
 // Helper function to extract run number and bit from the filename
-std::pair<int, int> 
-TriggerPrimitiveMakerModule::extract_run_and_bit(const std::string& filename) {
-    std::regex pattern("_run(\\d+)_.*?_(\\d+)_"); // Matches _run<run_number>_..._<bit>_
-    std::smatch match;
+std::pair<int, int>
+TriggerPrimitiveMakerModule::extract_run_and_bit(const std::string& filename)
+{
+  std::regex pattern("_run(\\d+)_.*?_(\\d+)_"); // Matches _run<run_number>_..._<bit>_
+  std::smatch match;
 
-    if (std::regex_search(filename, match, pattern) && match.size() > 2) {
-        int run_number = std::stoi(match[1].str()); // Extract run number
-        int bit = std::stoi(match[2].str());        // Extract bit
-        return {run_number, bit};
-    }
+  if (std::regex_search(filename, match, pattern) && match.size() > 2) {
+    int run_number = std::stoi(match[1].str()); // Extract run number
+    int bit = std::stoi(match[2].str());        // Extract bit
+    return { run_number, bit };
+  }
 
-    // Default if the regex doesn't match
-    return {0, 0};
+  // Default if the regex doesn't match
+  return { 0, 0 };
 }
 
 } // namespace dunedaq::trigger
