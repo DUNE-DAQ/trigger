@@ -58,6 +58,8 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
     ers::error(dunedaq::trigger::ReplayChannelMapProblem(ERS_HERE, get_name(), m_channel_map_name));
   }
 
+  m_loops = m_conf->get_number_of_loops();
+
   // Plane filtering
   for (auto& plane_wrap : m_conf->get_filter_out_plane()) {
     m_filter_planes_ids.push_back(plane_wrap->get_plane());
@@ -332,14 +334,11 @@ TriggerPrimitiveMakerModule::do_work(
   int local_tpv_failed = 0;
 
   while (running_flag.load()) {
-    if (m_conf->get_number_of_loops() > 0 && current_iteration >= m_conf->get_number_of_loops()) {
+    if (m_loops > 0 && current_iteration >= m_loops) {
       break;
     }
 
-    int local_iter = 0;
     for (auto& tpv : tpvs) {
-
-      local_iter++;
 
       if (!running_flag.load()) {
         break;
@@ -391,9 +390,11 @@ TriggerPrimitiveMakerModule::do_work(
 
       // Increase timestamps in the TPs so they don't
       // repeat when we do multiple loops over the file
-      for (auto& tpa : tpv) {
-        tpa.tp.time_start += total_stream_duration;
-        tpa.tp.time_peak += total_stream_duration;
+      if (m_loops > 1 && current_iteration < m_loops) {
+        for (auto& tpa : tpv) {
+          tpa.tp.time_start += total_stream_duration;
+          tpa.tp.time_peak += total_stream_duration;
+        }
       }
 
     } // end loop over tpsets
