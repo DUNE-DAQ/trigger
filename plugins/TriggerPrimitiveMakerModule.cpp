@@ -155,7 +155,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
       m_tp_streams.push_back(std::move(this_stream));
       plane_iter++;
     }
-    iter++;
+    iter = iter + m_planes_to_use.size();
   }
   TLOG() << "Total of " << m_tp_streams.size() << " TP streams.";
 }
