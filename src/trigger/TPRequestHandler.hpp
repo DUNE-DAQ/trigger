@@ -15,7 +15,6 @@
 #include "appmodel/DataHandlerModule.hpp"
 
 #include "datahandlinglibs/ReadoutLogging.hpp"
-#include "utilities/ReusableThread.hpp"
 #include "datahandlinglibs/FrameErrorRegistry.hpp"
 #include "datahandlinglibs/DataHandlingIssues.hpp"
 #include "datahandlinglibs/ReadoutLogging.hpp"
