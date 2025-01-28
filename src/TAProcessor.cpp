@@ -15,7 +15,7 @@
 #include "datahandlinglibs/DataHandlingIssues.hpp"
 #include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/models/IterableQueueModel.hpp"
-#include "datahandlinglibs/utils/ReusableThread.hpp"
+#include "utilities/ReusableThread.hpp"
 
 //#include "detchannelmaps/TPCChannelMap.hpp"
 
