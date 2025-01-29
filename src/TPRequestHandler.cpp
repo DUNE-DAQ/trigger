@@ -39,6 +39,9 @@ TPRequestHandler::start(const nlohmann::json& args) {
 
 void
 TPRequestHandler::periodic_data_transmission() {
+   
+   if (m_tpset_sink == nullptr) return;
+
    dunedaq::dfmessages::DataRequest dr;
 
    {
