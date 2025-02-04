@@ -264,9 +264,10 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 ERS_DECLARE_ISSUE_BASE(trigger,
                        ReplayNoDataAfterFilter,
                        appfwk::GeneralDAQModuleIssue,
-                       "File: " << item << ", no TPs found after plane filtering!",
+                       "File: " << item << ", no TPs found after plane " << plane << " filtering!",
                        ((std::string)name),
-                       ((std::string)item))
+                       ((std::string)item)
+		       ((int)plane))
 
 } // namespace dunedaq
 

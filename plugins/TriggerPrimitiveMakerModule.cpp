@@ -140,8 +140,17 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
     // loop over planes
     int plane_iter = 0;
     for (auto plane : m_planes_to_use) {
+
+      // Check that there is data for this ROU / plane
+      auto it2 = tps_data.find(plane);
+      if (it2 == tps_data.end() || it2->second.empty()) {
+        // key doesn't exist or no data
+        plane_iter++;
+        continue;
+      }
+
       TPStream this_stream;
-      TLOG() << "Stream: " << iter << "; ROU: " << it->first << "; plane: " << plane << "; TP sink is "
+      TLOG() << "Stream: " << (iter + plane_iter) << "; ROU: " << it->first << "; plane: " << plane << "; TP sink is "
              << con[iter + plane_iter]->class_name() << "@" << con[iter + plane_iter]->UID()
              << "; first file: " << it->second[0];
       this_stream.tp_sink =
@@ -287,7 +296,8 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
     // plane by plane
     for (auto plane : m_planes_to_use) {
       if (frags_by_plane[plane].size() == 0) {
-        ers::error(dunedaq::trigger::ReplayNoDataAfterFilter(ERS_HERE, get_name(), filename));
+        ers::error(dunedaq::trigger::ReplayNoDataAfterFilter(ERS_HERE, get_name(), filename, plane)); 
+        continue;
       }
 
       TLOG() << "Will use " << frags_by_plane[plane].size() << " fragments for ROU: " << rou << ", plane: " << plane
@@ -314,16 +324,17 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
 
         std::vector<TriggerPrimitiveTypeAdapter> tps;
         for (size_t i(0); i < num_tps; i++) {
-          auto& tp = tp_array[i];
           trigger::TriggerPrimitiveTypeAdapter tpa;
-          tpa.tp = tp;
-          tps.push_back(tpa);
+          tpa.tp = tp_array[i];
+          tps.push_back(std::move(tpa));
           local_tps_counter++;
         }
         if (tps.size() > 0) {
-          this_plane_tpvs.push_back(tps);
+          this_plane_tpvs.push_back(std::move(tps));
           local_vectors_counter++;
         }
+
+	frag.reset();
       }
 
       tps_counter += local_tps_counter;
@@ -347,11 +358,13 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
              << filename << ", ROU: " << rou << ", plane: " << plane << ".";
 
       if (all_tpvs.find(plane) != all_tpvs.end()) {
-        all_tpvs[plane].insert(all_tpvs[plane].end(), this_plane_tpvs.begin(), this_plane_tpvs.end());
+        all_tpvs[plane].insert(all_tpvs[plane].end(), std::make_move_iterator(this_plane_tpvs.begin()), std::make_move_iterator(this_plane_tpvs.end()));
       } else {
         // If the key doesn't exist, add the new vector as a new entry
-        all_tpvs[plane] = this_plane_tpvs;
+        all_tpvs[plane] = std::move(this_plane_tpvs);
       }
+
+      this_plane_tpvs.clear();
 
     } // plane loop
   }   // file loop
@@ -384,7 +397,8 @@ TriggerPrimitiveMakerModule::do_work(
   int local_tpv_failed = 0;
 
   while (running_flag.load()) {
-    if (m_loops > 0 && current_iteration >= m_loops) {
+
+    if (m_loops > 1 && current_iteration >= m_loops) {
       break;
     }
 
@@ -431,7 +445,12 @@ TriggerPrimitiveMakerModule::do_work(
       local_tpv_made++;
       local_tp_made += tpv.size();
       try {
-        tp_sink->send(std::move(tpv), m_queue_timeout);
+	if (m_loops > 1) {
+          auto copy = tpv;  
+          tp_sink->send(std::move(copy), m_queue_timeout);
+	} else {
+          tp_sink->send(std::move(tpv), m_queue_timeout);
+	}
       } catch (const dunedaq::iomanager::TimeoutExpired& e) {
         ers::warning(e);
         m_tpv_failed_sent_count++;
