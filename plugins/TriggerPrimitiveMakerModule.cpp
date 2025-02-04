@@ -82,7 +82,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
       }
     }
   } else {
-    m_planes_to_use = {0,1,2};
+    m_planes_to_use = { 0, 1, 2 };
   }
 
   // For each of the streams that are specified in the config, we read
@@ -136,14 +136,16 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
   int iter = 0;
   // loop over ROUs
   for (auto it = grouped_files.begin(); it != grouped_files.end(); ++it) {
-    std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> > tps_data = read_tps(it->second, it->first);
+    std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>> tps_data = read_tps(it->second, it->first);
     // loop over planes
     int plane_iter = 0;
-    for ( auto plane : m_planes_to_use) {	  
+    for (auto plane : m_planes_to_use) {
       TPStream this_stream;
-      TLOG() << "Stream: " << iter << "; ROU: " << it->first << "; plane: " << plane << "; TP sink is " << con[iter+plane_iter]->class_name() << "@" << con[iter+plane_iter]->UID()
+      TLOG() << "Stream: " << iter << "; ROU: " << it->first << "; plane: " << plane << "; TP sink is "
+             << con[iter + plane_iter]->class_name() << "@" << con[iter + plane_iter]->UID()
              << "; first file: " << it->second[0];
-      this_stream.tp_sink = get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[iter+plane_iter]->UID());
+      this_stream.tp_sink =
+        get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[iter + plane_iter]->UID());
 
       this_stream.tpvs = tps_data[plane];
 
@@ -221,9 +223,8 @@ TriggerPrimitiveMakerModule::do_stop(const nlohmann::json& /*args*/)
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - m_run_start_time).count();
   float rate_hz = 1e3 * static_cast<float>(m_tpv_made_count) / time_ms;
 
-  TLOG() << "TOTAL: Generated " << m_tpv_made_count << " TP vectors (" << m_tp_made_count << " TPs) in "
-         << time_ms << " ms. (" << rate_hz << " TP vectors/s). " << m_tpv_failed_sent_count
-         << " TP vectors failed to push.";
+  TLOG() << "TOTAL: Generated " << m_tpv_made_count << " TP vectors (" << m_tp_made_count << " TPs) in " << time_ms
+         << " ms. (" << rate_hz << " TP vectors/s). " << m_tpv_failed_sent_count << " TP vectors failed to push.";
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -248,10 +249,10 @@ TriggerPrimitiveMakerModule::generate_opmon_data()
   this->publish(std::move(info));
 }
 
-std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> >
+std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>>
 TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::string rou)
 {
-  std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> > all_tpvs;
+  std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>> all_tpvs;
   int tps_counter = 0;
   int vectors_counter = 0;
 
@@ -263,15 +264,18 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
     std::string filename = a_file;
     input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
     std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
-    std::map< int, std::vector<std::string> > frags_by_plane;
+    std::map<int, std::vector<std::string>> frags_by_plane;
     // sort fragments by plane
-    for (const auto& path : fragment_paths ) {
+    for (const auto& path : fragment_paths) {
       int plane = extract_plane_number(path);
 
       // hack for APA1, basically making plane 1 collection plane :/
       if (rou == "APA_P02SU") {
-        if (plane == 1) { plane = 2; }
-        else if (plane == 2) { plane = 1; }
+        if (plane == 1) {
+          plane = 2;
+        } else if (plane == 2) {
+          plane = 1;
+        }
       }
       // Check if plane is in m_filter_planes_ids
       if (std::find(m_filter_planes_ids.begin(), m_filter_planes_ids.end(), plane) != m_filter_planes_ids.end()) {
@@ -281,12 +285,13 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
     }
 
     // plane by plane
-    for (auto plane: m_planes_to_use) {
+    for (auto plane : m_planes_to_use) {
       if (frags_by_plane[plane].size() == 0) {
         ers::error(dunedaq::trigger::ReplayNoDataAfterFilter(ERS_HERE, get_name(), filename));
       }
 
-      TLOG() << "Will use " << frags_by_plane[plane].size() << " fragments for ROU: " << rou << ", plane: " << plane << ".";
+      TLOG() << "Will use " << frags_by_plane[plane].size() << " fragments for ROU: " << rou << ", plane: " << plane
+             << ".";
 
       std::vector<std::vector<TriggerPrimitiveTypeAdapter>> this_plane_tpvs;
       int local_tps_counter = 0;
@@ -349,10 +354,10 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
       }
 
     } // plane loop
-  } // file loop
+  }   // file loop
 
-  TLOG() << "Done with all files for this ROU (" << rou << "). Total of " << tps_counter << " TPs, stored in " << vectors_counter
-         << " vectors, using " << m_planes_to_use.size() << " planes.";
+  TLOG() << "Done with all files for this ROU (" << rou << "). Total of " << tps_counter << " TPs, stored in "
+         << vectors_counter << " vectors, using " << m_planes_to_use.size() << " planes.";
   return all_tpvs;
 }
 
