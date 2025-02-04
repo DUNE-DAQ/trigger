@@ -289,6 +289,9 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
       TLOG() << "Will use " << frags_by_plane[plane].size() << " fragments for ROU: " << rou << ", plane: " << plane << ".";
 
       std::vector<std::vector<TriggerPrimitiveTypeAdapter>> this_plane_tpvs;
+      int local_tps_counter = 0;
+      int local_vectors_counter = 0;
+
       // Read in the file, convert TPs to TPTypeAdapters and place them in vector.
       // This loop assumes the input file is sorted by TP start time
       for (std::string& fragment_path : frags_by_plane[plane]) {
@@ -310,13 +313,16 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
           trigger::TriggerPrimitiveTypeAdapter tpa;
           tpa.tp = tp;
           tps.push_back(tpa);
-          tps_counter++;
+          local_tps_counter++;
         }
         if (tps.size() > 0) {
           this_plane_tpvs.push_back(tps);
-          vectors_counter++;
+          local_vectors_counter++;
         }
       }
+
+      tps_counter += local_tps_counter;
+      vectors_counter += local_vectors_counter;
 
       // Final check for orderliness
       // Sort the outer vector using stable_sort, comparing based on the time_start of the first element of each inner
@@ -332,7 +338,7 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
       if (this_plane_tpvs.size() == 0) {
         ers::error(dunedaq::trigger::ReplayNoValidTPs(ERS_HERE, get_name(), filename));
       }
-      TLOG() << "Read " << tps_counter << " TPs, stored in " << vectors_counter << " vectors, from file "
+      TLOG() << "Read " << local_tps_counter << " TPs, stored in " << local_vectors_counter << " vectors, from file "
              << filename << ", ROU: " << rou << ", plane: " << plane << ".";
 
       if (all_tpvs.find(plane) != all_tpvs.end()) {
@@ -346,7 +352,7 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
   } // file loop
 
   TLOG() << "Done with all files for this ROU (" << rou << "). Total of " << tps_counter << " TPs, stored in " << vectors_counter
-         << " vectors.";
+         << " vectors, using " << m_planes_to_use.size() << " planes.";
   return all_tpvs;
 }
 
