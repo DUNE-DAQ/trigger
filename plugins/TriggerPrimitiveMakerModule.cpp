@@ -277,8 +277,8 @@ TriggerPrimitiveMakerModule::generate_opmon_data()
   opmon::TriggerPrimitiveMakerInfo info;
 
   info.set_tp_made_count(m_tp_made_count);
-  info.set_tp_set_made_count(m_tpv_made_count);
-  info.set_tp_set_failed_sent_count(m_tpv_failed_sent_count);
+  info.set_tpv_made_count(m_tpv_made_count);
+  info.set_tpv_failed_sent_count(m_tpv_failed_sent_count);
 
   this->publish(std::move(info));
 }
