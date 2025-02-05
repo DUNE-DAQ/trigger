@@ -252,7 +252,7 @@ TriggerPrimitiveMakerModule::do_stop(const nlohmann::json& /*args*/)
   float rate_hz = 1e3 * static_cast<float>(m_tpv_made_count) / time_ms;
 
   TLOG() << "### SUMMARY ###";
-  TLOG() << "------------------------------";  
+  TLOG() << "------------------------------";
   TLOG() << "Generated TP vectors: " << m_tpv_made_count;
   TLOG() << "Generated TPs: " << m_tp_made_count;
   TLOG() << "Time taken: " << time_ms << " ms";
@@ -479,7 +479,7 @@ TriggerPrimitiveMakerModule::do_work(
       if (!break_flag) {
         std::this_thread::sleep_until(next_tpv_send_time);
       }
-      
+
       prev_tpv_send_time = next_tpv_send_time;
       prev_tpv_start_time = tpv.front().tp.time_start;
 
@@ -487,7 +487,7 @@ TriggerPrimitiveMakerModule::do_work(
       m_tp_made_count += tpv.size();
       local_tpv_made++;
       local_tp_made += tpv.size();
-      
+
       try {
         if (m_loops > 1) {
           auto copy = tpv;
