@@ -88,9 +88,10 @@ private:
   std::vector<TPStream> m_tp_streams;
   triggeralgs::timestamp_t m_earliest_first_tp_timestamp;
   triggeralgs::timestamp_t m_latest_last_tp_timestamp;
-  
+
   // TP data
-  std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> > read_tps(std::vector<std::string> filenames, std::string rou);
+  std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>> read_tps(std::vector<std::string> filenames,
+                                                                                std::string rou);
 
   // Configuration
   const appmodel::TriggerPrimitiveMakerModuleConf* m_conf;

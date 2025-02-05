@@ -93,8 +93,8 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
     m_planes_to_use = { 0, 1, 2 };
   }
 
-  // For each of the streams that are specified in the config, we extract ROU, and sort them. 
-  // Then we create an outgoing sink for each unique ROU + plane (if not filtered) combination. 
+  // For each of the streams that are specified in the config, we extract ROU, and sort them.
+  // Then we create an outgoing sink for each unique ROU + plane (if not filtered) combination.
   // We also keep track of the total timestamp range of all the streams, so we can keep
   // the timestamps of the multiple streams in sync when replaying,
   // even when they don't all start or end at the same time
@@ -110,7 +110,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
   std::map<std::string, std::vector<std::string>> grouped_files;
   for (auto& stream : m_conf->get_tp_streams()) {
     std::string rou = extract_readout_unit(stream->get_filename());
-    if (!rou.empty()){
+    if (!rou.empty()) {
       grouped_files[rou].push_back(stream->get_filename());
     }
   }
@@ -122,23 +122,23 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
   // Sort each vector in grouped_files (time ordering)
   for (auto& [rou, files] : grouped_files) {
     // Sort and filter by run number and bit
-    files.erase(
-        std::remove_if(files.begin(), files.end(), [this](const std::string& filename) {
-            auto [run, bit] = this->extract_run_and_bit(filename);
-            return (run == 0 && bit == 0);  // Remove files where (run == 0 && bit == 0)
-        }),
-        files.end()
-    );
+    files.erase(std::remove_if(files.begin(),
+                               files.end(),
+                               [this](const std::string& filename) {
+                                 auto [run, bit] = this->extract_run_and_bit(filename);
+                                 return (run == 0 && bit == 0); // Remove files where (run == 0 && bit == 0)
+                               }),
+                files.end());
 
     // Sort the remaining files by run number and bit
     std::sort(files.begin(), files.end(), [this](const std::string& a, const std::string& b) {
-        auto [run_a, bit_a] = this->extract_run_and_bit(a);
-        auto [run_b, bit_b] = this->extract_run_and_bit(b);
+      auto [run_a, bit_a] = this->extract_run_and_bit(a);
+      auto [run_b, bit_b] = this->extract_run_and_bit(b);
 
-        // First compare by run number, then by bit
-        if (run_a != run_b)
-            return run_a < run_b;
-        return bit_a < bit_b;
+      // First compare by run number, then by bit
+      if (run_a != run_b)
+        return run_a < run_b;
+      return bit_a < bit_b;
     });
   }
 
@@ -317,7 +317,7 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
     for (auto plane : m_planes_to_use) {
       if (frags_by_plane[plane].size() == 0) {
         ers::error(dunedaq::trigger::ReplayNoDataAfterFilter(ERS_HERE, get_name(), filename, plane));
-	TLOG() << "No fragments for ROU: " << rou << ", plane: " << plane << ".";
+        TLOG() << "No fragments for ROU: " << rou << ", plane: " << plane << ".";
         continue;
       }
 
