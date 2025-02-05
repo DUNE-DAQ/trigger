@@ -251,8 +251,14 @@ TriggerPrimitiveMakerModule::do_stop(const nlohmann::json& /*args*/)
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - m_run_start_time).count();
   float rate_hz = 1e3 * static_cast<float>(m_tpv_made_count) / time_ms;
 
-  TLOG() << "TOTAL: Generated " << m_tpv_made_count << " TP vectors (" << m_tp_made_count << " TPs) in " << time_ms
-         << " ms. (" << rate_hz << " TP vectors/s). " << m_tpv_failed_sent_count << " TP vectors failed to push.";
+  TLOG() << "### SUMMARY ###";
+  TLOG() << "------------------------------";  
+  TLOG() << "Generated TP vectors: " << m_tpv_made_count;
+  TLOG() << "Generated TPs: " << m_tp_made_count;
+  TLOG() << "Time taken: " << time_ms << " ms";
+  TLOG() << "Rate: " << rate_hz << " TP vectors/s";
+  TLOG() << "Failed to push TP vectors: " << m_tpv_failed_sent_count;
+  TLOG();
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -375,8 +381,15 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
       if (this_plane_tpvs.size() == 0) {
         ers::error(dunedaq::trigger::ReplayNoValidTPs(ERS_HERE, get_name(), filename));
       }
-      TLOG() << "Read " << local_tps_counter << " TPs, stored in " << local_vectors_counter << " vectors, from file "
-             << filename << ", ROU: " << rou << ", plane: " << plane << ".";
+
+      TLOG() << "Data loading summary (plane stage):";
+      TLOG() << "------------------------------";
+      TLOG() << "File: " << filename;
+      TLOG() << "ROU: " << rou;
+      TLOG() << "Plane: " << plane;
+      TLOG() << "Read TPs: " << local_tps_counter;
+      TLOG() << "TP vectors:  " << local_vectors_counter;
+      TLOG();
 
       if (all_tpvs.find(plane) != all_tpvs.end()) {
         all_tpvs[plane].insert(all_tpvs[plane].end(),
@@ -392,8 +405,14 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
     } // plane loop
   }   // file loop
 
-  TLOG() << "Done with all files for this ROU (" << rou << "). Total of " << tps_counter << " TPs, stored in "
-         << vectors_counter << " vectors, using " << m_planes_to_use.size() << " planes.";
+  TLOG() << "Data loading summary (file stage):";
+  TLOG() << "------------------------------";
+  TLOG() << "ROU: " << rou;
+  TLOG() << "Planes: " << m_planes_to_use.size();
+  TLOG() << "Total read TPs: " << tps_counter;
+  TLOG() << "TP vectors: " << vectors_counter;
+  TLOG();
+
   return all_tpvs;
 }
 
@@ -421,7 +440,7 @@ TriggerPrimitiveMakerModule::do_work(
 
   while (running_flag.load()) {
 
-    if (m_loops > 1 && current_iteration >= m_loops) {
+    if (current_iteration >= m_loops) {
       break;
     }
 
@@ -460,6 +479,7 @@ TriggerPrimitiveMakerModule::do_work(
       if (!break_flag) {
         std::this_thread::sleep_until(next_tpv_send_time);
       }
+      
       prev_tpv_send_time = next_tpv_send_time;
       prev_tpv_start_time = tpv.front().tp.time_start;
 
@@ -467,6 +487,7 @@ TriggerPrimitiveMakerModule::do_work(
       m_tp_made_count += tpv.size();
       local_tpv_made++;
       local_tp_made += tpv.size();
+      
       try {
         if (m_loops > 1) {
           auto copy = tpv;
@@ -498,8 +519,14 @@ TriggerPrimitiveMakerModule::do_work(
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - run_start_time).count();
   float rate_hz = 1e3 * static_cast<float>(local_tpv_made) / time_ms;
 
-  TLOG() << "LOCAL: Generated " << local_tpv_made << " TP vectors (" << local_tp_made << " TPs) in " << time_ms
-         << " ms. (" << rate_hz << " TP vectors/s). " << local_tpv_failed << " TP vectors failed to push.";
+  TLOG() << "Thread summary:";
+  TLOG() << "------------------------------";
+  TLOG() << "Sent TPs: " << local_tp_made;
+  TLOG() << "TP vectors: " << local_tpv_made;
+  TLOG() << "Time taken: " << time_ms << " ms";
+  TLOG() << "Rate: " << rate_hz << " TP vectors/s";
+  TLOG() << "Failed to push TP vectors: " << local_tpv_failed;
+  TLOG();
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
