@@ -213,6 +213,13 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((std::string)item))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayConfigurationProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Configuration error: " << item,
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
                        ReplayChannelMapProblem,
                        appfwk::GeneralDAQModuleIssue,
                        "Specified channel map: " << item << " does not exist!",

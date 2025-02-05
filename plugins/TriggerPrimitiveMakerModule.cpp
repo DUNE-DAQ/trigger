@@ -11,7 +11,6 @@
 #include "trigger/Issues.hpp" // For TLVL_*
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 
-// #include "appfwk/cmd/Nljs.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
@@ -40,16 +39,25 @@ TriggerPrimitiveMakerModule::TriggerPrimitiveMakerModule(const std::string& name
   register_command("scrap", &TriggerPrimitiveMakerModule::do_scrap);
   // clang-format on
 }
+
 void
 TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   auto mtrg = mcfg->module<appmodel::TriggerPrimitiveMakerModule>(get_name());
   m_conf = mtrg->get_configuration();
+  if (!m_conf) {
+    throw ReplayConfigurationProblem(ERS_HERE, get_name(), "Missing configuration!");
+  }
+
   clocks_per_us =
     mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000;
 
   // Get channel map
   m_channel_map_name = m_conf->get_channel_map();
+  if (m_channel_map_name.empty()) {
+    throw ReplayConfigurationProblem(ERS_HERE, get_name(), "No Channel map provided!");
+  }
+
   TLOG() << "### REPLAY CONFIGURATION ###";
   TLOG() << "Will use channel map: " << m_channel_map_name;
   try {
@@ -85,9 +93,9 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
     m_planes_to_use = { 0, 1, 2 };
   }
 
-  // For each of the streams that are specified in the config, we read
-  // the input file, and create an outgoing sink. We also keep track
-  // of the total timestamp range of all the streams, so we can keep
+  // For each of the streams that are specified in the config, we extract ROU, and sort them. 
+  // Then we create an outgoing sink for each unique ROU + plane (if not filtered) combination. 
+  // We also keep track of the total timestamp range of all the streams, so we can keep
   // the timestamps of the multiple streams in sync when replaying,
   // even when they don't all start or end at the same time
 
@@ -102,7 +110,9 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
   std::map<std::string, std::vector<std::string>> grouped_files;
   for (auto& stream : m_conf->get_tp_streams()) {
     std::string rou = extract_readout_unit(stream->get_filename());
-    grouped_files[rou].push_back(stream->get_filename());
+    if (!rou.empty()){
+      grouped_files[rou].push_back(stream->get_filename());
+    }
   }
 
   if (grouped_files.empty()) {
@@ -111,16 +121,24 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
 
   // Sort each vector in grouped_files (time ordering)
   for (auto& [rou, files] : grouped_files) {
-    // Sort each vector of filenames by run number and bit using a custom comparator
-    std::sort(files.begin(), files.end(), [this](const std::string& a, const std::string& b) {
-      // Capture 'this' to access the member function
-      auto [run_a, bit_a] = this->extract_run_and_bit(a); // Call the member function with 'this'
-      auto [run_b, bit_b] = this->extract_run_and_bit(b);
+    // Sort and filter by run number and bit
+    files.erase(
+        std::remove_if(files.begin(), files.end(), [this](const std::string& filename) {
+            auto [run, bit] = this->extract_run_and_bit(filename);
+            return (run == 0 && bit == 0);  // Remove files where (run == 0 && bit == 0)
+        }),
+        files.end()
+    );
 
-      // First compare by run number, then by bit
-      if (run_a != run_b)
-        return run_a < run_b;
-      return bit_a < bit_b;
+    // Sort the remaining files by run number and bit
+    std::sort(files.begin(), files.end(), [this](const std::string& a, const std::string& b) {
+        auto [run_a, bit_a] = this->extract_run_and_bit(a);
+        auto [run_b, bit_b] = this->extract_run_and_bit(b);
+
+        // First compare by run number, then by bit
+        if (run_a != run_b)
+            return run_a < run_b;
+        return bit_a < bit_b;
     });
   }
 
@@ -133,6 +151,8 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
     }
   }
 
+  // Data loaded and sorted.
+  // Now we create streams.
   int iter = 0;
   // loop over ROUs
   for (auto it = grouped_files.begin(); it != grouped_files.end(); ++it) {
@@ -183,7 +203,6 @@ TriggerPrimitiveMakerModule::do_start(const nlohmann::json& args)
 
   rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
   m_run_number = start_params.run;
-
   m_running_flag.store(true);
 
   // Reset opmon
@@ -261,6 +280,7 @@ TriggerPrimitiveMakerModule::generate_opmon_data()
 std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>>
 TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::string rou)
 {
+  // Store loaded data per plane
   std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>> all_tpvs;
   int tps_counter = 0;
   int vectors_counter = 0;
@@ -268,7 +288,7 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
   // Loop over files for this ROU
   for (const auto& a_file : filenames) {
 
-    // Prepare input file
+    // Prepare input file, at this point checks were already done on the file/data
     std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file;
     std::string filename = a_file;
     input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
@@ -297,6 +317,7 @@ TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::s
     for (auto plane : m_planes_to_use) {
       if (frags_by_plane[plane].size() == 0) {
         ers::error(dunedaq::trigger::ReplayNoDataAfterFilter(ERS_HERE, get_name(), filename, plane));
+	TLOG() << "No fragments for ROU: " << rou << ", plane: " << plane << ".";
         continue;
       }
 
@@ -519,11 +540,13 @@ TriggerPrimitiveMakerModule::extract_readout_unit(const std::string& filename)
     input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
   } catch (const hdf5libs::FileOpenFailed& e) {
     ers::error(dunedaq::trigger::ReplayFileProblem(ERS_HERE, get_name(), filename));
+    return {};
   }
 
   // Check that the file is a TimeSlice type
   if (!input_file->is_timeslice_type()) {
     ers::error(dunedaq::trigger::BadTPInputFile(ERS_HERE, get_name(), filename));
+    return {};
   }
 
   std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
@@ -538,6 +561,7 @@ TriggerPrimitiveMakerModule::extract_readout_unit(const std::string& filename)
   auto frag_data_size = frag->get_data_size();
   if (frag_data_size == 0) {
     ers::error(dunedaq::trigger::ReplayEmptyFrag(ERS_HERE, get_name(), filename));
+    return {};
   }
   trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
   auto& tp = tp_array[0];
@@ -546,33 +570,8 @@ TriggerPrimitiveMakerModule::extract_readout_unit(const std::string& filename)
     return ROU;
   } catch (...) {
     ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
-    throw;
+    return {};
   }
-}
-
-std::vector<std::string>
-TriggerPrimitiveMakerModule::filter_fragments(const std::vector<std::string>& fragment_paths, std::string rou)
-{
-  std::vector<std::string> filtered_fragments;
-  for (const auto& path : fragment_paths) {
-    int plane = extract_plane_number(path);
-
-    // hack for APA1, basically making plane 1 collection plane :/
-    if (rou == "APA_P02SU") {
-      if (plane == 1) {
-        plane = 2;
-      }
-    }
-
-    // Check if plane is in m_filter_planes_ids
-    if (std::find(m_filter_planes_ids.begin(), m_filter_planes_ids.end(), plane) != m_filter_planes_ids.end()) {
-      continue; // Skip this fragment if plane is in m_filter_planes_ids
-    }
-
-    // Otherwise, add to filtered_fragments
-    filtered_fragments.push_back(path);
-  }
-  return filtered_fragments;
 }
 
 // Helper function to extract run number and bit from the filename

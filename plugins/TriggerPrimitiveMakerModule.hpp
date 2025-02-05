@@ -79,24 +79,26 @@ private:
   std::vector<std::unique_ptr<std::thread>> m_threads;
   std::atomic<bool> m_running_flag;
 
+  // TP streams
+  struct TPStream
+  {
+    std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>> tp_sink;
+    std::vector<std::vector<TriggerPrimitiveTypeAdapter>> tpvs;
+  };
+  std::vector<TPStream> m_tp_streams;
+  triggeralgs::timestamp_t m_earliest_first_tp_timestamp;
+  triggeralgs::timestamp_t m_latest_last_tp_timestamp;
+  
+  // TP data
   std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> > read_tps(std::vector<std::string> filenames, std::string rou);
 
   // Configuration
   const appmodel::TriggerPrimitiveMakerModuleConf* m_conf;
   uint64_t clocks_per_us;
   int m_loops;
-
   daqdataformats::run_number_t m_run_number{ daqdataformats::TypeDefaults::s_invalid_run_number };
-
-  nlohmann::json m_init_obj; // Stash this so we know name -> instance mappings
-
-  struct TPStream
-  {
-    std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>> tp_sink;
-    std::vector<std::vector<TriggerPrimitiveTypeAdapter>> tpvs;
-  };
-
-  std::vector<TPStream> m_tp_streams;
+  std::chrono::milliseconds m_queue_timeout;
+  std::chrono::steady_clock::time_point m_run_start_time;
 
   // Channel maps, plane related
   std::string m_channel_map_name;
@@ -107,14 +109,6 @@ private:
   std::string extract_readout_unit(const std::string& filename);
   std::pair<int, int> extract_run_and_bit(const std::string& filename);
   int extract_plane_number(const std::string& str);
-  std::vector<std::string> filter_fragments(const std::vector<std::string>& fragment_paths, std::string rou);
-
-  std::chrono::milliseconds m_queue_timeout;
-
-  // Variables to keep track of the total time span of multiple TP streams
-  triggeralgs::timestamp_t m_earliest_first_tp_timestamp;
-  triggeralgs::timestamp_t m_latest_last_tp_timestamp;
-  std::chrono::steady_clock::time_point m_run_start_time;
 
   // opmon
   using metric_counter_type = uint64_t;
