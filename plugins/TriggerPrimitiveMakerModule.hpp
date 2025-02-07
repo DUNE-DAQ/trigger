@@ -95,7 +95,7 @@ private:
 
   // Configuration
   const appmodel::TriggerPrimitiveMakerModuleConf* m_conf;
-  uint64_t clocks_per_us;
+  double clocks_per_us;
   int m_loops;
   daqdataformats::run_number_t m_run_number{ daqdataformats::TypeDefaults::s_invalid_run_number };
   std::chrono::milliseconds m_queue_timeout;

@@ -50,7 +50,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> m
   }
 
   clocks_per_us =
-    mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000;
+    mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000.0;
 
   // Get channel map
   m_channel_map_name = m_conf->get_channel_map();
