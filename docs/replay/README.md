@@ -110,6 +110,9 @@ This means there would be 12 `TPHandlers`, 12 queues from `TriggerPrimitiveMaker
 Importantly, there is always just 1 `TriggerPrimitiveMaker`, however, it will make use of 12 threads, each feeding its own `TPHandler` (pretending to be a plane from readout). 
 <br>
 
+It should be mentioned that the application is fully integrated with the rest of the system, such as registering the SourceIDs in MLT and in DFO. 
+<br>
+
 ### Set-up
 #### TriggerReplayApplication
 - Example Trigger Replay application for 1 ROU and 1 active plane:
@@ -131,7 +134,7 @@ Some additional notes:
 - it publishes TAs to a `TriggerApplication`; this creates TCs and passes onwards to `MLT`
 - generally, the flow is similar to having a readout application replaced
 
-#### TriggerPrimitiveMaker module
+### TriggerPrimitiveMaker module
 The `TriggerPrimitiveMaker` module is the base of replay.
 Functionality:
 - loads in configuration; including HDF5 files, planes, channel map...
@@ -154,4 +157,64 @@ Additionally, multiple new issues have been declared to handle errors, for examp
 For full list please see: [Issues.hpp](./../../include/trigger/Issues.hpp)
 
 
-df
+#### Logging
+Verbose logging is available in the `TriggerPrimitiveMaker` module:
+- Configuration:
+```
+### REPLAY CONFIGURATION ###
+Will use channel map: PD2HDChannelMap
+Plane filtering: 1
+Planes to filter:
+0
+```
+- File overview:
+```
+Files to use:
+ROU: APA_P01SU
+<file>.hdf5
+ROU: APA_P02NL
+<different_file>.hdf5
+```
+- Plane data summary:
+```
+Will use 44 fragments for ROU: APA_P01SU, plane: 1.
+Data loading summary (plane stage):
+------------------------------
+File: <file>.hdf5
+ROU: APA_P01SU
+Plane: 1
+Read TPs: 32738550
+TP vectors: 44
+```
+- File data summary:
+```
+Data loading summary (file stage):
+------------------------------
+ROU: APA_P01SU
+Planes: 2
+Total read TPs: 47295032
+TP vectors: 88
+```
+- Thread summary after running:
+```
+Thread summary:
+------------------------------
+Sent TPs: 14556482
+TP vectors: 44
+Time taken: 42292 ms
+Rate: 1.04041 TP vectors/s
+Failed to push TP vectors: 0
+```
+- Global (aggregated) summary:
+```
+### SUMMARY ###
+------------------------------
+Generated TP vectors: 178
+Generated TPs: 94783270
+Time taken: 135302 ms
+Rate: 1.31558 TP vectors/s
+Failed to push TP vectors: 0
+```
+This can be compared with opmon from `TPHandlerModule` for sanity checking. 
+
+dd
