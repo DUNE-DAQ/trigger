@@ -237,11 +237,17 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 - *ehn1-replay-config*: common cern opmon and reporting
 
 - Replay session:
+
 ![replay_ses](https://github.com/user-attachments/assets/8456a4bb-8f51-40b3-99dc-e4d8f2654c7d)
+
 - Trigger segment:
+
 ![conf_trg](https://github.com/user-attachments/assets/f913afc9-32f7-40b9-980c-47d7cf8de583)
+
 - `TriggerPrimitiveMaker` module configuration:
+
 ![conf_tpmm](https://github.com/user-attachments/assets/def5662f-2df7-4f88-9d43-182c36109744)
+
 As mentioned, the different plane options are already configured, and can simply be selected as needed.
 
 Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). `TriggerReplayApplication` is added to the `trg-segment`. You can see an overview [here](#connecting-to-the-daq-system).
