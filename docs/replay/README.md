@@ -262,8 +262,8 @@ Additionally, the handler modules used are typical in the sense that they alread
 - *Memory limits*: Some memory optimization is implemented, however, TPStream files are often very big. Because most processing happens within one module (TPMm), memory usage can be an issue for many files at once. You have been warned.
 
 ### TODO (future)
-- [] should the initial TP times be shifted (as if they were streamed now) ?
-- [] support for multiple concurrent (different) makers
-- [] when TP format changes (relative `tp.time_peak`) looping logic needs adjusting
+- [ ] should the initial TP times be shifted (as if they were streamed now) ?
+- [ ] support for multiple concurrent (different) makers
+- [ ] when TP format changes (relative `tp.time_peak`) looping logic needs adjusting
 
 For more details please see [this report](https://docs.dunescience.org/cgi-bin/private/ShowDocument?docid=32918). 
