@@ -1,6 +1,17 @@
 # Trigger Replay Application
 
-This is the new Trigger Replay Application (v5+). For the previous version follow [here](https://github.com/DUNE-DAQ/trigger/tree/production/v4/python/trigger/replay_tps).
+This is the new Trigger Replay Application (v5+). For the previous version follow [here](https://github.com/DUNE-DAQ/trigger/tree/production/v4/python/trigger/replay_tps). This version is NOT backward compatible. 
+
+## Table of Contents
+- [What is Replay](#what-is-replay)
+- [How does it work?](#how-does-it-work)
+- [Implementation](#implementation)
+- [Appmodel schemas](#appmodel-schemas)
+- [Appmodel source code](#appmodel-source-code)
+- [Set-up](#set-up)
+- [Operational Monitoring](#operational-monitoring)
+- [Other Notes](#other-notes)
+- [TODO (future)](#todo-future)
 
 ## What is Replay
 The replay application is an 'emulation tool'. It is meant for developing the trigger, associated infrastructure, integration, and algorithm testing. 
@@ -65,12 +76,15 @@ Process:
  </class>
 ```
 - Configuration options:
-  - `number_of_loops`: possibility to 'shift' the times of TPs and replay them multiple times in consecution
-  - `maximum_wait_time_us`: a little time buffer to wait between sending consecutive TP vectors
-  - `channel_map`: detector channel map, used to extract ROU
-  - `filter_out_plane`: possibility to filter out (ignore) data from a particular plane (induction 1 / induction 2 / collection)
-  - `tp_streams`: a vector of TPStream HDF5 files to be used (your TP data input)
- <br>
+
+| Option                 | Description                                                                                      |
+|------------------------|--------------------------------------------------------------------------------------------------|
+| **number_of_loops**    | Allows replaying the TPs multiple times with shifted timestamps.                                 |
+| **maximum_wait_time_us** | Max buffer time between sending consecutive TP vectors.                                            |
+| **channel_map**        | Specifies the detector channel map, used to extract Readout Unit (ROU).                         |
+| **filter_out_plane**   | Option to filter out (ignore) data from a specific plane (Induction 1 / Induction 2 / Collection). |
+| **tp_streams**        | List of TPStream HDF5 files to be used as input (multiple files supported).                      |
+<br>
  
 Plane filtering schema:
 ```xml
@@ -222,6 +236,34 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 - *local-replay-config*: local opmon & reporting
 - *ehn1-replay-config*: common cern opmon and reporting
 
+- Replay session: ![replay_ses](https://github.com/user-attachments/assets/8456a4bb-8f51-40b3-99dc-e4d8f2654c7d)
+- Trigger segment: ![conf_trg](https://github.com/user-attachments/assets/f913afc9-32f7-40b9-980c-47d7cf8de583)
+- `TriggerPrimitiveMaker` module configuration: ![conf_tpmm](https://github.com/user-attachments/assets/def5662f-2df7-4f88-9d43-182c36109744)
+As mentioned, the different plane options are already configured, and can simply be selected as needed.
+
 Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). `TriggerReplayApplication` is added to the `trg-segment`. You can see an overview [here](#connecting-to-the-daq-system).
 
-ss
+## Operational Monitoring
+A graph showing opmon data from `TriggerPrimitiveMaker` module is available on Grafana: 
+> Grafana -> Trigger Flow -> Plugins -> TP Maker
+
+![new_graf](https://github.com/user-attachments/assets/c3490188-32f1-4693-9e25-cf3d0c5b58d8)
+
+This shows TP data being read in, and TP vector data being created and sent. 
+Additionally, the handler modules used are typical in the sense that they already provide the expected opmon data (TP receiving rates, TA making rates...). All other objects also have corresponding monitoring (queues, network connections, buffers...). 
+
+## Other Notes
+### Issues / Perks
+- *Dynamicity*: The choice to be user-friendly carries a price. Readout units are generally easily extracted from an HDF5 file using already available functions in `hdf5libs` repository. However, this repository is not available in `appmodel` (as `appmodel` is a dependency of `hdf5libs`). This can be solved in a few ways. For now, the `TriggerReplayApplication` extracts the ROU from the TPStream file name. This therefore requires consistency in the naming to be retained, or building a custom extractor function that would replicate portions of the `hdf5libs` code.  
+- *Plane filtering*: The code pretends that for APA1 ("APA_P02SU") the collection plane is induiction plane 2, and vice-versa. This is by choice, as for NP04 running plane 2 was used as effective collection plane for APA1.
+- *Configuration management*: Current implementation uses 1 queue description and 1 `TPHandler` configuration, that is then used for all the instances of queues and handler objects (with unique names of course). This means that for a file with 3 active planes, the handler for each plane would be using the same algorithm (same for readout).
+- *Init stage*: A lot is happening inside the `TriggerPrimitiveMaker` module at the init stage: parsing configuration, multiple checks on HDF5 files, extracting ROUs, actually extracting TP data, plane filtering... Depending on the number of files this can take a lot of time. If needed, portions of this can be moved to different run stages.
+- *Expectations ?*: There are many places in the current dune-daq code where expectations are baked in (but not necessarily documented), for example, an expectation for queues that are at times not obvious (ie `TPRequestHandler` is expected to link to `FragmentAggregatorModule`, but this module is not required outside readout).
+- *Memory limits*: Some memory optimization is implemented, however, TPStream files are often very big. Because most processing happens within one module (TPMm), memory usage can be an issue for many files at once. You have been warned.
+
+### TODO (future)
+- [] should the initial TP times be shifted (as if they were streamed now) ?
+- [] support for multiple concurrent (different) makers
+- [] when TP format changes (relative `tp.time_peak`) looping logic needs adjusting
+
+For more details please see [this report](https://docs.dunescience.org/cgi-bin/private/ShowDocument?docid=32918). 
