@@ -217,4 +217,11 @@ Failed to push TP vectors: 0
 ```
 This can be compared with opmon from `TPHandlerModule` for sanity checking. 
 
-dd
+## OKS Sessions
+Two example replay sessions are available as part of example-configs in `daqsystemtest` repository. These are identical in terms of setup, with the only difference being opmon and error reporting. 
+- *local-replay-config*: local opmon & reporting
+- *ehn1-replay-config*: common cern opmon and reporting
+
+Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). `TriggerReplayApplication` is added to the `trg-segment`. You can see an overview [here](#connecting-to-the-daq-system).
+
+ss
