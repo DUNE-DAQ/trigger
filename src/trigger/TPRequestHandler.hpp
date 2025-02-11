@@ -23,7 +23,7 @@
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TPSet.hpp"
 
-#include <logging/Logging.hpp> // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
  
 #include <atomic>
 #include <memory>
