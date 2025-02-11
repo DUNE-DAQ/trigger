@@ -20,7 +20,7 @@ Process:
 - as a separate standalone application, it can be used in combination with other DAQ applications
 
 ## Implementation
-### TriggerReplayApplication
+### Appmodel schemas
 `TriggerReplayApplication` schema:
 ```xml
  <class name="TriggerReplayApplication">
@@ -92,4 +92,66 @@ TPStream configuration:
 ![conf_files](https://github.com/user-attachments/assets/665f8e12-0cec-4e63-91ac-69c85b8fc008)
 <br>
  
+### Appmodel source code
+The design of the source code is a result of the aim to be 'user friendly'. This means the user can provide a vector of files, without restrictions on ROUs. 
+Therefore, a lot of heavy lifting happens when the application modules and links are being generated. 
+The basis for the procedure is: 
+- loop over the files, checking validity (exists; is a TPStream HDF5 file; has data)
+- extract the ROU for the file
+- output a map of vectors of (valid) files, grouped by ROUs, ordered by time within the vectors
 
+Afterward, the generation is based on: 
+
+> **number of unique ROUs** x **number of active planes**
+
+An active plane is a plane that is **not** filtered out.  
+Therefore, in an example scenario where 4 files are provided, covering 4 unique ROUs (for example 4 different APAs), and no planes are configured to be filtered out, this magic number will be 4 (ROUs) x 3 (planes) = 12.
+This means there would be 12 `TPHandlers`, 12 queues from `TriggerPrimitiveMaker`, 12 data request network connections, 12 outcoming TA publishing network connections.
+Importantly, there is always just 1 `TriggerPrimitiveMaker`, however, it will make use of 12 threads, each feeding its own `TPHandler` (pretending to be a plane from readout). 
+<br>
+
+### Set-up
+#### TriggerReplayApplication
+- Example Trigger Replay application for 1 ROU and 1 active plane:
+![replay dot](https://github.com/user-attachments/assets/7c00a8a9-1ffd-4c3f-89cb-598a82c1b444)
+- Another example using 2 ROUs and 2 active planes:
+![replay3 dot](https://github.com/user-attachments/assets/cdb442e5-0361-43f5-9ca6-d6b9edd91600)
+
+One can see the module generation being driven by the unique ROU and active planes. 
+Some additional notes:
+- There is always 1 `TriggerPrimitiveMaker` module. It has an internal logic that spawns threads.
+- The `TPHandlers` make use of the common `TriggerDataHandlerModules`, meaning they also contain latency buffers, have unique SourceIDs, and respond to data requests.
+- The `TPHandlers` create TAs and stream these to output network connections. 
+<br>
+
+#### Connecting to the DAQ system
+![session dot](https://github.com/user-attachments/assets/a4e56fe8-c0ac-4b42-b837-d14ef4be25ac)
+- the TriggerReplayApplication is part of the `trg-segment`
+- it has an input from `DFApplication`: readout requests
+- it publishes TAs to a `TriggerApplication`; this creates TCs and passes onwards to `MLT`
+- generally, the flow is similar to having a readout application replaced
+
+#### TriggerPrimitiveMaker module
+The `TriggerPrimitiveMaker` module is the base of replay.
+Functionality:
+- loads in configuration; including HDF5 files, planes, channel map...
+- runs checks on files: file exists, is valid HDF5, is TPStream type, has valid fragments, contains TPs
+- loops over files, extracts the ROU, and sorts the files by unique ROU (additionally, if there are multiple files for an ROU, the files are time ordered)
+- creates unique *streams*, each stream representing a unique plane data
+- plane data is extracted from the file, filtering is applied
+- TP data is handled in TP vectors (this is mostly because it was already available for `TriggerDataHandlerModule`, was previously using `TPSets` but there is no implementation for this data type)
+- each stream spawns a unique thread, running independently (timing controlled by clock)
+- running threads check the slice time (slice, in this case, represented as a vector of TPs, covering one fragment of TPs), compare to the clock, and send over the queues to `TPHandlers` as appropriate. There is an additional wait time applied so as to not overwhelm the system.
+- if multiple loops are configured, the TP times are shifted to allow for repetition with new/future times
+- publishes opmon data
+- has basic logging / counters
+
+
+Additionally, multiple new issues have been declared to handle errors, for example:
+- `ReplayConfigurationProblem`: Missing or incorrect configuration
+- `ReplayNoValidFiles`: No provided file passes checks
+- `ReplayNoValidTPs`: No valid TPs have been extracted
+For full list please see: [Issues.hpp](./../../include/trigger/Issues.hpp)
+
+
+df
