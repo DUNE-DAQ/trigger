@@ -5,6 +5,7 @@ This is the new Trigger Replay Application (v5+). For the previous version follo
 ## Table of Contents
 - [What is Replay](#what-is-replay)
 - [How does it work?](#how-does-it-work)
+- [How to Replay?](#how-to-replay)
 - [Implementation](#implementation)
 - [Appmodel schemas](#appmodel-schemas)
 - [Appmodel source code](#appmodel-source-code)
@@ -29,6 +30,12 @@ Process:
 - also contains buffers, which respond to readout requests
 - the timing is controlled by a global clock
 - as a separate standalone application, it can be used in combination with other DAQ applications
+
+## How to Replay
+Replay works via a `TriggerReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.
+To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration. 
+Remember, replay is emulation readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required. 
+Finally, configure the `TriggerPrimitiveMaker` module that is part of this application. It accepts list of input HDF5 TPStream files. Additionally, one can choose to filter-out planes.
 
 ## Implementation
 ### Appmodel schemas
