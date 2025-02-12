@@ -13,7 +13,7 @@
 //#include "appfwk/cmd/Structs.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/ModuleConfiguration.hpp"
+#include "appfwk/ConfigurationManager.hpp"
 
 #include "datahandlinglibs/concepts/SourceConcept.hpp"
 
@@ -37,7 +37,7 @@ public:
   DataSubscriberModule(DataSubscriberModule&&) = delete;                 ///< DataSubscriberModule is not move-constructible
   DataSubscriberModule& operator=(DataSubscriberModule&&) = delete;      ///< DataSubscriberModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> cfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> cfg) override;
 
   std::shared_ptr<datahandlinglibs::SourceConcept> create_data_subscriber(const confmodel::DaqModule* cfg);
 private:

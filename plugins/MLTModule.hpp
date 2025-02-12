@@ -74,7 +74,7 @@ public:
   MLTModule(MLTModule&&) = delete;                 ///< MLTModule is not move-constructible
   MLTModule& operator=(MLTModule&&) = delete;      ///< MLTModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
   void generate_opmon_data() override;
 
 private:

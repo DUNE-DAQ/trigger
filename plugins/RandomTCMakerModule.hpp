@@ -10,7 +10,7 @@
 #include "trigger/TokenManager.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/ModuleConfiguration.hpp"
+#include "appfwk/ConfigurationManager.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/Session.hpp"
 #include "confmodel/DetectorConfig.hpp"
@@ -68,7 +68,7 @@ public:
   RandomTCMakerModule& operator=(RandomTCMakerModule&&) =
     delete; ///< RandomTCMakerModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
   void generate_opmon_data() override;
 
 private:
