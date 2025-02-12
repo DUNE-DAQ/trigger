@@ -32,10 +32,10 @@ Process:
 - as a separate standalone application, it can be used in combination with other DAQ applications
 
 ## How to Replay
-Replay works via a `TriggerReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.
-To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration. 
-Remember, replay is emulation readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required. 
-Finally, configure the `TriggerPrimitiveMaker` module that is part of this application. It accepts list of input HDF5 TPStream files. Additionally, one can choose to filter-out planes.
+Replay works via a `TriggerReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.<br>
+To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration.<br><br>
+Remember, replay is an emulation of readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required.<br><br>
+Finally, configure the `TriggerPrimitiveMaker` module that is part of this application. It accepts a list of input HDF5 TPStream files. Additionally, one can choose to filter out planes.
 
 ## Implementation
 ### Appmodel schemas
