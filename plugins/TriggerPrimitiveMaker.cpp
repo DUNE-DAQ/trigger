@@ -40,7 +40,7 @@ TriggerPrimitiveMaker::TriggerPrimitiveMaker(const std::string& name)
   // clang-format on
 }
 void 
-TriggerPrimitiveMaker::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+TriggerPrimitiveMaker::init(std::shared_ptr<dunedaq::appfwk::ConfigurationManager>)
 {}
 
 //void
