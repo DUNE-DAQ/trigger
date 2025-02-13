@@ -5,8 +5,8 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef TRIGGER_SRC_TRIGGER_TCPROCESSOR_HPP_
-#define TRIGGER_SRC_TRIGGER_TCPROCESSOR_HPP_
+#ifndef TRIGGER_SRC_TRIGGER_TCPROCESSORPDS_HPP_
+#define TRIGGER_SRC_TRIGGER_TCPROCESSORPDS_HPP_
 
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
@@ -30,7 +30,7 @@
 
 #include "trgdataformats/TriggerCandidateData.hpp"
 #include "trgdataformats/Types.hpp"
-#include "triggeralgs/TriggerCandidate.hpp"
+#include "triggeralgs/TriggerCandidatePDS.hpp"
 
 namespace dunedaq {
 namespace trigger {
