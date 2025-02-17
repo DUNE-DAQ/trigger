@@ -41,7 +41,7 @@ public:
   TPSetSink(TPSetSink&&) = delete;                 ///< TPSetSink is not move-constructible
   TPSetSink& operator=(TPSetSink&&) = delete;      ///< TPSetSink is not move-assignable
 
-  virtual void init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>) override;
+  virtual void init(std::shared_ptr<dunedaq::appfwk::ConfigurationManager>) override;
 
 private:
   // Commands
