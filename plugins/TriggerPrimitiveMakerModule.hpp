@@ -19,7 +19,7 @@
 #include "appmodel/TriggerPrimitiveMakerModuleConf.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/ModuleConfiguration.hpp"
+#include "appfwk/ConfigurationManager.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
@@ -61,7 +61,7 @@ public:
   TriggerPrimitiveMakerModule& operator=(TriggerPrimitiveMakerModule&&) =
     delete; ///< TriggerPrimitiveMakerModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
   void generate_opmon_data() override;
 
 private:

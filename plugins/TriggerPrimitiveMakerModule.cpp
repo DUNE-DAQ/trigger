@@ -41,16 +41,16 @@ TriggerPrimitiveMakerModule::TriggerPrimitiveMakerModule(const std::string& name
 }
 
 void
-TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
-  auto mtrg = mcfg->module<appmodel::TriggerPrimitiveMakerModule>(get_name());
+  auto mtrg = mcfg->get_dal<appmodel::TriggerPrimitiveMakerModule>(get_name());
   m_conf = mtrg->get_configuration();
   if (!m_conf) {
     throw ReplayConfigurationProblem(ERS_HERE, get_name(), "Missing configuration!");
   }
 
   clocks_per_us =
-    mcfg->configuration_manager()->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000.0;
+    mcfg->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000.0;
 
   // Get channel map
   m_channel_map_name = m_conf->get_channel_map();
