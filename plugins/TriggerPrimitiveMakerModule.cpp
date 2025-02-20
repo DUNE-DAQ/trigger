@@ -103,80 +103,63 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
 
   m_earliest_first_tp_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
   m_latest_last_tp_timestamp = 0;
-
-  // Map to group files by ROU
-  // because this is the first time looping over files
-  // the function also checks the file
-  std::map<std::string, std::vector<std::string>> grouped_files;
+ 
+  std::map <int, std::string> tpstream_files;
   for (auto& stream : m_conf->get_tp_streams()) {
-    std::string rou = extract_readout_unit(stream->get_filename());
-    if (!rou.empty()) {
-      grouped_files[rou].push_back(stream->get_filename());
-    }
-  }
-
-  if (grouped_files.empty()) {
-    ers::error(dunedaq::trigger::ReplayNoValidFiles(ERS_HERE, get_name()));
-  }
-
-  // Sort each vector in grouped_files (time ordering)
-  for (auto& [rou, files] : grouped_files) {
-    // Sort and filter by run number and bit
-    files.erase(std::remove_if(files.begin(),
-                               files.end(),
-                               [this](const std::string& filename) {
-                                 auto [run, bit] = this->extract_run_and_bit(filename);
-                                 return (run == 0 && bit == 0); // Remove files where (run == 0 && bit == 0)
-                               }),
-                files.end());
-
-    // Sort the remaining files by run number and bit
-    std::sort(files.begin(), files.end(), [this](const std::string& a, const std::string& b) {
-      auto [run_a, bit_a] = this->extract_run_and_bit(a);
-      auto [run_b, bit_b] = this->extract_run_and_bit(b);
-
-      // First compare by run number, then by bit
-      if (run_a != run_b)
-        return run_a < run_b;
-      return bit_a < bit_b;
-    });
+    std::pair tmp_obj = std::make_pair( stream->get_index(), stream->get_filename() ); 
+    tpstream_files.insert( tmp_obj );
   }
 
   // Print grouped files
   TLOG() << "Files to use:";
-  for (const auto& entry : grouped_files) {
-    TLOG() << "ROU: " << entry.first << "\nFiles:\n";
-    for (const auto& file : entry.second) {
-      TLOG() << "  " << file << "\n";
+  for (const auto& pair : tpstream_files) {
+    std::cout << "Index: " << pair.first << ", Filename: " << pair.second << std::endl;
+  }
+
+  // Load data here
+  //             ROU               plane              vectors of TPs (one per frag)
+  std::map < std::string, std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> > > all_tp_data;
+  all_tp_data = read_tps( tpstream_files );
+
+  // TEXT BLOCK MOVE LATER
+  TLOG() << "THIS RIGHT HERE";
+  // Loop through the map and print sizes
+  for (const auto& rou_pair : all_tp_data) {
+    const std::string& ROU = rou_pair.first;  // ROU name (key)
+    const auto& plane_map = rou_pair.second;  // Map of planes for this ROU
+
+    std::cout << "ROU: " << ROU << ", Number of planes: " << plane_map.size() << std::endl;
+
+    // Loop through each plane for the current ROU
+    for (const auto& plane_pair : plane_map) {
+      int plane = plane_pair.first;  // Plane number (key)
+      const auto& vector_of_tps = plane_pair.second;  // Vector of TriggerPrimitiveTypeAdapter vectors
+
+      std::cout << "  Plane: " << plane << ", Number of vectors: " << vector_of_tps.size() << std::endl;
     }
   }
+  // END OF TEXT BLOCK
 
   // Data loaded and sorted.
   // Now we create streams.
-  int iter = 0;
   // loop over ROUs
-  for (auto it = grouped_files.begin(); it != grouped_files.end(); ++it) {
-    std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>> tps_data = read_tps(it->second, it->first);
+  int global_iter = 0;
+  for (const auto& rou_pair : all_tp_data) {
+    const std::string& ROU = rou_pair.first;
+    const auto& plane_map = rou_pair.second;
     // loop over planes
     int plane_iter = 0;
-    for (auto plane : m_planes_to_use) {
-
-      // Check that there is data for this ROU / plane
-      auto it2 = tps_data.find(plane);
-      if (it2 == tps_data.end() || it2->second.empty()) {
-        // key doesn't exist or no data
-        plane_iter++;
-        continue;
-      }
+    for (const auto& plane_pair : plane_map) {
+      int plane = plane_pair.first;
+      const auto& vector_of_tps = plane_pair.second;
 
       TPStream this_stream;
-      TLOG() << "Stream: " << (iter + plane_iter) << "; ROU: " << it->first << "; plane: " << plane << "; TP sink is "
-             << con[iter + plane_iter]->class_name() << "@" << con[iter + plane_iter]->UID()
-             << "; first file: " << it->second[0];
+      TLOG() << "Stream: " << (global_iter + plane_iter) << "; ROU: " << ROU << "; plane: " << plane << "; TP sink is "
+             << con[global_iter + plane_iter]->class_name() << "@" << con[global_iter + plane_iter]->UID();
       this_stream.tp_sink =
-        get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[iter + plane_iter]->UID());
+        get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[global_iter + plane_iter]->UID());
 
-      this_stream.tpvs = tps_data[plane];
+      this_stream.tpvs = vector_of_tps;
 
       m_earliest_first_tp_timestamp =
         std::min(m_earliest_first_tp_timestamp, this_stream.tpvs.front().front().tp.time_start);
@@ -186,8 +169,9 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
       m_tp_streams.push_back(std::move(this_stream));
       plane_iter++;
     }
-    iter = iter + m_planes_to_use.size();
+    global_iter = global_iter + plane_iter;
   }
+
   TLOG() << "Total of " << m_tp_streams.size() << " TP streams.";
 }
 
@@ -283,137 +267,58 @@ TriggerPrimitiveMakerModule::generate_opmon_data()
   this->publish(std::move(info));
 }
 
-std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>>
-TriggerPrimitiveMakerModule::read_tps(std::vector<std::string> filenames, std::string rou)
+std::map < std::string, std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> > >
+TriggerPrimitiveMakerModule::read_tps( std::map <int, std::string> tpstream_files )
 {
-  // Store loaded data per plane
-  std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>> all_tpvs;
-  int tps_counter = 0;
-  int vectors_counter = 0;
+  std::map < std::string, std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> > > all_data;
 
-  // Loop over files for this ROU
-  for (const auto& a_file : filenames) {
-
-    // Prepare input file, at this point checks were already done on the file/data
+  // loop over each file
+  for (const auto& a_file : tpstream_files) {
     std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file;
-    std::string filename = a_file;
-    input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
+    std::string filename = a_file.second;
+    input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename); 
     std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
-    std::map<int, std::vector<std::string>> frags_by_plane;
-    // sort fragments by plane
-    for (const auto& path : fragment_paths) {
-      int plane = extract_plane_number(path);
 
-      // hack for APA1, basically making plane 1 collection plane :/
-      if (rou == "APA_P02SU") {
-        if (plane == 1) {
-          plane = 2;
-        } else if (plane == 2) {
-          plane = 1;
-        }
-      }
-      // Check if plane is in m_filter_planes_ids
+    for (const auto& path : fragment_paths) {
+      std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(path);
+      trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
+      auto& tp = tp_array[0];
+      // get rou
+      std::string ROU = m_channel_map->get_tpc_element_from_offline_channel(tp.channel);
+      // get plane
+      int plane = m_channel_map->get_plane_from_offline_channel(tp.channel);
+      // check filtering
       if (std::find(m_filter_planes_ids.begin(), m_filter_planes_ids.end(), plane) != m_filter_planes_ids.end()) {
         continue; // Skip this fragment if plane is in m_filter_planes_ids
       }
-      frags_by_plane[plane].push_back(path);
+      // extract data
+      std::vector<TriggerPrimitiveTypeAdapter> tps;
+      size_t num_tps = frag->get_data_size() / sizeof(trgdataformats::TriggerPrimitive);
+      tps.reserve(num_tps);
+      for (size_t i(0); i < num_tps; i++) {
+        trigger::TriggerPrimitiveTypeAdapter tpa;
+        tpa.tp = tp_array[i];
+        tps.push_back(std::move(tpa));
+      }
+      frag.reset();
+      // store data
+      all_data[ROU][plane].push_back(std::move(tps));
     }
+  }
 
-    // plane by plane
-    for (auto plane : m_planes_to_use) {
-      if (frags_by_plane[plane].size() == 0) {
-        ers::error(dunedaq::trigger::ReplayNoDataAfterFilter(ERS_HERE, get_name(), filename, plane));
-        TLOG() << "No fragments for ROU: " << rou << ", plane: " << plane << ".";
-        continue;
-      }
+  // Sort each vector for ROU and plane by the time_start of the first TriggerPrimitiveTypeAdapter
+  for (auto& rou_pair : all_data) {
+    for (auto& plane_pair : rou_pair.second) {
+      auto& vector_of_tps = plane_pair.second;
 
-      TLOG() << "Will use " << frags_by_plane[plane].size() << " fragments for ROU: " << rou << ", plane: " << plane
-             << ".";
-
-      std::vector<std::vector<TriggerPrimitiveTypeAdapter>> this_plane_tpvs;
-      int local_tps_counter = 0;
-      int local_vectors_counter = 0;
-
-      // Read in the file, convert TPs to TPTypeAdapters and place them in vector.
-      // This loop assumes the input file is sorted by TP start time
-      for (std::string& fragment_path : frags_by_plane[plane]) {
-        std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(fragment_path);
-        // Make sure this fragment is a TriggerPrimitive
-        if (frag->get_fragment_type() != daqdataformats::FragmentType::kTriggerPrimitive)
-          continue;
-        if (frag->get_element_id().subsystem != daqdataformats::SourceID::Subsystem::kTrigger)
-          continue;
-
-        // Prepare TP buffer
-        size_t num_tps = frag->get_data_size() / sizeof(trgdataformats::TriggerPrimitive);
-
-        trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
-
-        std::vector<TriggerPrimitiveTypeAdapter> tps;
-        for (size_t i(0); i < num_tps; i++) {
-          trigger::TriggerPrimitiveTypeAdapter tpa;
-          tpa.tp = tp_array[i];
-          tps.push_back(std::move(tpa));
-          local_tps_counter++;
-        }
-        if (tps.size() > 0) {
-          this_plane_tpvs.push_back(std::move(tps));
-          local_vectors_counter++;
-        }
-
-        frag.reset();
-      }
-
-      tps_counter += local_tps_counter;
-      vectors_counter += local_vectors_counter;
-
-      // Final check for orderliness
-      // Sort the outer vector using stable_sort, comparing based on the time_start of the first element of each inner
-      // vector
-      std::stable_sort(
-        this_plane_tpvs.begin(),
-        this_plane_tpvs.end(),
+      std::sort(vector_of_tps.begin(), vector_of_tps.end(),
         [](const std::vector<TriggerPrimitiveTypeAdapter>& a, const std::vector<TriggerPrimitiveTypeAdapter>& b) {
-          return a.front().tp.time_start < b.front().tp.time_start;
+          return a[0].tp.time_start < b[0].tp.time_start; // Sorting based on the first TriggerPrimitive's time_start
         });
+    }
+  }
 
-      // check for empty vector here
-      if (this_plane_tpvs.size() == 0) {
-        ers::error(dunedaq::trigger::ReplayNoValidTPs(ERS_HERE, get_name(), filename));
-      }
-
-      TLOG() << "Data loading summary (plane stage):";
-      TLOG() << "------------------------------";
-      TLOG() << "File: " << filename;
-      TLOG() << "ROU: " << rou;
-      TLOG() << "Plane: " << plane;
-      TLOG() << "Read TPs: " << local_tps_counter;
-      TLOG() << "TP vectors:  " << local_vectors_counter;
-      TLOG();
-
-      if (all_tpvs.find(plane) != all_tpvs.end()) {
-        all_tpvs[plane].insert(all_tpvs[plane].end(),
-                               std::make_move_iterator(this_plane_tpvs.begin()),
-                               std::make_move_iterator(this_plane_tpvs.end()));
-      } else {
-        // If the key doesn't exist, add the new vector as a new entry
-        all_tpvs[plane] = std::move(this_plane_tpvs);
-      }
-
-      this_plane_tpvs.clear();
-
-    } // plane loop
-  }   // file loop
-
-  TLOG() << "Data loading summary (file stage):";
-  TLOG() << "------------------------------";
-  TLOG() << "ROU: " << rou;
-  TLOG() << "Planes: " << m_planes_to_use.size();
-  TLOG() << "Total read TPs: " << tps_counter;
-  TLOG() << "TP vectors: " << vectors_counter;
-  TLOG();
-
-  return all_tpvs;
+  return all_data;
 }
 
 void
@@ -599,23 +504,6 @@ TriggerPrimitiveMakerModule::extract_readout_unit(const std::string& filename)
     ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
     return {};
   }
-}
-
-// Helper function to extract run number and bit from the filename
-std::pair<int, int>
-TriggerPrimitiveMakerModule::extract_run_and_bit(const std::string& filename)
-{
-  std::regex pattern("_run(\\d+)_.*?_(\\d+)_"); // Matches _run<run_number>_..._<bit>_
-  std::smatch match;
-
-  if (std::regex_search(filename, match, pattern) && match.size() > 2) {
-    int run_number = std::stoi(match[1].str()); // Extract run number
-    int bit = std::stoi(match[2].str());        // Extract bit
-    return { run_number, bit };
-  }
-
-  // Default if the regex doesn't match
-  return { 0, 0 };
 }
 
 } // namespace dunedaq::trigger

@@ -1,131 +1,195 @@
+import argparse
 import copy
 import re
+import logging
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Dict, Set, List
+from pathlib import Path
 
 import conffwk
 import daqdataformats
 import detchannelmaps
 import trgdataformats
-
 from daqconf.consolidate import copy_configuration
 from hdf5libs import HDF5RawDataFile
-from pathlib import Path
 
-# make local copies of db files
-sessions_file = "config/daqsystemtest/example-configs.data.xml"
-path_str = "replay-run"
-path_object = Path(path_str)
-path_object.mkdir(parents=True, exist_ok=True)
-local_object_databases = copy_configuration(path_object, [sessions_file])
+def setup_logging(verbose: bool):
+    """
+    Set up logging based on the verbose flag.
+    If verbose flag is provided, set the logging level to DEBUG to show all logs.
+    Otherwise, set it to INFO to only show INFO level logs and above.
+    """
+    if verbose:
+        logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+        logging.debug("Verbose logging configured!")
+    else:
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# load db
-config_file = path_str + "/example-configs.data.xml"
-cfg = conffwk.Configuration(f"oksconflibs:{config_file}")
+@dataclass
+class ROUPlaneData:
+    data: Dict[str, Set[int]] = field(default_factory=lambda: defaultdict(set))
 
-# get required objects
-all_replay_apps     = cfg.get_dals("TriggerReplayApplication")
-replay_app = all_replay_apps[0] # this may need improving if we'll have more apps
+    def add_value(self, rou: str, plane: int):
+        self.data[rou].add(plane)
 
-# printout
-print("##### REPLAY APP #####")
-print(replay_app)
-print("####################")
-print()
+    def get_values(self, rou: str):
+        return self.data.get(rou, set())
 
-# get tpstream files from provided file
-# Open the file and read lines into a list
-with open("files2.txt", "r") as file:
-    files = file.readlines()
-files = [line.strip() for line in files]
-# get full paths if not provided
+    def total_plane_count(self):
+        return sum(len(planes) for planes in self.data.values())
 
-print("##### TPStream files #####")
-print(files)
-print("####################")
-print()
-# should also do other checks here?
-# there are many in c++
+@dataclass
+class TPStreamFile:
+    filename: str
+    stime: int
+    index: int
 
-# get tpmm object
-tppm_conf = replay_app.tpmm_conf
-channel_map_name = tppm_conf.channel_map
-channel_map = detchannelmaps.make_map(channel_map_name)
-planes_to_filter_conf = tppm_conf.filter_out_plane
-planes_to_filter = set()
-for plane in planes_to_filter_conf:
-    planes_to_filter.add( plane.plane )
+    def __str__(self):
+        return f"Name: {self.filename}, Stime: {self.stime}, Index: {self.index}"
 
-print("##### Planes to filter #####")
-print(planes_to_filter)
-print("####################")
-print()
+def setup_configuration(path_str: str, sessions_file: str, verbose: bool):
+    logging.info("Setting up configuration files")
+    logging.debug("Local path for configurations: %s", path_str)
+    path = Path(path_str).resolve()  # Convert string to Path object
+    path.mkdir(parents=True, exist_ok=True)
+    external_logger = logging.getLogger('daqconf.consolidate')
+    if not verbose: external_logger.setLevel(logging.WARNING)
+    copy_configuration(path, [sessions_file])
 
-conf_tpstreams = tppm_conf.tp_streams
-tpstream_files = []
-for a_file in conf_tpstreams:
-    tpstream_files.append(a_file.filename)
+    logging.debug("Copying configuration represented by databases: %s", [sessions_file])
 
-# extract source IDs from files
-source_ids_all = set()
-for tpstream_file in files:
-    loaded_file = HDF5RawDataFile(tpstream_file)
-    first_record = loaded_file.get_all_record_ids()[0] # assumption that the first record contains all relevant frags (for all source ids)
-    source_ids = loaded_file.get_source_ids_for_fragment_type( first_record, "Trigger_Primitive" )
+    return conffwk.Configuration(f"oksconflibs:{path}/example-configs.data.xml")
 
-    # figure out sourceID-to-plane for filtering
-    for sid in source_ids:
-        frag = loaded_file.get_frag(first_record, sid)
-        tp = trgdataformats.TriggerPrimitive(frag.get_data(0))
-        plane = channel_map.get_plane_from_offline_channel( tp.channel )
-        # apply filtering
-        if plane not in planes_to_filter:
-            source_ids_all.add( sid.id )
+def get_tpstream_files(filename: str, verbose: bool) -> List[str]:
+    logging.info("Reading TPStream file list from %s", filename)
+    with open(filename, "r") as file:
+        tpstream_files = [line.strip() for line in file.readlines()]
 
-# printout source ids
-print("##### SourceIDs #####")
-print("Total: ", len(source_ids_all))
-for sid in source_ids_all:
-    print(sid)
-print("####################")
-print()
+    logging.info("Total files to process: %i", len(tpstream_files))
+    logging.debug("TPStream files loaded: %s", tpstream_files)
 
-### get objects needed from config and update
-# tot planes
-tppm_conf.total_planes = len(source_ids_all)
-# files
-a_tp_stream = tppm_conf.tp_streams[0] # get example tp stream (TODO: if does not exist, create new one from scratch)
-tp_streams = []
-for counter, a_file in enumerate(files):
-    temp_tp_stream = copy.deepcopy(a_tp_stream)
-    temp_tp_stream.id = "def-tp-stream-" + str(counter)
-    temp_tp_stream.filename = a_file
-    tp_streams.append(temp_tp_stream)
-tppm_conf.tp_streams = tp_streams
-# source ids
-# should we assume the same source ID across different files is the same plane ?!
-a_sid = replay_app.tp_source_ids[0] # get example sid obj (TODO: if does not exist, create new one from scratch)
-all_sids = []
-base_string = "replay-tp-srcid-100000"
-match = re.search(r'(\d+)$', base_string)
-start_number = int(match.group(1))
-for i in range(1, len(source_ids_all)+1):
-    temp_sid = copy.deepcopy(a_sid)
-    new_number = start_number + i
-    new_string = re.sub(r'\d+$', f"{new_number:06d}", base_string)
-    temp_sid.id = new_string
-    temp_sid.sid = i
-    temp_sid.subsystem = "Trigger"
-    all_sids.append(temp_sid)
-replay_app.tp_source_ids = all_sids
+    return tpstream_files
 
-# store this update to local files
-db_modules = conffwk.Configuration("oksconflibs:" + path_str + "/moduleconfs.data.xml")
-db_trigger = conffwk.Configuration("oksconflibs:" + path_str + "/trigger-segment.data.xml")
-for tpstream in tppm_conf.tp_streams:
-    db_modules.update_dal(tpstream) # create objects
-for sid in replay_app.tp_source_ids:
-    db_trigger.update_dal(sid)
-db_trigger.update_dal(replay_app)    
-db_modules.update_dal(tppm_conf)
-db_modules.commit()
-db_trigger.commit()
+def extract_rous_and_planes(files: List[str], channel_map, planes_to_filter: Set[int], verbose: bool) -> (List[TPStreamFile], ROUPlaneData):
+    logging.info("Extracting ROUs and planes from files")
+    all_tpstream_files = []
+    rou_plane_data = ROUPlaneData()
+
+    for tpstream_file in files:
+        logging.info("Processing file: %s", tpstream_file)
+        loaded_file = HDF5RawDataFile(tpstream_file)
+        first_record = loaded_file.get_all_record_ids()[0]
+        source_ids = loaded_file.get_source_ids_for_fragment_type(first_record, "Trigger_Primitive")
+        logging.debug("SIDs: %s", source_ids)
+
+        for i, sid in enumerate(source_ids):
+            frag = loaded_file.get_frag(first_record, sid)
+            tp = trgdataformats.TriggerPrimitive(frag.get_data(0))
+
+            if i == 0:
+                all_tpstream_files.append(TPStreamFile(tpstream_file, tp.time_start, 0))
+                logging.debug("First time start: %s", tp.time_start)
+
+            plane = channel_map.get_plane_from_offline_channel(tp.channel)
+            if plane not in planes_to_filter:
+                rou = channel_map.get_tpc_element_from_offline_channel(tp.channel)
+                rou_plane_data.add_value(rou, plane)
+                logging.debug("Extracted rou: %s for plane: %s", rou, plane)
+            else:
+                logging.debug("Plane %s filtered", plane)
+
+    # No need for an if verbose check here, as logging level is already set
+    logging.info("Extracted ROUs and planes: %s", rou_plane_data.data)
+
+    return all_tpstream_files, rou_plane_data
+
+def update_tpstream_indices(tpstream_files: List[TPStreamFile]) -> List[TPStreamFile]:
+    logging.info("Sorting TPStream files by time and assigning indices")
+    sorted_files = sorted(tpstream_files, key=lambda x: x.stime)
+    for i, tp_file in enumerate(sorted_files):
+        tp_file.index = i + 1
+    logging.debug("Sorted TPSTreamFile objects: %s", sorted_files)
+    return sorted_files
+
+def update_configuration(replay_app, tpmm_conf, sorted_tpstream_files, total_unique_planes, path_str, verbose: bool):
+    logging.info("Updating configuration with new TPStream data")
+    tpmm_conf.total_planes = total_unique_planes
+
+    a_tp_stream = tpmm_conf.tp_streams[0] if tpmm_conf.tp_streams else None
+    if not a_tp_stream:
+        logging.warning("No template TPStream object found")
+        # TODO get template and create from scratch
+    tp_streams = []
+    for a_file in sorted_tpstream_files:
+        temp_tp_stream = copy.deepcopy(a_tp_stream)
+        temp_tp_stream.id = f"def-tp-stream-{a_file.index}"
+        temp_tp_stream.filename = a_file.filename
+        temp_tp_stream.index = a_file.index
+        tp_streams.append(temp_tp_stream)
+        logging.debug("Created TPStream: %s", temp_tp_stream)
+    tpmm_conf.tp_streams = tp_streams
+    logging.info("Total of %i TPStream configs created", len(tp_streams))
+
+    a_sid = replay_app.tp_source_ids[0] if replay_app.tp_source_ids else None
+    if not a_sid:
+        logging.warning("No template Source ID object found")
+    all_sids = []
+    base_string = "replay-tp-srcid-100000"
+    start_number = int(re.search(r'(\d+)$', base_string).group(1))
+    for i in range(1, total_unique_planes + 1):
+        temp_sid = copy.deepcopy(a_sid)
+        temp_sid.id = re.sub(r'\d+$', f"{start_number + i:06d}", base_string)
+        temp_sid.sid = i
+        temp_sid.subsystem = "Trigger"
+        all_sids.append(temp_sid)
+        logging.debug("Created SID config: %s", temp_sid)
+    replay_app.tp_source_ids = all_sids
+    logging.info("Total of %i SID configs created", len(all_sids))
+
+    # No need for an if verbose check here, as logging level is already set
+    logging.debug("Committing updated configuration to database")
+
+    db_modules = conffwk.Configuration(f"oksconflibs:{path_str}/moduleconfs.data.xml")
+    db_trigger = conffwk.Configuration(f"oksconflibs:{path_str}/trigger-segment.data.xml")
+    for tpstream in tpmm_conf.tp_streams:
+        db_modules.update_dal(tpstream)
+    for sid in replay_app.tp_source_ids:
+        db_trigger.update_dal(sid)
+    db_trigger.update_dal(replay_app)
+    db_modules.update_dal(tpmm_conf)
+    db_modules.commit()
+    db_trigger.commit()
+
+def main():
+    parser = argparse.ArgumentParser(description="Process TPStream data and update configuration.")
+    parser.add_argument("--files", type=str, required=True, help="Path to TPStream files list.")
+    parser.add_argument("--config", type=str, default="config/daqsystemtest/example-configs.data.xml", help="Path to configuration file.")
+    parser.add_argument("--path", type=str, default="replay-run", help="Path for configuration output.")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging.")
+    args = parser.parse_args()
+
+    # Set up logging based on the verbose flag
+    setup_logging(args.verbose)
+
+    logging.info("Starting TPStream processing script")
+    cfg = setup_configuration(args.path, args.config, args.verbose)
+    replay_app = cfg.get_dals("TriggerReplayApplication")[0] # need a check here
+    logging.debug("Replay application configuration: %s", replay_app)
+    tpmm_conf = replay_app.tpmm_conf
+    logging.debug("TPMM configuration: %s", tpmm_conf)
+    channel_map = detchannelmaps.make_map(tpmm_conf.channel_map)
+    planes_to_filter = {plane.plane for plane in tpmm_conf.filter_out_plane}
+    logging.debug("Planes to filter: %s", planes_to_filter)
+
+    files = get_tpstream_files(args.files, args.verbose)
+    all_tpstream_files, rou_plane_data = extract_rous_and_planes(files, channel_map, planes_to_filter, args.verbose)
+    sorted_tpstream_files = update_tpstream_indices(all_tpstream_files)
+
+    total_unique_planes = rou_plane_data.total_plane_count()
+    logging.info("Total plane count: %d", total_unique_planes)
+    update_configuration(replay_app, tpmm_conf, sorted_tpstream_files, total_unique_planes, args.path, args.verbose)
+
+if __name__ == "__main__":
+    main()
 

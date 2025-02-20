@@ -90,8 +90,7 @@ private:
   triggeralgs::timestamp_t m_latest_last_tp_timestamp;
 
   // TP data
-  std::map<int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>>> read_tps(std::vector<std::string> filenames,
-                                                                                std::string rou);
+  std::map < std::string, std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> > > read_tps( std::map <int, std::string> );
 
   // Configuration
   const appmodel::TriggerPrimitiveMakerModuleConf* m_conf;
@@ -108,7 +107,6 @@ private:
   std::vector<int> m_filter_planes_ids;
   std::vector<int> m_planes_to_use;
   std::string extract_readout_unit(const std::string& filename);
-  std::pair<int, int> extract_run_and_bit(const std::string& filename);
   int extract_plane_number(const std::string& str);
 
   // opmon
