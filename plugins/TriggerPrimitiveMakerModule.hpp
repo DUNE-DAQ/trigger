@@ -73,7 +73,7 @@ private:
 
   // Threading
   void do_work(std::atomic<bool>&,
-               std::vector<std::vector<TriggerPrimitiveTypeAdapter>>& tpvs,
+               std::deque<std::vector<TriggerPrimitiveTypeAdapter>>& tpvs,
                std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>>& tp_sink,
                std::chrono::steady_clock::time_point earliest_timestamp_time);
   std::vector<std::unique_ptr<std::thread>> m_threads;
@@ -83,20 +83,22 @@ private:
   struct TPStream
   {
     std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>> tp_sink;
-    std::vector<std::vector<TriggerPrimitiveTypeAdapter>> tpvs;
+    std::deque<std::vector<TriggerPrimitiveTypeAdapter>> tpvs;
   };
   std::vector<TPStream> m_tp_streams;
+  std::map <int, std::string> m_tpstream_files;
   triggeralgs::timestamp_t m_earliest_first_tp_timestamp;
   triggeralgs::timestamp_t m_latest_last_tp_timestamp;
 
   // TP data
-  std::map < std::string, std::map< int, std::vector<std::vector<TriggerPrimitiveTypeAdapter>> > > read_tps( std::map <int, std::string> );
+  std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> read_tps( std::map <int, std::string> );
+  //           ROU             plane                   vectors of TPs (one per frag)
+  std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> m_all_tp_data;
 
   // Configuration
   const appmodel::TriggerPrimitiveMakerModuleConf* m_conf;
   double clocks_per_us;
   int m_loops;
-  daqdataformats::run_number_t m_run_number{ daqdataformats::TypeDefaults::s_invalid_run_number };
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::steady_clock::time_point m_run_start_time;
 
@@ -106,8 +108,6 @@ private:
   bool m_filter_planes;
   std::vector<int> m_filter_planes_ids;
   std::vector<int> m_planes_to_use;
-  std::string extract_readout_unit(const std::string& filename);
-  int extract_plane_number(const std::string& str);
 
   // opmon
   using metric_counter_type = uint64_t;
