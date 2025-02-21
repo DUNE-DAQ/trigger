@@ -256,6 +256,13 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((std::string)item))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayPlaneError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Cannot retrieve plane from file: " << item << " !",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
                        ReplayNoValidFiles,
                        appfwk::GeneralDAQModuleIssue,
                        "No valid files to use!",
