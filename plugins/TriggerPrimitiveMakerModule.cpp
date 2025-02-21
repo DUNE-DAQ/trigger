@@ -270,10 +270,10 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
 
   // Loop over each file
   for (const auto& a_file : m_tpstream_files) {
-    std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file;
     std::string filename = a_file.second;
 
     // Check file exists
+    std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file;
     try {
       input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
     } catch (const hdf5libs::FileOpenFailed& e) {
@@ -289,16 +289,17 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
 
     std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
     // Check there are fragments
-    if (fragment_paths.size() == 0) {
+    if (fragment_paths.empty()) {
       ers::error(dunedaq::trigger::ReplayNoFragments(ERS_HERE, get_name(), filename));
+      return {};
     }
 
     for (const auto& path : fragment_paths) {
       std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(path);
 
       // Check fragment has data
-      auto frag_data_size = frag->get_data_size();
-      if (frag_data_size == 0) {
+      auto frag_size = frag->get_data_size();
+      if (frag_size == 0) {
         ers::error(dunedaq::trigger::ReplayEmptyFrag(ERS_HERE, get_name(), filename));
         return {};
       }
@@ -327,11 +328,7 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       // hack for APA1, basically making plane 1 collection plane
       // decide whether we want this here long term
       if (ROU == "APA_P02SU") {
-        if (plane == 1) {
-          plane = 2;
-        } else if (plane == 2) {
-          plane = 1;
-        }
+        plane = (plane == 1) ? 2 : (plane == 2) ? 1 : plane;
       }
 
       // Check if this plane should be filtered
@@ -340,18 +337,23 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       }
 
       // Extract trigger primitives
+      size_t num_tps = frag_size / sizeof(trgdataformats::TriggerPrimitive);
       std::vector<TriggerPrimitiveTypeAdapter> tps;
-      size_t num_tps = frag->get_data_size() / sizeof(trgdataformats::TriggerPrimitive);
       tps.reserve(num_tps);
       for (size_t i = 0; i < num_tps; i++) {
-        trigger::TriggerPrimitiveTypeAdapter tpa;
-        tpa.tp = tp_array[i];
-        tps.push_back(std::move(tpa));
+        tps.emplace_back();
+        tps.back().tp = tp_array[i]; // Avoid unnecessary copies
       }
       frag.reset();
 
       // Efficient insertion into deque
       auto& data_deque = all_data[ROU][plane];
+
+      // Reserve space for the first vector in deque if size is known
+      if (data_deque.empty()) {
+        data_deque.push_back(std::vector<TriggerPrimitiveTypeAdapter>());
+        data_deque.back().reserve(num_tps); // Reserve space inside the vector
+      }
 
       // Fast path: Append if already in order
       if (data_deque.empty() || data_deque.back().front().tp.time_start <= tps.front().tp.time_start) {
@@ -373,8 +375,12 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
 
         data_deque.insert(insert_pos, std::move(tps));
       }
-    }
-  }
+
+      // cleanup
+      tps.clear();
+
+    } // frags loop
+  } // files loop
 
   return all_data;
 }
