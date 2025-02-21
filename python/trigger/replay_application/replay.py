@@ -88,6 +88,8 @@ def get_replay_app(cfg):
     """
     Retrieves the instance of TriggerReplayApplication from configuration files.
     If it does not exist, stops the script.
+    In theory, we could make one from scratch, however, there are so many objects to configure
+    that doing that externally is preferred.
     """
     replay_apps = cfg.get_dals("TriggerReplayApplication")
     if replay_apps:
