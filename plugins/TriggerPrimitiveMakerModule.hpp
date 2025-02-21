@@ -18,8 +18,8 @@
 #include "appmodel/TriggerPrimitiveMakerModule.hpp"
 #include "appmodel/TriggerPrimitiveMakerModuleConf.hpp"
 
-#include "appfwk/DAQModule.hpp"
 #include "appfwk/ConfigurationManager.hpp"
+#include "appfwk/DAQModule.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
@@ -86,12 +86,13 @@ private:
     std::deque<std::vector<TriggerPrimitiveTypeAdapter>> tpvs;
   };
   std::vector<TPStream> m_tp_streams;
-  std::map <int, std::string> m_tpstream_files;
+  std::map<int, std::string> m_tpstream_files;
   triggeralgs::timestamp_t m_earliest_first_tp_timestamp;
   triggeralgs::timestamp_t m_latest_last_tp_timestamp;
 
   // TP data
-  std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> read_tps( std::map <int, std::string> );
+  std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> read_tps(
+    std::map<int, std::string>);
   //           ROU             plane                   vectors of TPs (one per frag)
   std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> m_all_tp_data;
 

@@ -49,8 +49,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
     throw ReplayConfigurationProblem(ERS_HERE, get_name(), "Missing configuration!");
   }
 
-  clocks_per_us =
-    mcfg->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000.0;
+  clocks_per_us = mcfg->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000.0;
 
   // Get channel map
   m_channel_map_name = m_conf->get_channel_map();
@@ -103,10 +102,10 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
 
   m_earliest_first_tp_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
   m_latest_last_tp_timestamp = 0;
- 
+
   for (auto& stream : m_conf->get_tp_streams()) {
-    std::pair tmp_obj = std::make_pair( stream->get_index(), stream->get_filename() ); 
-    m_tpstream_files.insert( tmp_obj );
+    std::pair tmp_obj = std::make_pair(stream->get_index(), stream->get_filename());
+    m_tpstream_files.insert(tmp_obj);
   }
 
   // Print grouped files
@@ -116,20 +115,20 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
   }
 
   // Load data here
-  m_all_tp_data = read_tps( m_tpstream_files );
+  m_all_tp_data = read_tps(m_tpstream_files);
 
   TLOG() << "Loaded data";
   // Loop through the map and print sizes
   for (const auto& rou_pair : m_all_tp_data) {
-    const std::string& ROU = rou_pair.first;  // ROU name (key)
-    const auto& plane_map = rou_pair.second;  // Map of planes for this ROU
+    const std::string& ROU = rou_pair.first; // ROU name (key)
+    const auto& plane_map = rou_pair.second; // Map of planes for this ROU
 
     std::cout << "ROU: " << ROU << ", Number of planes: " << plane_map.size() << std::endl;
 
     // Loop through each plane for the current ROU
     for (const auto& plane_pair : plane_map) {
-      int plane = plane_pair.first;  // Plane number (key)
-      const auto& vector_of_tps = plane_pair.second;  // Vector of TriggerPrimitiveTypeAdapter vectors
+      int plane = plane_pair.first;                  // Plane number (key)
+      const auto& vector_of_tps = plane_pair.second; // Vector of TriggerPrimitiveTypeAdapter vectors
 
       std::cout << "  Plane: " << plane << ", Number of vectors: " << vector_of_tps.size() << std::endl;
     }
@@ -267,112 +266,117 @@ TriggerPrimitiveMakerModule::generate_opmon_data()
 std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>
 TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_files)
 {
-    std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> all_data;
+  std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> all_data;
 
-    // Loop over each file
-    for (const auto& a_file : m_tpstream_files) {
-        std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file;
-        std::string filename = a_file.second;
+  // Loop over each file
+  for (const auto& a_file : m_tpstream_files) {
+    std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file;
+    std::string filename = a_file.second;
 
-	// Check file exists
-  	try {
-    	    input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
-        } catch (const hdf5libs::FileOpenFailed& e) {
-            ers::error(dunedaq::trigger::ReplayFileProblem(ERS_HERE, get_name(), filename));
-            return {};
-        }
-
-        // Check that the file is a TimeSlice type
-        if (!input_file->is_timeslice_type()) {
-            ers::error(dunedaq::trigger::BadTPInputFile(ERS_HERE, get_name(), filename));
-            return {};
-        }
-
-	std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
-        // Check there are fragments
-	if (fragment_paths.size() == 0) {
-             ers::error(dunedaq::trigger::ReplayNoFragments(ERS_HERE, get_name(), filename));
-        }
-
-        for (const auto& path : fragment_paths) {
-            std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(path);
-            
-	    // Check fragment has data
-	    auto frag_data_size = frag->get_data_size();
-  	    if (frag_data_size == 0) {
-                ers::error(dunedaq::trigger::ReplayEmptyFrag(ERS_HERE, get_name(), filename));
-                return {};
-            }
-	    
-	    trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
-
-            // Get ROU and plane
-            auto& tp = tp_array[0];
-
-	    std::string ROU;
-	    try {
-                ROU = m_channel_map->get_tpc_element_from_offline_channel(tp.channel);
-	    } catch (...) {
-                ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
-                return {};
-            }
-
-	    int plane;
-	    try {
-                plane = m_channel_map->get_plane_from_offline_channel(tp.channel);
-	    } catch (...) {
-                ers::error(dunedaq::trigger::ReplayPlaneError(ERS_HERE, get_name(), filename));
-                return {};
-	    }
-
-	    // hack for APA1, basically making plane 1 collection plane
-	    // decide whether we want this here long term
-            if (ROU == "APA_P02SU") {
-                if (plane == 1) { plane = 2; } 
-		else if (plane == 2) { plane = 1; }
-            }
-
-            // Check if this plane should be filtered
-            if (std::find(m_filter_planes_ids.begin(), m_filter_planes_ids.end(), plane) != m_filter_planes_ids.end()) {
-                continue;
-            }
-
-            // Extract trigger primitives
-            std::vector<TriggerPrimitiveTypeAdapter> tps;
-            size_t num_tps = frag->get_data_size() / sizeof(trgdataformats::TriggerPrimitive);
-            tps.reserve(num_tps);
-            for (size_t i = 0; i < num_tps; i++) {
-                trigger::TriggerPrimitiveTypeAdapter tpa;
-                tpa.tp = tp_array[i];
-                tps.push_back(std::move(tpa));
-            }
-            frag.reset();
-
-            // Efficient insertion into deque
-            auto& data_deque = all_data[ROU][plane];
-
-            // Fast path: Append if already in order
-            if (data_deque.empty() || data_deque.back().front().tp.time_start <= tps.front().tp.time_start) {
-                data_deque.push_back(std::move(tps));
-            }
-            // Fast path: Prepend if this vector is older than the first element
-            else if (data_deque.front().front().tp.time_start >= tps.front().tp.time_start) {
-                data_deque.push_front(std::move(tps));
-            }
-            // General case: Insert using binary search (O(log N) search + O(1) insertion)
-            else {
-                auto insert_pos = std::lower_bound(
-                    data_deque.begin(), data_deque.end(), tps,
-                    [](const std::vector<TriggerPrimitiveTypeAdapter>& a, const std::vector<TriggerPrimitiveTypeAdapter>& b) {
-                        return a.front().tp.time_start < b.front().tp.time_start;
-                    });
-
-                data_deque.insert(insert_pos, std::move(tps));
-            }
-        }
+    // Check file exists
+    try {
+      input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
+    } catch (const hdf5libs::FileOpenFailed& e) {
+      ers::error(dunedaq::trigger::ReplayFileProblem(ERS_HERE, get_name(), filename));
+      return {};
     }
 
-    return all_data;
+    // Check that the file is a TimeSlice type
+    if (!input_file->is_timeslice_type()) {
+      ers::error(dunedaq::trigger::BadTPInputFile(ERS_HERE, get_name(), filename));
+      return {};
+    }
+
+    std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
+    // Check there are fragments
+    if (fragment_paths.size() == 0) {
+      ers::error(dunedaq::trigger::ReplayNoFragments(ERS_HERE, get_name(), filename));
+    }
+
+    for (const auto& path : fragment_paths) {
+      std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(path);
+
+      // Check fragment has data
+      auto frag_data_size = frag->get_data_size();
+      if (frag_data_size == 0) {
+        ers::error(dunedaq::trigger::ReplayEmptyFrag(ERS_HERE, get_name(), filename));
+        return {};
+      }
+
+      trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
+
+      // Get ROU and plane
+      auto& tp = tp_array[0];
+
+      std::string ROU;
+      try {
+        ROU = m_channel_map->get_tpc_element_from_offline_channel(tp.channel);
+      } catch (...) {
+        ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
+        return {};
+      }
+
+      int plane;
+      try {
+        plane = m_channel_map->get_plane_from_offline_channel(tp.channel);
+      } catch (...) {
+        ers::error(dunedaq::trigger::ReplayPlaneError(ERS_HERE, get_name(), filename));
+        return {};
+      }
+
+      // hack for APA1, basically making plane 1 collection plane
+      // decide whether we want this here long term
+      if (ROU == "APA_P02SU") {
+        if (plane == 1) {
+          plane = 2;
+        } else if (plane == 2) {
+          plane = 1;
+        }
+      }
+
+      // Check if this plane should be filtered
+      if (std::find(m_filter_planes_ids.begin(), m_filter_planes_ids.end(), plane) != m_filter_planes_ids.end()) {
+        continue;
+      }
+
+      // Extract trigger primitives
+      std::vector<TriggerPrimitiveTypeAdapter> tps;
+      size_t num_tps = frag->get_data_size() / sizeof(trgdataformats::TriggerPrimitive);
+      tps.reserve(num_tps);
+      for (size_t i = 0; i < num_tps; i++) {
+        trigger::TriggerPrimitiveTypeAdapter tpa;
+        tpa.tp = tp_array[i];
+        tps.push_back(std::move(tpa));
+      }
+      frag.reset();
+
+      // Efficient insertion into deque
+      auto& data_deque = all_data[ROU][plane];
+
+      // Fast path: Append if already in order
+      if (data_deque.empty() || data_deque.back().front().tp.time_start <= tps.front().tp.time_start) {
+        data_deque.push_back(std::move(tps));
+      }
+      // Fast path: Prepend if this vector is older than the first element
+      else if (data_deque.front().front().tp.time_start >= tps.front().tp.time_start) {
+        data_deque.push_front(std::move(tps));
+      }
+      // General case: Insert using binary search (O(log N) search + O(1) insertion)
+      else {
+        auto insert_pos = std::lower_bound(
+          data_deque.begin(),
+          data_deque.end(),
+          tps,
+          [](const std::vector<TriggerPrimitiveTypeAdapter>& a, const std::vector<TriggerPrimitiveTypeAdapter>& b) {
+            return a.front().tp.time_start < b.front().tp.time_start;
+          });
+
+        data_deque.insert(insert_pos, std::move(tps));
+      }
+    }
+  }
+
+  return all_data;
 }
 
 void
