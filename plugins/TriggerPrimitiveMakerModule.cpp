@@ -43,15 +43,18 @@ TriggerPrimitiveMakerModule::TriggerPrimitiveMakerModule(const std::string& name
 void
 TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
+  // ### Access configuration
   auto mtrg = mcfg->get_dal<appmodel::TriggerPrimitiveMakerModule>(get_name());
   m_conf = mtrg->get_configuration();
   if (!m_conf) {
     throw ReplayConfigurationProblem(ERS_HERE, get_name(), "Missing configuration!");
   }
 
-  clocks_per_us = mcfg->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000.0;
+  // ### Extract relevant objects
+  // Clock speed
+  clocks_per_us = mcfg->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000.0; // please keep the '.' to make this float
 
-  // Get channel map
+  // Channel map
   m_channel_map_name = m_conf->get_channel_map();
   if (m_channel_map_name.empty()) {
     throw ReplayConfigurationProblem(ERS_HERE, get_name(), "No Channel map provided!");
@@ -65,6 +68,7 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
     ers::error(dunedaq::trigger::ReplayChannelMapProblem(ERS_HERE, get_name(), m_channel_map_name));
   }
 
+  // Loops
   m_loops = m_conf->get_number_of_loops();
 
   // Plane filtering
@@ -81,28 +85,21 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
     }
   }
 
-  // Find planes to use
-  if (m_filter_planes) {
-    for (int plane = 0; plane < 3; plane++) {
-      if (std::find(m_filter_planes_ids.begin(), m_filter_planes_ids.end(), plane) == m_filter_planes_ids.end()) {
-        m_planes_to_use.push_back(plane);
-      }
-    }
-  } else {
-    m_planes_to_use = { 0, 1, 2 };
-  }
-
-  // For each of the streams that are specified in the config, we extract ROU, and sort them.
-  // Then we create an outgoing sink for each unique ROU + plane (if not filtered) combination.
+  // For each of the files that are specified in the config, we extract data and sort them.
+  // Data is sorted by ROU -> Plane (if not filtered). Multiple files can contribute to each.
+  // Then we create an outgoing sink for each unique ROU + plane combination.
   // We also keep track of the total timestamp range of all the streams, so we can keep
   // the timestamps of the multiple streams in sync when replaying,
-  // even when they don't all start or end at the same time
+  // even when they don't all start or end at the same time.
 
+  // Output queues
   auto con = mtrg->get_outputs();
 
+  // Global times
   m_earliest_first_tp_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
   m_latest_last_tp_timestamp = 0;
 
+  // Loading sorted TP stream files
   for (auto& stream : m_conf->get_tp_streams()) {
     std::pair tmp_obj = std::make_pair(stream->get_index(), stream->get_filename());
     m_tpstream_files.insert(tmp_obj);
@@ -116,43 +113,25 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
 
   // Load data here
   m_all_tp_data = read_tps(m_tpstream_files);
-
-  TLOG() << "Loaded data";
-  // Loop through the map and print sizes
-  for (const auto& rou_pair : m_all_tp_data) {
-    const std::string& ROU = rou_pair.first; // ROU name (key)
-    const auto& plane_map = rou_pair.second; // Map of planes for this ROU
-
-    std::cout << "ROU: " << ROU << ", Number of planes: " << plane_map.size() << std::endl;
-
-    // Loop through each plane for the current ROU
-    for (const auto& plane_pair : plane_map) {
-      int plane = plane_pair.first;                  // Plane number (key)
-      const auto& vector_of_tps = plane_pair.second; // Vector of TriggerPrimitiveTypeAdapter vectors
-
-      std::cout << "  Plane: " << plane << ", Number of vectors: " << vector_of_tps.size() << std::endl;
-
-      for (const auto& vec : vector_of_tps) {
-        std::cout << vec.size() << std::endl;
-      }
-    }
+  if (m_tpstream_files.size() == 0 || m_all_tp_data.size() == 0) {
+    ers::error(dunedaq::trigger::ReplayNoValidFiles(ERS_HERE, get_name()));
   }
 
   // Data loaded and sorted.
   // Now we create streams.
-  // loop over ROUs
   int global_iter = 0;
+  // Loop over ROUs
   for (const auto& rou_pair : m_all_tp_data) {
     const std::string& ROU = rou_pair.first;
     const auto& plane_map = rou_pair.second;
-    // loop over planes
     int plane_iter = 0;
+    // Loop over Planes
     for (const auto& plane_pair : plane_map) {
       int plane = plane_pair.first;
       const auto& vector_of_tps = plane_pair.second;
 
       TPStream this_stream;
-      TLOG() << "Stream: " << (global_iter + plane_iter) << "; ROU: " << ROU << "; plane: " << plane << "; TP sink is "
+      TLOG_DEBUG(1) << "Stream: " << (global_iter + plane_iter) << "; ROU: " << ROU << "; plane: " << plane << "; TP sink is "
              << con[global_iter + plane_iter]->class_name() << "@" << con[global_iter + plane_iter]->UID();
       this_stream.tp_sink =
         get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[global_iter + plane_iter]->UID());
@@ -197,6 +176,7 @@ TriggerPrimitiveMakerModule::do_start(const nlohmann::json& /*obj*/)
   auto earliest_timestamp_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(100);
   m_run_start_time = std::chrono::steady_clock::now();
 
+  // Start threads for each stream
   for (auto& stream : m_tp_streams) {
     m_threads.push_back(std::make_unique<std::thread>(&TriggerPrimitiveMakerModule::do_work,
                                                       this,
@@ -205,7 +185,6 @@ TriggerPrimitiveMakerModule::do_start(const nlohmann::json& /*obj*/)
                                                       std::ref(stream.tp_sink),
                                                       earliest_timestamp_time));
   }
-
   for (size_t i = 0; i < m_threads.size(); i++) {
     std::string name("replay-");
     name += std::to_string(i);
@@ -226,7 +205,7 @@ TriggerPrimitiveMakerModule::do_stop(const nlohmann::json& /*args*/)
     }
   }
   m_threads.clear();
-
+ 
   auto run_end_time = std::chrono::steady_clock::now();
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - m_run_start_time).count();
   float rate_hz = 1e3 * static_cast<float>(m_tpv_made_count) / time_ms;
@@ -251,7 +230,6 @@ TriggerPrimitiveMakerModule::do_scrap(const nlohmann::json& /*args*/)
   m_threads.clear();
   m_all_tp_data.clear();
   m_filter_planes_ids.clear();
-  m_planes_to_use.clear();
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
 
@@ -267,6 +245,13 @@ TriggerPrimitiveMakerModule::generate_opmon_data()
   this->publish(std::move(info));
 }
 
+// This is the heavy-lifting function of TPMM
+// Goes over all provided TPstream files
+// Does basic file checks
+// Extracts needed data
+// Sorts data per ROU and plane
+// Additional data-related checks
+// Plane filtering happens here
 std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>
 TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_files)
 {
@@ -298,6 +283,13 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       return {};
     }
 
+    // Local counters
+    std::set<std::string> local_rous;
+    std::set<int> local_planes;
+    int local_tp_vectors = 0;
+    int local_tps = 0;
+
+    // Loop over paths/fragments
     for (const auto& path : fragment_paths) {
       std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(path);
 
@@ -305,10 +297,17 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       auto frag_size = frag->get_data_size();
       if (frag_size == 0) {
         ers::error(dunedaq::trigger::ReplayEmptyFrag(ERS_HERE, get_name(), filename));
-        return {};
+        continue;
       }
 
       trgdataformats::TriggerPrimitive* tp_array = static_cast<trgdataformats::TriggerPrimitive*>(frag->get_data());
+      size_t num_tps = frag_size / sizeof(trgdataformats::TriggerPrimitive);
+
+      // Check there is TP data
+      if (num_tps < 1) {
+        ers::error(dunedaq::trigger::ReplayNoValidTPs(ERS_HERE, get_name(), filename));
+        continue;
+      }
 
       // Get ROU and plane
       auto& tp = tp_array[0];
@@ -316,6 +315,7 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       std::string ROU;
       try {
         ROU = m_channel_map->get_tpc_element_from_offline_channel(tp.channel);
+	local_rous.insert(ROU);
       } catch (...) {
         ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
         continue;
@@ -324,6 +324,7 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       int plane;
       try {
         plane = m_channel_map->get_plane_from_offline_channel(tp.channel);
+	local_planes.insert(plane);
       } catch (...) {
         ers::error(dunedaq::trigger::ReplayPlaneError(ERS_HERE, get_name(), filename));
         continue;
@@ -342,7 +343,6 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
 
       // Extract trigger primitives
       // Create a vector of the correct size, and directly associate it with tp_array
-      size_t num_tps = frag_size / sizeof(trgdataformats::TriggerPrimitive);
       std::vector<TriggerPrimitiveTypeAdapter> tps(reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array),
                                                    reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array) + num_tps);
 
@@ -353,7 +353,6 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       if (data_deque.empty()) {
         data_deque.push_back(std::move(tps));
       }
-
       // Append if already in order
       else if (data_deque.back().front().tp.time_start <= tps.front().tp.time_start) {
         data_deque.push_back(std::move(tps));
@@ -377,8 +376,39 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       data_deque.back().shrink_to_fit(); // Reclaims unused memory
       frag.reset();
 
+      local_tp_vectors++;
+      local_tps += num_tps;
     } // frags loop
+  
+    TLOG() << "Data loading summary (end of file):";
+    TLOG() << "------------------------------";
+    TLOG() << "File: " << filename;
+    TLOG() << "ROUs: " << local_rous.size();
+    TLOG() << "Planes: " << local_planes.size();
+    TLOG() << "TP vectors: " << local_tp_vectors;
+    TLOG() << "Total read TPs: " << local_tps;
+    TLOG();
+  
   } // files loop
+ 
+  TLOG() << "Data loading summary (all):";
+  TLOG() << "------------------------------";
+  TLOG() << "Files: " << m_tpstream_files.size();  
+  // Loop through the map and print sizes
+  for (const auto& rou_pair : all_data) {
+    const std::string& ROU = rou_pair.first; // ROU name (key)
+    const auto& plane_map = rou_pair.second; // Map of planes for this ROU
+
+    TLOG() << "ROU: " << ROU << ", Number of planes: " << plane_map.size();
+
+    // Loop through each plane for the current ROU
+    for (const auto& plane_pair : plane_map) {
+      int plane = plane_pair.first;                  // Plane number (key)
+      const auto& vector_of_tps = plane_pair.second; // Vector of TriggerPrimitiveTypeAdapter vectors
+      TLOG() << "  Plane: " << plane << ", Number of vectors: " << vector_of_tps.size();
+    }
+  }
+  TLOG();
 
   return all_data;
 }
@@ -399,18 +429,19 @@ TriggerPrimitiveMakerModule::do_work(
   auto const total_stream_duration = m_latest_last_tp_timestamp - m_earliest_first_tp_timestamp;
   auto run_start_time = std::chrono::steady_clock::now();
 
-  // local counters
+  // Local counters
   int local_tp_made = 0;
   int local_tpv_made = 0;
   int local_tpv_failed = 0;
 
   while (running_flag.load()) {
 
-    // looping logic
+    // Looping logic
     if (current_iteration >= m_loops) {
       break;
     }
 
+    // Going over TP vectors
     for (auto& tpv : tpvs) {
 
       if (!running_flag.load()) {
@@ -431,7 +462,7 @@ TriggerPrimitiveMakerModule::do_work(
         next_tpv_send_time = prev_tpv_send_time + std::chrono::microseconds(wait_time_us);
       }
 
-      // check running_flag periodically so we can stop punctually
+      // Check running_flag periodically so we can stop punctually
       auto slice_period = std::chrono::microseconds(m_conf->get_maximum_wait_time_us());
       auto next_slice_send_time = prev_tpv_send_time + slice_period;
       bool break_flag = false;
@@ -447,16 +478,17 @@ TriggerPrimitiveMakerModule::do_work(
         std::this_thread::sleep_until(next_tpv_send_time);
       }
 
+      // Update times
       prev_tpv_send_time = next_tpv_send_time;
       prev_tpv_start_time = tpv.front().tp.time_start;
 
-      // update counters
+      // Update counters
       m_tpv_made_count++;
       m_tp_made_count += tpv.size();
       local_tpv_made++;
       local_tp_made += tpv.size();
 
-      // actually send data
+      // Actually send data
       try {
         if (m_loops > 1) {
           auto copy = tpv;

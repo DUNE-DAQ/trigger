@@ -272,17 +272,9 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 ERS_DECLARE_ISSUE_BASE(trigger,
                        ReplayNoValidTPs,
                        appfwk::GeneralDAQModuleIssue,
-                       "File: " << item << " does not contain valid TPs!",
+                       "TP array does not contain valid TPs!",
                        ((std::string)name),
-                       ((std::string)item))
-
-ERS_DECLARE_ISSUE_BASE(trigger,
-                       ReplayNoDataAfterFilter,
-                       appfwk::GeneralDAQModuleIssue,
-                       "File: " << item << ", no TPs found after plane " << plane << " filtering!",
-                       ((std::string)name),
-                       ((std::string)item)
-		       ((int)plane))
+                       ERS_EMPTY)
 
 } // namespace dunedaq
 

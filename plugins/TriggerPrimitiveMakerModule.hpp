@@ -108,7 +108,6 @@ private:
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
   bool m_filter_planes;
   std::vector<int> m_filter_planes_ids;
-  std::vector<int> m_planes_to_use;
 
   // opmon
   using metric_counter_type = uint64_t;
