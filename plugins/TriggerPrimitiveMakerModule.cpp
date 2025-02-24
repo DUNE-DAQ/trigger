@@ -343,8 +343,8 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       // Extract trigger primitives
       // Create a vector of the correct size, and directly associate it with tp_array
       size_t num_tps = frag_size / sizeof(trgdataformats::TriggerPrimitive);
-      std::vector<TriggerPrimitiveTypeAdapter> tps(reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array), 
-                                             reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array) + num_tps);
+      std::vector<TriggerPrimitiveTypeAdapter> tps(reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array),
+                                                   reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array) + num_tps);
 
       // Efficient insertion into deque
       auto& data_deque = all_data[ROU][plane];
