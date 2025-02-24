@@ -41,7 +41,7 @@ DataSubscriberModule::DataSubscriberModule(const std::string& name)
 {
 
   inherited_mod::register_command("start", &DataSubscriberModule::do_start);
-  inherited_mod::register_command("drain_dataflow", &DataSubscriberModule::do_stop);
+  inherited_mod::register_command("stop_trigger_sources", &DataSubscriberModule::do_stop);
 }
 
 void
