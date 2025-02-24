@@ -131,6 +131,10 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
       const auto& vector_of_tps = plane_pair.second; // Vector of TriggerPrimitiveTypeAdapter vectors
 
       std::cout << "  Plane: " << plane << ", Number of vectors: " << vector_of_tps.size() << std::endl;
+
+      for (const auto& vec : vector_of_tps) {
+        std::cout << vec.size() << std::endl;
+      }
     }
   }
 
@@ -314,7 +318,7 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
         ROU = m_channel_map->get_tpc_element_from_offline_channel(tp.channel);
       } catch (...) {
         ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
-        return {};
+        continue;
       }
 
       int plane;
@@ -322,7 +326,7 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
         plane = m_channel_map->get_plane_from_offline_channel(tp.channel);
       } catch (...) {
         ers::error(dunedaq::trigger::ReplayPlaneError(ERS_HERE, get_name(), filename));
-        return {};
+        continue;
       }
 
       // hack for APA1, basically making plane 1 collection plane
@@ -337,29 +341,24 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
       }
 
       // Extract trigger primitives
+      // Create a vector of the correct size, and directly associate it with tp_array
       size_t num_tps = frag_size / sizeof(trgdataformats::TriggerPrimitive);
-      std::vector<TriggerPrimitiveTypeAdapter> tps;
-      tps.reserve(num_tps);
-      for (size_t i = 0; i < num_tps; i++) {
-        tps.emplace_back();
-        tps.back().tp = tp_array[i]; // Avoid unnecessary copies
-      }
-      frag.reset();
+      std::vector<TriggerPrimitiveTypeAdapter> tps(reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array), 
+                                             reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array) + num_tps);
 
       // Efficient insertion into deque
       auto& data_deque = all_data[ROU][plane];
 
-      // Reserve space for the first vector in deque if size is known
+      // First insertion if deque is empty
       if (data_deque.empty()) {
-        data_deque.push_back(std::vector<TriggerPrimitiveTypeAdapter>());
-        data_deque.back().reserve(num_tps); // Reserve space inside the vector
-      }
-
-      // Fast path: Append if already in order
-      if (data_deque.empty() || data_deque.back().front().tp.time_start <= tps.front().tp.time_start) {
         data_deque.push_back(std::move(tps));
       }
-      // Fast path: Prepend if this vector is older than the first element
+
+      // Append if already in order
+      else if (data_deque.back().front().tp.time_start <= tps.front().tp.time_start) {
+        data_deque.push_back(std::move(tps));
+      }
+      // Prepend if this vector is older than the first element
       else if (data_deque.front().front().tp.time_start >= tps.front().tp.time_start) {
         data_deque.push_front(std::move(tps));
       }
@@ -375,9 +374,8 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
 
         data_deque.insert(insert_pos, std::move(tps));
       }
-
-      // cleanup
-      tps.clear();
+      data_deque.back().shrink_to_fit(); // Reclaims unused memory
+      frag.reset();
 
     } // frags loop
   } // files loop
