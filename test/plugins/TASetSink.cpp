@@ -102,7 +102,7 @@ TASetSink::do_work()
         for (auto const& tp : ta.inputs) {
           m_outfile << "\t" << tp.time_start << "\t" << tp.time_over_threshold << "\t" << tp.time_peak << "\t"
                     << tp.channel << "\t" << tp.adc_integral << "\t" << tp.adc_peak << "\t" << tp.detid << "\t"
-                    << tp.type << "\t" << std::endl;
+                    << "\t" << std::endl;
         }
         m_outfile << std::endl;
       }
