@@ -84,7 +84,7 @@ object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 conf_dict = data_classes.drunc_config()
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
-conf_dict.session = "tdoutsidewindow"
+conf_dict.session = "tcoutsidewindow"
 conf_dict.tpg_enabled = False
 conf_dict.fake_hsi_enabled = True
 
