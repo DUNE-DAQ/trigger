@@ -223,6 +223,26 @@ def update_tpstream_dal_objects(a_tp_stream, cfg, sorted_tpstream_files):
         logging.debug("Created TPStream: %s", temp_tp_stream)
     return tp_streams
 
+def update_planes_dal_objects(a_plane, cfg, planes_to_filter):
+    """
+    Creates PlaneNumberConf dal objects for the provided set of planes.
+    Additional safety to create these from scratch if an example instance is not found.
+    """
+    if not a_plane:
+        logging.warning("No template PlaneNumberConf object found")
+        # get template and create from scratch
+        a_plane_template = cfg.create_obj('PlaneNumberConf', "template-PlaneNumberConf")
+        cache = {"PlaneNumberConf": {}}
+        a_plane = a_plane_template.as_dal(cache)
+    planes = []
+    for i in range(0, len(planes_to_filter)):
+        temp_plane = copy.deepcopy(a_plane)
+        temp_plane.id = f"replay-plane-filter-{i+1}"
+        temp_plane.plane = planes_to_filter[i]
+        planes.append(temp_plane)
+        logging.debug("Created PlaneNumberConf: %s", temp_plane)
+    return planes
+
 def update_sid_dal_objects(a_sid, cfg, total_unique_planes):
     """
     Creates SourceIDConf dal objects needed for each unique plane.
@@ -246,12 +266,14 @@ def update_sid_dal_objects(a_sid, cfg, total_unique_planes):
         logging.debug("Created SID config: %s", temp_sid)
     return all_sids
 
-def update_configuration(cfg, replay_app, tpmm_conf, sorted_tpstream_files, total_unique_planes, path_str, verbose: bool):
+def update_configuration(cfg, replay_app, tpmm_conf, sorted_tpstream_files, total_unique_planes, planes_to_filter, path_str, verbose: bool):
     """
     Takes all changes and updates the local database files.
     [total_planes in TPMM
      tp_streams in TPMM
-     tp_source_ids in replay]
+     planes in TPMM
+     tp_source_ids in replay
+     ]
     """
     logging.info("Updating configuration with new TPStream data")
     tpmm_conf.total_planes = total_unique_planes
@@ -259,6 +281,13 @@ def update_configuration(cfg, replay_app, tpmm_conf, sorted_tpstream_files, tota
     a_tp_stream = tpmm_conf.tp_streams[0] if tpmm_conf.tp_streams else None
     tpmm_conf.tp_streams = update_tpstream_dal_objects(a_tp_stream, cfg, sorted_tpstream_files)
     logging.info("Total of %i TPStream configs created", len(tpmm_conf.tp_streams))
+
+    if planes_to_filter:
+        a_plane = tpmm_conf.filter_out_plane[0] if tpmm_conf.filter_out_plane else None
+        tpmm_conf.filter_out_plane = update_planes_dal_objects(a_plane, cfg, list(planes_to_filter))
+        logging.info("Total of %i PlaneNumberConf configs created", len(tpmm_conf.filter_out_plane))
+    else:
+        tpmm_conf.filter_out_plane = []
 
     a_sid = replay_app.tp_source_ids[0] if replay_app.tp_source_ids else None
     replay_app.tp_source_ids = update_sid_dal_objects(a_sid, cfg, total_unique_planes)
@@ -271,6 +300,8 @@ def update_configuration(cfg, replay_app, tpmm_conf, sorted_tpstream_files, tota
     db_trigger = conffwk.Configuration(f"oksconflibs:{path_str}/trigger-segment.data.xml")
     for tpstream in tpmm_conf.tp_streams:
         db_modules.update_dal(tpstream)
+    for plane in tpmm_conf.filter_out_plane or []:
+        db_modules.update_dal(plane)
     for sid in replay_app.tp_source_ids:
         db_trigger.update_dal(sid)
     db_trigger.update_dal(replay_app)
@@ -283,6 +314,7 @@ def update_configuration(cfg, replay_app, tpmm_conf, sorted_tpstream_files, tota
 def main():
     parser = argparse.ArgumentParser(description="To be used with Trigger Replay Application. Process TPStream data and update configuration.")
     parser.add_argument("--files", type=str, required=True, help="Text file with (full) paths to HDF5 TPStream file location. One per line.")
+    parser.add_argument("--filter-planes", type=int, nargs='*', choices=[0, 1, 2], default=[], help="List of planes to filter out. Can be empty or contain any combination of 0 (U), 1 (V), and 2 (X).")
     parser.add_argument("--config", type=str, default="config/daqsystemtest/example-configs.data.xml", help="Path to OKS configuration file.")
     parser.add_argument("--path", type=str, default="replay-run", help="Path for local output for configuration files.")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging.")
@@ -301,7 +333,7 @@ def main():
     tpmm_conf = replay_app.tpmm_conf
     logging.debug("TPMM configuration: %s", tpmm_conf)
     channel_map = detchannelmaps.make_map(tpmm_conf.channel_map)
-    planes_to_filter = {plane.plane for plane in tpmm_conf.filter_out_plane}
+    planes_to_filter = set(args.filter_planes)
     logging.debug("Planes to filter: %s", planes_to_filter)
 
     files = get_tpstream_files(args.files, args.verbose)
@@ -311,7 +343,7 @@ def main():
 
     total_unique_planes = rou_plane_data.total_plane_count()
     logging.info("Total plane count: %d", total_unique_planes)
-    update_configuration(cfg, replay_app, tpmm_conf, sorted_tpstream_files, total_unique_planes, args.path, args.verbose)
+    update_configuration(cfg, replay_app, tpmm_conf, sorted_tpstream_files, total_unique_planes, planes_to_filter, args.path, args.verbose)
 
 if __name__ == "__main__":
     main()
