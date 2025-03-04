@@ -62,8 +62,8 @@ time_serialization(int tps_per_set)
 
   for (int i = 0; i < N; ++i) {
     // NOLINTNEXTLINE(build/unsigned)
-    std::vector<uint8_t> bytes = dunedaq::serialization::serialize(sets[i], dunedaq::serialization::kMsgPack);
-    dunedaq::trigger::TPSet set_recv = dunedaq::serialization::deserialize<dunedaq::trigger::TPSet>(bytes);
+    std::vector<uint8_t> bytes = dunedaq::serialization::serialize_msgpack(sets[i]);
+    dunedaq::trigger::TPSet set_recv = dunedaq::serialization::deserialize_msgpack<dunedaq::trigger::TPSet>(bytes);
     total += set_recv.seqno;
   }
   uint64_t end_time = now_us(); // NOLINT(build/unsigned)
@@ -86,6 +86,6 @@ main()
 
   dunedaq::trigger::TASet taset;
   // NOLINTNEXTLINE(build/unsigned)
-  std::vector<uint8_t> bytes = dunedaq::serialization::serialize(taset, dunedaq::serialization::kMsgPack);
-  dunedaq::trigger::TASet set_recv = dunedaq::serialization::deserialize<dunedaq::trigger::TASet>(bytes);
+  std::vector<uint8_t> bytes = dunedaq::serialization::serialize_msgpack(taset);
+  dunedaq::trigger::TASet set_recv = dunedaq::serialization::deserialize_msgpack<dunedaq::trigger::TASet>(bytes);
 }
