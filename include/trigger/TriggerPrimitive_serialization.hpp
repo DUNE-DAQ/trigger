@@ -13,7 +13,7 @@
 #include "triggeralgs/TriggerPrimitive.hpp"
 #include "trgdataformats/Types.hpp"
 
-DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(dunedaq::trgdataformats,
+DUNE_DAQ_SERIALIZE_NON_INTRUSIVE_MSGPACK(dunedaq::trgdataformats,
                                  TriggerPrimitive,
                                  time_start,
                                  time_peak,

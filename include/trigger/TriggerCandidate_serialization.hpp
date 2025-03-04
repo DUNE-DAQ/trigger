@@ -22,7 +22,7 @@ MSGPACK_ADD_ENUM(triggeralgs::TriggerCandidate::Type)
 MSGPACK_ADD_ENUM(triggeralgs::TriggerCandidate::Algorithm)
 
                                  
-DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(triggeralgs,
+DUNE_DAQ_SERIALIZE_NON_INTRUSIVE_MSGPACK(triggeralgs,
                                  TriggerCandidate,
                                  time_start,
                                  time_end,
