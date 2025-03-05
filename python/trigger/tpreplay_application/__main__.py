@@ -100,6 +100,19 @@ def get_tpreplay_app(cfg):
         logging.error("No 'TPReplayApplication' DAL objects found.")
         sys.exit(1)
 
+def load_channel_map(channel_map_string):
+    """
+    Tries to create a channel map using the provided string name.
+    If it fails, prints the error and exits.
+    """
+    try: 
+        channel_map = detchannelmaps.make_map(channel_map_string)
+        logging.debug(f"Channel map '{channel_map_string}' successfully created.")
+        return channel_map
+    except Exception as e:
+        print(f"Failed to create the channel map '{channel_map_string}'. Error: {str(e)}")
+        sys.exit(1)
+
 def get_tpstream_files(filename: str, verbose: bool) -> List[str]:
     """
     Reads in names of tpstream files from provided text file.
@@ -312,9 +325,13 @@ def update_configuration(cfg, tpreplay_app, tprm_conf, sorted_tpstream_files, to
     cleanup()
 
 def main():
-    parser = argparse.ArgumentParser(description="To be used with TP Replay Application. Process TPStream data and update configuration.")
+    parser = argparse.ArgumentParser(description="To be used with TP Replay Application. Process TPStream data and update configuration.",
+            formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--files", type=str, required=True, help="Text file with (full) paths to HDF5 TPStream file location. One per line.")
     parser.add_argument("--filter-planes", type=int, nargs='*', choices=[0, 1, 2], default=[], help="List of planes to filter out. Can be empty or contain any combination of 0 (U), 1 (V), and 2 (X).")
+    parser.add_argument("--channel-map", type=str, default='PD2HDChannelMap', 
+                        help="Specify the channel map to use. Available examples include: PD2HDChannelMap, PD2VDBottomTPCChannelMap, VDColdboxChannelMap, HDColdboxChannelMap.\n"
+                             "For more details, visit: https://github.com/DUNE-DAQ/detchannelmaps/blob/develop/docs/channel-maps-table.md")
     parser.add_argument("--config", type=str, default="config/daqsystemtest/example-configs.data.xml", help="Path to OKS configuration file.")
     parser.add_argument("--path", type=str, default="tpreplay-run", help="Path for local output for configuration files.")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging.")
@@ -332,7 +349,7 @@ def main():
     logging.debug("TP Replay application configuration: %s", tpreplay_app)
     tprm_conf = tpreplay_app.tprm_conf
     logging.debug("TPRM configuration: %s", tprm_conf)
-    channel_map = detchannelmaps.make_map(tprm_conf.channel_map)
+    channel_map = load_channel_map(args.channel_map)
     planes_to_filter = set(args.filter_planes)
     logging.debug("Planes to filter: %s", planes_to_filter)
 
