@@ -52,7 +52,8 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 
   // ### Extract relevant objects
   // Clock speed
-  clocks_per_us = mcfg->session()->get_detector_configuration()->get_clock_speed_hz() / 1'000'000.0; // please keep the '.' to make this float
+  clocks_per_us = mcfg->session()->get_detector_configuration()->get_clock_speed_hz() /
+                  1'000'000.0; // please keep the '.' to make this float
 
   // Channel map
   m_channel_map_name = m_conf->get_channel_map();
@@ -131,8 +132,9 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
       const auto& vector_of_tps = plane_pair.second;
 
       TPStream this_stream;
-      TLOG_DEBUG(1) << "Stream: " << (global_iter + plane_iter) << "; ROU: " << ROU << "; plane: " << plane << "; TP sink is "
-             << con[global_iter + plane_iter]->class_name() << "@" << con[global_iter + plane_iter]->UID();
+      TLOG_DEBUG(1) << "Stream: " << (global_iter + plane_iter) << "; ROU: " << ROU << "; plane: " << plane
+                    << "; TP sink is " << con[global_iter + plane_iter]->class_name() << "@"
+                    << con[global_iter + plane_iter]->UID();
       this_stream.tp_sink =
         get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[global_iter + plane_iter]->UID());
 
@@ -205,7 +207,7 @@ TPReplayModule::do_stop(const nlohmann::json& /*args*/)
     }
   }
   m_threads.clear();
- 
+
   auto run_end_time = std::chrono::steady_clock::now();
   auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(run_end_time - m_run_start_time).count();
   float rate_hz = 1e3 * static_cast<float>(m_tpv_made_count) / time_ms;
@@ -315,7 +317,7 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
       std::string ROU;
       try {
         ROU = m_channel_map->get_tpc_element_from_offline_channel(tp.channel);
-	local_rous.insert(ROU);
+        local_rous.insert(ROU);
       } catch (...) {
         ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
         continue;
@@ -324,7 +326,7 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
       int plane;
       try {
         plane = m_channel_map->get_plane_from_offline_channel(tp.channel);
-	local_planes.insert(plane);
+        local_planes.insert(plane);
       } catch (...) {
         ers::error(dunedaq::trigger::ReplayPlaneError(ERS_HERE, get_name(), filename));
         continue;
@@ -379,7 +381,7 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
       local_tp_vectors++;
       local_tps += num_tps;
     } // frags loop
-  
+
     TLOG() << "Data loading summary (end of file):";
     TLOG() << "------------------------------";
     TLOG() << "File: " << filename;
@@ -388,12 +390,12 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
     TLOG() << "TP vectors: " << local_tp_vectors;
     TLOG() << "Total read TPs: " << local_tps;
     TLOG();
-  
+
   } // files loop
- 
+
   TLOG() << "Data loading summary (all):";
   TLOG() << "------------------------------";
-  TLOG() << "Files: " << m_tpstream_files.size();  
+  TLOG() << "Files: " << m_tpstream_files.size();
   // Loop through the map and print sizes
   for (const auto& rou_pair : all_data) {
     const std::string& ROU = rou_pair.first; // ROU name (key)

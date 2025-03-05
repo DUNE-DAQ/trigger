@@ -14,9 +14,9 @@
 #include "trigger/opmon/tpreplaymodule_info.pb.h"
 
 #include "appmodel/PlaneNumberConf.hpp"
-#include "appmodel/TPStreamConf.hpp"
 #include "appmodel/TPReplayModule.hpp"
 #include "appmodel/TPReplayModuleConf.hpp"
+#include "appmodel/TPStreamConf.hpp"
 
 #include "appfwk/ConfigurationManager.hpp"
 #include "appfwk/DAQModule.hpp"
@@ -52,14 +52,10 @@ public:
    */
   explicit TPReplayModule(const std::string& name);
 
-  TPReplayModule(const TPReplayModule&) =
-    delete; ///< TPReplayModule is not copy-constructible
-  TPReplayModule& operator=(const TPReplayModule&) =
-    delete; ///< TPReplayModule is not copy-assignable
-  TPReplayModule(TPReplayModule&&) =
-    delete; ///< TPReplayModule is not move-constructible
-  TPReplayModule& operator=(TPReplayModule&&) =
-    delete; ///< TPReplayModule is not move-assignable
+  TPReplayModule(const TPReplayModule&) = delete;            ///< TPReplayModule is not copy-constructible
+  TPReplayModule& operator=(const TPReplayModule&) = delete; ///< TPReplayModule is not copy-assignable
+  TPReplayModule(TPReplayModule&&) = delete;                 ///< TPReplayModule is not move-constructible
+  TPReplayModule& operator=(TPReplayModule&&) = delete;      ///< TPReplayModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
   void generate_opmon_data() override;
