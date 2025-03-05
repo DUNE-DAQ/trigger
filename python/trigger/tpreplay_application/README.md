@@ -4,20 +4,23 @@ This is the new Trigger Primitive (TP) Replay Application (v5+). For the previou
 
 ## Table of Contents
 - [What is Replay](#what-is-replay)
-- [How does it work?](#how-does-it-work)
+  - [How does it work?](#how-does-it-work)
 - [How to Replay?](#how-to-replay)
-- [General Procedure](#general-procedure)
-- [Using this script](#using-this-script)
+  - [General Procedure](#general-procedure)
+  - [Using this script](#using-this-script)
+    - [Command-Line Options for TP Replay Application](#command-line-options-for-tp-replay-application)
+    - [Generating custom configuration](#generating-custom-configuration)
+    - [Starting a run with the modified configuration](#starting-a-run-with-the-modified-configuration)
 - [Implementation](#implementation)
-- [Python script](#python-script)
-- [Appmodel schemas](#appmodel-schemas)
-- [Appmodel source code](#appmodel-source-code)
-- [Set-up](#set-up)
-- [TP Replay Module](#tpreplaymodule)
-- [OKS Sessions](#oks-sessions)
+  - [Python script](#python-script)
+  - [Appmodel schemas](#appmodel-schemas)
+  - [Appmodel source code](#appmodel-source-code)
+  - [Set-up](#set-up)
+  - [TP Replay Module](#tpreplaymodule)
+  - [OKS Sessions](#oks-sessions)
 - [Operational Monitoring](#operational-monitoring)
 - [Other Notes](#other-notes)
-- [TODO (future)](#todo-future)
+  - [TODO (future)](#todo-future)
 
 ## What is Replay
 The replay application is an 'emulation tool'. It is meant for developing the trigger, associated infrastructure, integration, and algorithm testing. 
