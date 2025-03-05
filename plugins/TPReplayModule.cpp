@@ -1,12 +1,12 @@
 /**
- * @file TriggerPrimitiveMakerModule.cpp
+ * @file TPReplayModule.cpp
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "TriggerPrimitiveMakerModule.hpp"
+#include "TPReplayModule.hpp"
 
 #include "trigger/Issues.hpp" // For TLVL_*
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
@@ -28,23 +28,23 @@ using namespace triggeralgs;
 
 namespace dunedaq::trigger {
 
-TriggerPrimitiveMakerModule::TriggerPrimitiveMakerModule(const std::string& name)
+TPReplayModule::TPReplayModule(const std::string& name)
   : DAQModule(name)
   , m_queue_timeout(100)
 {
   // clang-format off
-  register_command("conf",  &TriggerPrimitiveMakerModule::do_configure);
-  register_command("start", &TriggerPrimitiveMakerModule::do_start);
-  register_command("stop_trigger_sources",  &TriggerPrimitiveMakerModule::do_stop);
-  register_command("scrap", &TriggerPrimitiveMakerModule::do_scrap);
+  register_command("conf",  &TPReplayModule::do_configure);
+  register_command("start", &TPReplayModule::do_start);
+  register_command("stop_trigger_sources",  &TPReplayModule::do_stop);
+  register_command("scrap", &TPReplayModule::do_scrap);
   // clang-format on
 }
 
 void
-TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
+TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
   // ### Access configuration
-  auto mtrg = mcfg->get_dal<appmodel::TriggerPrimitiveMakerModule>(get_name());
+  auto mtrg = mcfg->get_dal<appmodel::TPReplayModule>(get_name());
   m_conf = mtrg->get_configuration();
   if (!m_conf) {
     throw ReplayConfigurationProblem(ERS_HERE, get_name(), "Missing configuration!");
@@ -153,12 +153,12 @@ TriggerPrimitiveMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> 
 }
 
 void
-TriggerPrimitiveMakerModule::do_configure(const nlohmann::json& /*obj*/)
+TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
 {
 }
 
 void
-TriggerPrimitiveMakerModule::do_start(const nlohmann::json& /*obj*/)
+TPReplayModule::do_start(const nlohmann::json& /*obj*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
@@ -178,7 +178,7 @@ TriggerPrimitiveMakerModule::do_start(const nlohmann::json& /*obj*/)
 
   // Start threads for each stream
   for (auto& stream : m_tp_streams) {
-    m_threads.push_back(std::make_unique<std::thread>(&TriggerPrimitiveMakerModule::do_work,
+    m_threads.push_back(std::make_unique<std::thread>(&TPReplayModule::do_work,
                                                       this,
                                                       std::ref(m_running_flag),
                                                       std::ref(stream.tpvs),
@@ -186,7 +186,7 @@ TriggerPrimitiveMakerModule::do_start(const nlohmann::json& /*obj*/)
                                                       earliest_timestamp_time));
   }
   for (size_t i = 0; i < m_threads.size(); i++) {
-    std::string name("replay-");
+    std::string name("tpreplay-");
     name += std::to_string(i);
     pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
   }
@@ -195,7 +195,7 @@ TriggerPrimitiveMakerModule::do_start(const nlohmann::json& /*obj*/)
 }
 
 void
-TriggerPrimitiveMakerModule::do_stop(const nlohmann::json& /*args*/)
+TPReplayModule::do_stop(const nlohmann::json& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_running_flag.store(false);
@@ -223,7 +223,7 @@ TriggerPrimitiveMakerModule::do_stop(const nlohmann::json& /*args*/)
 }
 
 void
-TriggerPrimitiveMakerModule::do_scrap(const nlohmann::json& /*args*/)
+TPReplayModule::do_scrap(const nlohmann::json& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
   m_tp_streams.clear();
@@ -234,9 +234,9 @@ TriggerPrimitiveMakerModule::do_scrap(const nlohmann::json& /*args*/)
 }
 
 void
-TriggerPrimitiveMakerModule::generate_opmon_data()
+TPReplayModule::generate_opmon_data()
 {
-  opmon::TriggerPrimitiveMakerInfo info;
+  opmon::TPReplayModuleInfo info;
 
   info.set_tp_made_count(m_tp_made_count);
   info.set_tpv_made_count(m_tpv_made_count);
@@ -245,7 +245,7 @@ TriggerPrimitiveMakerModule::generate_opmon_data()
   this->publish(std::move(info));
 }
 
-// This is the heavy-lifting function of TPMM
+// This is the heavy-lifting function of TPRM
 // Goes over all provided TPstream files
 // Does basic file checks
 // Extracts needed data
@@ -253,7 +253,7 @@ TriggerPrimitiveMakerModule::generate_opmon_data()
 // Additional data-related checks
 // Plane filtering happens here
 std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>
-TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_files)
+TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
 {
   std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> all_data;
 
@@ -414,7 +414,7 @@ TriggerPrimitiveMakerModule::read_tps(std::map<int, std::string> m_tpstream_file
 }
 
 void
-TriggerPrimitiveMakerModule::do_work(
+TPReplayModule::do_work(
   std::atomic<bool>& running_flag,
   std::deque<std::vector<TriggerPrimitiveTypeAdapter>>& tpvs,
   std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>>& tp_sink,
@@ -534,4 +534,4 @@ TriggerPrimitiveMakerModule::do_work(
 
 } // namespace dunedaq::trigger
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::TriggerPrimitiveMakerModule)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::TPReplayModule)

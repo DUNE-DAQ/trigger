@@ -1,6 +1,6 @@
 /**
  * @file generate_tpset_from_hdf5.cxx Read TP fragments from file and generate a TPSet vector.
- * Matches code within TriggerPrimitiveMaker.
+ * Matches code within TPReplayModule.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -8,7 +8,7 @@
  */
 #include "CLI/CLI.hpp"
 
-#include "../../plugins/TriggerPrimitiveMakerModule.hpp"
+#include "../../plugins/TPReplayModule.hpp"
 #include "trgdataformats/TriggerPrimitive.hpp"
 
 #include "daqdataformats/Fragment.hpp"

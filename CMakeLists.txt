@@ -66,7 +66,7 @@ daq_add_plugin(DataSubscriberModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDataHandlerModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(RandomTCMakerModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(MLTModule duneDAQModule LINK_LIBRARIES trigger)
-daq_add_plugin(TriggerPrimitiveMakerModule duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(TPReplayModule duneDAQModule LINK_LIBRARIES trigger)
 
 # Algorithm plugins
 #daq_add_plugin(TriggerDecisionMakerSupernovaPlugin duneTDMaker LINK_LIBRARIES trigger)

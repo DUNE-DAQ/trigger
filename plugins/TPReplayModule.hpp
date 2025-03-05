@@ -1,22 +1,22 @@
 /**
- * @file TriggerPrimitiveMakerModule.hpp
+ * @file TPReplayModule.hpp
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#ifndef TRIGGER_PLUGINS_TRIGGERPRIMITIVEMAKERMODULE_HPP_
-#define TRIGGER_PLUGINS_TRIGGERPRIMITIVEMAKERMODULE_HPP_
+#ifndef TRIGGER_PLUGINS_TPREPLAYMODULE_HPP_
+#define TRIGGER_PLUGINS_TPREPLAYMODULE_HPP_
 
 #include "trigger/TPSet.hpp"
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
-#include "trigger/opmon/triggerprimitivemaker_info.pb.h"
+#include "trigger/opmon/tpreplaymodule_info.pb.h"
 
 #include "appmodel/PlaneNumberConf.hpp"
 #include "appmodel/TPStreamConf.hpp"
-#include "appmodel/TriggerPrimitiveMakerModule.hpp"
-#include "appmodel/TriggerPrimitiveMakerModuleConf.hpp"
+#include "appmodel/TPReplayModule.hpp"
+#include "appmodel/TPReplayModuleConf.hpp"
 
 #include "appfwk/ConfigurationManager.hpp"
 #include "appfwk/DAQModule.hpp"
@@ -43,23 +43,23 @@ DUNE_DAQ_TYPESTRING(std::vector<dunedaq::trigger::TriggerPrimitiveTypeAdapter>, 
 
 namespace dunedaq {
 namespace trigger {
-class TriggerPrimitiveMakerModule : public dunedaq::appfwk::DAQModule
+class TPReplayModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
    * @brief RandomDataListGenerator Constructor
    * @param name Instance name for this RandomDataListGenerator instance
    */
-  explicit TriggerPrimitiveMakerModule(const std::string& name);
+  explicit TPReplayModule(const std::string& name);
 
-  TriggerPrimitiveMakerModule(const TriggerPrimitiveMakerModule&) =
-    delete; ///< TriggerPrimitiveMakerModule is not copy-constructible
-  TriggerPrimitiveMakerModule& operator=(const TriggerPrimitiveMakerModule&) =
-    delete; ///< TriggerPrimitiveMakerModule is not copy-assignable
-  TriggerPrimitiveMakerModule(TriggerPrimitiveMakerModule&&) =
-    delete; ///< TriggerPrimitiveMakerModule is not move-constructible
-  TriggerPrimitiveMakerModule& operator=(TriggerPrimitiveMakerModule&&) =
-    delete; ///< TriggerPrimitiveMakerModule is not move-assignable
+  TPReplayModule(const TPReplayModule&) =
+    delete; ///< TPReplayModule is not copy-constructible
+  TPReplayModule& operator=(const TPReplayModule&) =
+    delete; ///< TPReplayModule is not copy-assignable
+  TPReplayModule(TPReplayModule&&) =
+    delete; ///< TPReplayModule is not move-constructible
+  TPReplayModule& operator=(TPReplayModule&&) =
+    delete; ///< TPReplayModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
   void generate_opmon_data() override;
@@ -97,7 +97,7 @@ private:
   std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> m_all_tp_data;
 
   // Configuration
-  const appmodel::TriggerPrimitiveMakerModuleConf* m_conf;
+  const appmodel::TPReplayModuleConf* m_conf;
   double clocks_per_us;
   int m_loops;
   std::chrono::milliseconds m_queue_timeout;
@@ -118,4 +118,4 @@ private:
 } // namespace trigger
 } // namespace dunedaq
 
-#endif // TRIGGER_PLUGINS_TRIGGERPRIMITIVEMAKERMODULE_HPP_
+#endif // TRIGGER_PLUGINS_TPREPLAYMODULE_HPP_
