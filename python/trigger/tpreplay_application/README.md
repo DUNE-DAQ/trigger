@@ -1,6 +1,6 @@
-# Trigger Replay Application
+# Trigger Primitive Replay Application
 
-This is the new Trigger Replay Application (v5+). For the previous version follow [here](https://github.com/DUNE-DAQ/trigger/tree/production/v4/python/trigger/replay_tps). This version is NOT backward compatible. 
+This is the new Trigger Primitive (TP) Replay Application (v5+). For the previous version follow [here](https://github.com/DUNE-DAQ/trigger/tree/production/v4/python/trigger/replay_tps). However, it is quite likely this version will work with older types of files as well (not guaranteed).
 
 ## Table of Contents
 - [What is Replay](#what-is-replay)
@@ -18,11 +18,11 @@ This is the new Trigger Replay Application (v5+). For the previous version follo
 The replay application is an 'emulation tool'. It is meant for developing the trigger, associated infrastructure, integration, and algorithm testing. 
 
 ### How does it work?
-The application is replacing the readout and instead uses TPs from offline files (HDF5 TPStream). The implementation is 'emulating' the readout closely, meaning the data is replayed per-plane and per-readout unit. TP Handlers are also part of the same application, exactly as in the current readout application.
+The application is replacing the readout and instead uses TPs from offline files (HDF5 TPStream). The implementation is 'emulating' the readout closely, meaning the data is replayed per-plane and per-readout unit. TP Handlers are also part of the same application, exactly as in the current readout application. This is then usually connected to the Trigger Application to more closely resemble a (small) dunedaq system. 
 
 Process:
-- accepts TPStream HDF5 files (taken with v5+)
-- uses `TriggerPrimitiveMaker` module to assess the data and extract selected TPs 
+- accepts TPStream HDF5 files
+- uses `TPReplayModule` to assess the data and extract selected TPs 
 - creates TP Handlers (the number depends on configuration), with a configured algorithm
 - creates required queues, network connections
 - spawns individual threads for each plane
@@ -32,23 +32,23 @@ Process:
 - as a separate standalone application, it can be used in combination with other DAQ applications
 
 ## How to Replay
-Replay works via a `TriggerReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.<br>
+Replay works via a `TPReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.<br>
 To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration.<br><br>
 Remember, replay is an emulation of readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required.<br><br>
-Finally, configure the `TriggerPrimitiveMaker` module that is part of this application. It accepts a list of input HDF5 TPStream files. Additionally, one can choose to filter out planes.
+Finally, configure the `TPReplayModule` that is part of this application. It accepts a list of input HDF5 TPStream files. Additionally, one can choose to filter out planes.
 
 ## Implementation
 ### Appmodel schemas
-`TriggerReplayApplication` schema:
+`TPReplayApplication` schema:
 ```xml
- <class name="TriggerReplayApplication">
+ <class name="TPReplayApplication">
   <superclass name="ResourceSetAND"/>
   <superclass name="SmartDaqApplication"/>
   <attribute name="application_name" type="string" init-value="daq_application" is-not-null="yes"/>
   <relationship name="tp_source_ids" class-type="SourceIDConf" low-cc="zero" high-cc="many" is-composite="no" is-exclusive="no" is-dependent="no"/>
-  <relationship name="tpmm_conf" class-type="TriggerPrimitiveMakerModuleConf" low-cc="one" high-cc="one" is-composite="no" is-exclusive="no" is-dependent="no"/>
+  <relationship name="tprm_conf" class-type="TPReplayModuleConf" low-cc="one" high-cc="one" is-composite="no" is-exclusive="no" is-dependent="no"/>
   <relationship name="tp_handler" class-type="DataHandlerConf" low-cc="one" high-cc="one" is-composite="no" is-exclusive="no" is-dependent="no"/>
-  <method name="generate_modules" description="Generate daq module dal objects for TriggerReplayApplication on the fly">
+  <method name="generate_modules" description="Generate daq module dal objects for TPReplayApplication on the fly">
    <method-implementation language="c++" prototype="std::vector&lt;const dunedaq::confmodel::DaqModule*&gt; generate_modules(conffwk::Configuration*, const std::string&amp;, const confmodel::Session*) const override" body=""/>
   </method>
   <method name="get_ro_unit" description="">
@@ -60,21 +60,20 @@ Finally, configure the `TriggerPrimitiveMaker` module that is part of this appli
 - inherits from `SmartDaqApplication`
 - Configuration options:
   - *TP Source IDs*: these are already set up to cover 3 planes for 4 different Readout Units (so can be left untouched for NP0X)
-  - configuration for `TriggerPrimitiveMaker` module (below)
+  - configuration for `TPReplayModule` (below)
   - configuration for *TP Handler (TA Maker)*
 - declaration of `generate_modules` function (modules & connections build instructions)
-- declaration of helper `get_ro_unit` function, which is used by multiple applications to extract Readout Unit [ROU] from file's path
 <br>
 
-`TriggerPrimitiveMaker` module schema: 
+`TPReplayModule` schema: 
 ```xml
- <class name="TriggerPrimitiveMakerModule">
+ <class name="TPReplayModule">
   <superclass name="DaqModule"/>
-  <relationship name="configuration" class-type="TriggerPrimitiveMakerModuleConf" low-cc="one" high-cc="one" is-composite="no" is-exclusive="no" is-dependent="no"/>
+  <relationship name="configuration" class-type="TPReplayModuleConf" low-cc="one" high-cc="one" is-composite="no" is-exclusive="no" is-dependent="no"/>
  </class>
 
- <class name="TriggerPrimitiveMakerModuleConf">
-  <attribute name="template_for" type="class" init-value="TriggerPrimitiveMakerModule"/>
+ <class name="TPReplayModuleConf">
+  <attribute name="template_for" type="class" init-value="TPReplayMakerModule"/>
   <attribute name="number_of_loops" type="u32" init-value="1" is-not-null="yes"/>
   <attribute name="maximum_wait_time_us" type="u32" init-value="1000" is-not-null="yes"/>
   <attribute name="channel_map" type="string" init-value="PD2HDChannelMap" is-not-null="yes"/>
@@ -127,36 +126,36 @@ Afterward, the generation is based on:
 
 An active plane is a plane that is **not** filtered out.  
 Therefore, in an example scenario where 4 files are provided, covering 4 unique ROUs (for example 4 different APAs), and no planes are configured to be filtered out, this magic number will be 4 (ROUs) x 3 (planes) = 12.
-This means there would be 12 `TPHandlers`, 12 queues from `TriggerPrimitiveMaker`, 12 data request network connections, 12 outcoming TA publishing network connections.
-Importantly, there is always just 1 `TriggerPrimitiveMaker`, however, it will make use of 12 threads, each feeding its own `TPHandler` (pretending to be a plane from readout). 
+This means there would be 12 `TPHandlers`, 12 queues from `TPReplayModule`, 12 data request network connections, 12 outcoming TA publishing network connections.
+Importantly, there is always just 1 `TPReplayModule`, however, it will make use of 12 threads, each feeding its own `TPHandler` (pretending to be a plane from readout). 
 <br>
 
 It should be mentioned that the application is fully integrated with the rest of the system, such as registering the SourceIDs in MLT and in DFO. 
 <br>
 
 ### Set-up
-#### TriggerReplayApplication
-- Example Trigger Replay application for 1 ROU and 1 active plane:
+#### TPReplayApplication
+- Example TP Replay application for 1 ROU and 1 active plane:
 ![replay dot](https://github.com/user-attachments/assets/7c00a8a9-1ffd-4c3f-89cb-598a82c1b444)
 - Another example using 2 ROUs and 2 active planes:
 ![replay3 dot](https://github.com/user-attachments/assets/cdb442e5-0361-43f5-9ca6-d6b9edd91600)
 
 One can see the module generation being driven by the unique ROU and active planes. 
 Some additional notes:
-- There is always 1 `TriggerPrimitiveMaker` module. It has an internal logic that spawns threads.
+- There is always 1 `TPReplayModule` module. It has an internal logic that spawns threads.
 - The `TPHandlers` make use of the common `TriggerDataHandlerModules`, meaning they also contain latency buffers, have unique SourceIDs, and respond to data requests.
 - The `TPHandlers` create TAs and stream these to output network connections. 
 <br>
 
 #### Connecting to the DAQ system
 ![session dot](https://github.com/user-attachments/assets/a4e56fe8-c0ac-4b42-b837-d14ef4be25ac)
-- the TriggerReplayApplication is part of the `trg-segment`
+- the TPReplayApplication is part of the `trg-segment`
 - it has an input from `DFApplication`: readout requests
 - it publishes TAs to a `TriggerApplication`; this creates TCs and passes onwards to `MLT`
 - generally, the flow is similar to having a readout application replaced
 
-### TriggerPrimitiveMaker module
-The `TriggerPrimitiveMaker` module is the base of replay.
+### TPReplayModule
+The `TPReplayModule` module is the base of replay.
 Functionality:
 - loads in configuration; including HDF5 files, planes, channel map...
 - runs checks on files: file exists, is valid HDF5, is TPStream type, has valid fragments, contains TPs
@@ -179,7 +178,7 @@ For full list please see: [Issues.hpp](./../../include/trigger/Issues.hpp)
 
 
 #### Logging
-Verbose logging is available in the `TriggerPrimitiveMaker` module:
+Verbose logging is available in the `TPReplayModule`:
 - Configuration:
 ```
 ### REPLAY CONFIGURATION ###
@@ -240,10 +239,10 @@ This can be compared with opmon from `TPHandlerModule` for sanity checking.
 
 ## OKS Sessions
 Two example replay sessions are available as part of example-configs in `daqsystemtest` repository. These are identical in terms of setup, with the only difference being opmon and error reporting. 
-- *local-replay-config*: local opmon & reporting
-- *ehn1-replay-config*: common cern opmon and reporting
+- *local-tpreplay-config*: local opmon & reporting
+- *ehn1-tpreplay-config*: common cern opmon and reporting
 
-- Replay session:
+- TPReplay session:
 
 ![replay_ses](https://github.com/user-attachments/assets/8456a4bb-8f51-40b3-99dc-e4d8f2654c7d)
 
@@ -251,16 +250,16 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 
 ![conf_trg](https://github.com/user-attachments/assets/f913afc9-32f7-40b9-980c-47d7cf8de583)
 
-- `TriggerPrimitiveMaker` module configuration:
+- `TPReplayModule` configuration:
 
 ![conf_tpmm](https://github.com/user-attachments/assets/def5662f-2df7-4f88-9d43-182c36109744)
 
 As mentioned, the different plane options are already configured, and can simply be selected as needed.
 
-Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). `TriggerReplayApplication` is added to the `trg-segment`. You can see an overview [here](#connecting-to-the-daq-system).
+Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). `TPReplayApplication` is added to the `trg-segment`. You can see an overview [here](#connecting-to-the-daq-system).
 
 ## Operational Monitoring
-A graph showing opmon data from `TriggerPrimitiveMaker` module is available on Grafana: 
+A graph showing opmon data from `TPReplayModule` is available on Grafana: 
 > Grafana -> Trigger Flow -> Plugins -> TP Maker
 
 ![new_graf](https://github.com/user-attachments/assets/c3490188-32f1-4693-9e25-cf3d0c5b58d8)
@@ -270,10 +269,9 @@ Additionally, the handler modules used are typical in the sense that they alread
 
 ## Other Notes
 ### Issues / Perks
-- *Dynamicity*: The choice to be user-friendly carries a price. Readout units are generally easily extracted from an HDF5 file using already available functions in `hdf5libs` repository. However, this repository is not available in `appmodel` (as `appmodel` is a dependency of `hdf5libs`). This can be solved in a few ways. For now, the `TriggerReplayApplication` extracts the ROU from the TPStream file name. This therefore requires consistency in the naming to be retained, or building a custom extractor function that would replicate portions of the `hdf5libs` code.  
-- *Plane filtering*: The code pretends that for APA1 ("APA_P02SU") the collection plane is induiction plane 2, and vice-versa. This is by choice, as for NP04 running plane 2 was used as effective collection plane for APA1.
-- *Configuration management*: Current implementation uses 1 queue description and 1 `TPHandler` configuration, that is then used for all the instances of queues and handler objects (with unique names of course). This means that for a file with 3 active planes, the handler for each plane would be using the same algorithm (same for readout).
-- *Init stage*: A lot is happening inside the `TriggerPrimitiveMaker` module at the init stage: parsing configuration, multiple checks on HDF5 files, extracting ROUs, actually extracting TP data, plane filtering... Depending on the number of files this can take a lot of time. If needed, portions of this can be moved to different run stages.
+- *Plane filtering*: The code pretends that for APA1 ("APA_P02SU") the collection plane is induction plane 2, and vice-versa. This is by choice, as for NP04 running plane 2 was used as an effective collection plane for APA1.
+- *Configuration management*: Current implementation uses 1 queue description and 1 `TPHandler` configuration, which is then used for all the instances of queues and handler objects (with unique names of course). This means that for a file with 3 active planes, the handler for each plane would be using the same algorithm (same for readout).
+- *Init stage*: A lot is happening inside the `TPReplayModule` at the init stage: parsing configuration, multiple checks on HDF5 files, extracting ROUs, actually extracting TP data, plane filtering... Depending on the number of files this can take a lot of time. If needed, portions of this can be moved to different run stages.
 - *Expectations ?*: There are many places in the current dune-daq code where expectations are baked in (but not necessarily documented), for example, an expectation for queues that are at times not obvious (ie `TPRequestHandler` is expected to link to `FragmentAggregatorModule`, but this module is not required outside readout).
 - *Memory limits*: Some memory optimization is implemented, however, TPStream files are often very big. Because most processing happens within one module (TPMm), memory usage can be an issue for many files at once. You have been warned.
 
