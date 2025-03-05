@@ -32,6 +32,7 @@ Process:
 - as a separate standalone application, it can be used in combination with other DAQ applications
 
 ## How to Replay
+The easiest way is to use this python module. It helps to retrieve relevant OKS configuration data and modify it given user-provided selection. However, replay can also be run on any (valid) OKS configuration generated outside of this script.<br> 
 Replay works via a `TPReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.<br>
 To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration.<br><br>
 Remember, replay is an emulation of readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required.<br><br>
@@ -51,15 +52,12 @@ Finally, configure the `TPReplayModule` that is part of this application. It acc
   <method name="generate_modules" description="Generate daq module dal objects for TPReplayApplication on the fly">
    <method-implementation language="c++" prototype="std::vector&lt;const dunedaq::confmodel::DaqModule*&gt; generate_modules(conffwk::Configuration*, const std::string&amp;, const confmodel::Session*) const override" body=""/>
   </method>
-  <method name="get_ro_unit" description="">
-    <method-implementation language="c++" prototype="static int get_ro_unit(const std::string&amp; path)" body=""/>
-  </method>
  </class>
 ```
 - it's own application
 - inherits from `SmartDaqApplication`
 - Configuration options:
-  - *TP Source IDs*: these are already set up to cover 3 planes for 4 different Readout Units (so can be left untouched for NP0X)
+  - *TP Source IDs*: there needs to be *one* source ID *for each* module that has a buffer able to respond to data requests. When using this python script, this is done automatically.
   - configuration for `TPReplayModule` (below)
   - configuration for *TP Handler (TA Maker)*
 - declaration of `generate_modules` function (modules & connections build instructions)
@@ -73,23 +71,25 @@ Finally, configure the `TPReplayModule` that is part of this application. It acc
  </class>
 
  <class name="TPReplayModuleConf">
-  <attribute name="template_for" type="class" init-value="TPReplayMakerModule"/>
+  <attribute name="template_for" type="class" init-value="TPReplayModule"/>
   <attribute name="number_of_loops" type="u32" init-value="1" is-not-null="yes"/>
   <attribute name="maximum_wait_time_us" type="u32" init-value="1000" is-not-null="yes"/>
   <attribute name="channel_map" type="string" init-value="PD2HDChannelMap" is-not-null="yes"/>
+  <attribute name="total_planes" type="u32" init-value="0" is-not-null="yes"/>
   <relationship name="filter_out_plane" class-type="PlaneNumberConf" low-cc="zero" high-cc="many" is-composite="no" is-exclusive="no" is-dependent="no"/>
   <relationship name="tp_streams" class-type="TPStreamConf" low-cc="one" high-cc="many" is-composite="no" is-exclusive="no" is-dependent="no"/>
- </class>
+</class>
 ```
 - Configuration options:
 
-| Option                 | Description                                                                                      |
-|------------------------|--------------------------------------------------------------------------------------------------|
-| **number_of_loops**    | Allows replaying the TPs multiple times with shifted timestamps.                                 |
-| **maximum_wait_time_us** | Max buffer time between sending consecutive TP vectors.                                            |
-| **channel_map**        | Specifies the detector channel map, used to extract Readout Unit (ROU).                         |
-| **filter_out_plane**   | Option to filter out (ignore) data from a specific plane (Induction 1 / Induction 2 / Collection). |
-| **tp_streams**        | List of TPStream HDF5 files to be used as input (multiple files supported).                      |
+| Option                   | Description                                                                                                                 |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| **number_of_loops**      | Allows replaying the TPs multiple times with shifted timestamps.                                                            |
+| **maximum_wait_time_us** | Max buffer time between sending consecutive TP vectors.                                                                     |
+| **channel_map**          | Specifies the detector channel map, used to extract Readout Unit (ROU), planes.                                             |
+| **total_planes**         | Represents the total number of unique planes. Required by multiple applications when building modules / linking the system. |
+| **filter_out_plane**     | Option to filter out (ignore) data from a specific plane (Induction 1 / Induction 2 / Collection).                          |
+| **tp_streams**           | List of TPStream HDF5 files to be used as input (multiple files supported).                                                 |
 <br>
  
 Plane filtering schema:
@@ -113,19 +113,11 @@ TPStream configuration:
 <br>
  
 ### Appmodel source code
-The design of the source code is a result of the aim to be 'user friendly'. This means the user can provide a vector of files, without restrictions on ROUs. 
-Therefore, a lot of heavy lifting happens when the application modules and links are being generated. 
-The basis for the procedure is: 
-- loop over the files, checking validity (exists; is a TPStream HDF5 file; has data)
-- extract the ROU for the file
-- output a map of vectors of (valid) files, grouped by ROUs, ordered by time within the vectors
+The design of the source code is to be modular. This means the user can provide a vector of files without restrictions on ROUs / planes.
+The internal linking is dependent on the **total_planes** variable. If one uses this python script, this is set automatically given the provided files.<br><br>
 
-Afterward, the generation is based on: 
-
-> **number of unique ROUs** x **number of active planes**
-
-An active plane is a plane that is **not** filtered out.  
-Therefore, in an example scenario where 4 files are provided, covering 4 unique ROUs (for example 4 different APAs), and no planes are configured to be filtered out, this magic number will be 4 (ROUs) x 3 (planes) = 12.
+The **total_planes** counter represents the number of active (non-filtered), unique planes for which data was 'observed' in the provided files.<br>
+Therefore, in an example scenario where 4 files are provided, covering 4 unique ROUs (for example 4 different APAs), and no planes are configured to be filtered out, the **total_planes** number would be 4 (ROUs) x 3 (planes) = 12.
 This means there would be 12 `TPHandlers`, 12 queues from `TPReplayModule`, 12 data request network connections, 12 outcoming TA publishing network connections.
 Importantly, there is always just 1 `TPReplayModule`, however, it will make use of 12 threads, each feeding its own `TPHandler` (pretending to be a plane from readout). 
 <br>
@@ -159,9 +151,9 @@ The `TPReplayModule` module is the base of replay.
 Functionality:
 - loads in configuration; including HDF5 files, planes, channel map...
 - runs checks on files: file exists, is valid HDF5, is TPStream type, has valid fragments, contains TPs
-- loops over files, extracts the ROU, and sorts the files by unique ROU (additionally, if there are multiple files for an ROU, the files are time ordered)
-- creates unique *streams*, each stream representing a unique plane data
-- plane data is extracted from the file, filtering is applied
+- loops over files, extracts the ROU, extracts the plane, and stores the TP data in a map (map[ROU][plane][TP data in vectors]). This data is also sorted by time. Each TP vector represents one fragment from the HDF5 file.
+- additionally, applies filtering on the plane
+- creates unique *streams*, each stream representing a unique plane (and its associated data)
 - TP data is handled in TP vectors (this is mostly because it was already available for `TriggerDataHandlerModule`, was previously using `TPSets` but there is no implementation for this data type)
 - each stream spawns a unique thread, running independently (timing controlled by clock)
 - running threads check the slice time (slice, in this case, represented as a vector of TPs, covering one fragment of TPs), compare to the clock, and send over the queues to `TPHandlers` as appropriate. There is an additional wait time applied so as to not overwhelm the system.
@@ -190,39 +182,39 @@ Planes to filter:
 - File overview:
 ```
 Files to use:
-ROU: APA_P01SU
-<file>.hdf5
-ROU: APA_P02NL
-<different_file>.hdf5
-```
-- Plane data summary:
-```
-Will use 44 fragments for ROU: APA_P01SU, plane: 1.
-Data loading summary (plane stage):
-------------------------------
-File: <file>.hdf5
-ROU: APA_P01SU
-Plane: 1
-Read TPs: 32738550
-TP vectors: 44
+Index: 1, Filename: /nfs/rscratch/mrigan/swtest_tp_run032886_0000_tp-stream-writer-apa3_tpw_4_20241128T081856.hdf5
+Index: 2, Filename: /nfs/rscratch/mrigan/swtest_tp_run032886_0000_tp-stream-writer-apa2_tpw_4_20241128T081856.hdf5
 ```
 - File data summary:
 ```
-Data loading summary (file stage):
+Data loading summary (end of file):
 ------------------------------
-ROU: APA_P01SU
-Planes: 2
-Total read TPs: 47295032
-TP vectors: 88
+File: /nfs/rscratch/mrigan/swtest_tp_run032886_0000_tp-stream-writer-apa3_tpw_4_20241128T081856.hdf5
+  ROUs: 1
+  Planes: 3
+  TP vectors: 90
+  Total read TPs: 47488238
+```
+- Overall data loading summary:
+```
+Data loading summary (all):
+------------------------------
+Files: 2
+  ROU: APA_P01SU, Number of planes: 2
+    Plane: 1, Number of vectors: 44
+    Plane: 2, Number of vectors: 44
+  ROU: APA_P02NL, Number of planes: 2
+    Plane: 1, Number of vectors: 45
+    Plane: 2, Number of vectors: 45
 ```
 - Thread summary after running:
 ```
 Thread summary:
 ------------------------------
-Sent TPs: 14556482
+Sent TPs: 32738550
 TP vectors: 44
-Time taken: 42292 ms
-Rate: 1.04041 TP vectors/s
+Time taken: 42285 ms
+Rate: 1.04056 TP vectors/s
 Failed to push TP vectors: 0
 ```
 - Global (aggregated) summary:
@@ -231,8 +223,8 @@ Failed to push TP vectors: 0
 ------------------------------
 Generated TP vectors: 178
 Generated TPs: 94783270
-Time taken: 135302 ms
-Rate: 1.31558 TP vectors/s
+Time taken: 121693 ms
+Rate: 1.4627 TP vectors/s
 Failed to push TP vectors: 0
 ```
 This can be compared with opmon from `TPHandlerModule` for sanity checking. 
@@ -277,6 +269,7 @@ Additionally, the handler modules used are typical in the sense that they alread
 
 ### TODO (future)
 - [ ] should the initial TP times be shifted (as if they were streamed now) ?
+- [ ] option in python script to pick TA algorithm ?
 - [ ] support for multiple concurrent (different) makers
 - [ ] when TP format changes (relative `tp.time_peak`) looping logic needs adjusting
 
