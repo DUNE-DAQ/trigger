@@ -33,12 +33,98 @@ Process:
 
 ## How to Replay
 The easiest way is to use this python module. It helps to retrieve relevant OKS configuration data and modify it given user-provided selection. However, replay can also be run on any (valid) OKS configuration generated outside of this script.<br> 
+
+### General procedure
 Replay works via a `TPReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.<br>
 To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration.<br><br>
 Remember, replay is an emulation of readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required.<br><br>
 Finally, configure the `TPReplayModule` that is part of this application. It accepts a list of input HDF5 TPStream files. Additionally, one can choose to filter out planes.
 
+### Using this script
+One can use this script that will modify the OKS data with data obtained from the provided files.<br>
+
+#### Command-Line Options for TP Replay Application
+| Option               | Type         | Default Value  | Description  |
+|----------------------|--------------|----------------|--------------|
+| `--files`            | `str`        | **Required**   | Text file with full paths to HDF5 TPStream file locations. |
+| `--filter-planes`    | `list[int]`  | `[]` (empty)   | List of planes to filter out. Accepts combinations of: <br> `0` (U), `1` (V), `2` (X). Example: `[0, 1]` to filter out both induction planes. |
+| `--channel-map`      | `str`        | `PD2HDChannelMap` | Specify channel map. For example: `PD2HDChannelMap`, `PD2VDBottomTPCChannelMap`, etc. For the full list, see: [Channel Maps Documentation](https://github.com/DUNE-DAQ/detchannelmaps/blob/develop/docs/channel-maps-table.md). |
+| `--config`           | `str`        | `config/daqsystemtest/example-configs.data.xml` | Path to the base OKS configuration file with `tpreplay` session. |
+| `--path`             | `str`        | `tpreplay-run` | Path for local output for configuration files. This directory will be created by this script and modified configurations stored there. |
+| `--verbose`          | `bool`       | `False`        | Enable verbose logging. |
+
+Notes:
+- *input text file*:
+An example input text file:
+```
+/nfs/rscratch/mrigan/swtest_tp_run032886_0000_tp-stream-writer-apa1_tpw_4_20241128T081856.hdf5
+/nfs/rscratch/mrigan/swtest_tp_run032886_0000_tp-stream-writer-apa2_tpw_4_20241128T081856.hdf5
+```
+<== text file containing full paths to HDF5 TPStream files, newline-separated.
+- *plane filtering*: Option to filter planes. Can be left empty. Otherwise accepts values 0-2, and combinations of those. For example to filter out the collection plane: 
+```
+--filter-planes 2
+```
+ To ONLY use the collection plane (and filter two induction planes):
+```
+--filter-planes 0 1
+```
+- *channel-map*: valid channel map is needed to extract readout units and planes. Defaults to `PD2HDChannelMap`.
+- *config*: this is a path to OKS (.data.xml) file that containts default `tpreplay` session. Can be left to use the default.
+- *path*: this is a path that will be created locally to store the modified configurations. By default set to `tpreplay-run`.
+- *verbose*: to enable debugging messages.
+
+#### Generating custom configuration
+The only required argument is the text file containing the names of TPStream files:
+```
+python -m trigger.tpreplay_application --files files.txt 
+```
+<== this will use default values (no filtering).
+
+To only use the collection plane:
+```
+python -m trigger.tpreplay_application --files files.txt --filter-planes 0 1
+```
+
+To use the induction planes and files with data from PD2 VD:
+```
+python -m trigger.tpreplay_application --files files.txt --filter-planes 2 --channel-map PD2VDBottomTPCChannelMap
+```
+
+To change the name of local directory that gets created, and verbose logging:
+```
+python -m trigger.tpreplay_application --files files.txt --path custom_replay --verbose
+```
+and so on.
+
+#### Starting a run with the modified configuration
+After a modified configuration is created, one can 'run' with this configuration using `drunc`:
+```
+drunc-unified-shell ssh-standalone tpreplay-run/example-configs.data.xml local-tpreplay-config
+```
+<== the `tpreplay-run` name needs to be modified if `path` argument was changed from the default value.<br>
+Additionally, the python script modified the `TPReplayApplication` but not the 2 example TPReplay sessions. One can therefore pick `local-tpreplay-config` for a local run or `ehn1-tpreplay-config` for a run with grafana monitoring.
+<br><br>
+For more details on `drunc` please see [operating-a-daq-with-drunc](https://dune-daq-sw.readthedocs.io/en/latest/packages/drunc/Running-drunc/#operating-a-daq-with-drunc) and [setting up development area](https://github.com/DUNE-DAQ/daqconf/wiki/Setting-up-a-fddaq%E2%80%90v5.3.0-development-area). 
+<br><br>
+*After using the script, one **can** still modify the local configuration if needed.*
+<br><br>
+
 ## Implementation
+### Python script
+Few notes on what happens in this script:
+- there is a memory limit applied (safety measure if someone provides 'too many' TPStream files)
+- required OKS configuration files are copied over
+- retrieves the `TPReplay` application configuration
+- retrieves `TPReplayModule` configuration
+- loads the `channel map`
+- parses TPStream files from the provided text file
+- runs basic checks on these files
+- extracts readout units and active (used) planes from the data in the provided files (using the provided channel map). Additional data checks are executed, plane filtering is applied. 
+- TPStream files are sorted by start time
+- prepare configuration objects for the extracted options (ie number of total planes, required number of source IDs ...). The general approach is to search for an existing template of the specific DAL object and use that as a base. If it does not exist, a new one is created from scratch (from schema).
+- finally, update the local OKS files, including storing the new objects and updating relations / references.<br>
+
 ### Appmodel schemas
 `TPReplayApplication` schema:
 ```xml
