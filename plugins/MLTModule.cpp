@@ -68,9 +68,9 @@ MLTModule::decode_geoid(uint64_t _geoid_int)
 }
 
 void
-MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+MLTModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
-  auto mtrg = mcfg->module<appmodel::MLTModule>(get_name());
+  auto mtrg = mcfg->get_dal<appmodel::MLTModule>(get_name());
 
   // Get the inputs
   std::string candidate_input;
@@ -95,7 +95,7 @@ MLTModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   }
   
   // Get the session to access the detector configuration
-  auto session = mcfg->configuration_manager()->session();
+  auto session = mcfg->session();
 
   hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap = hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(session);
 

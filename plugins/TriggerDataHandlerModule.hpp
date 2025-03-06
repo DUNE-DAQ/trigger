@@ -34,7 +34,7 @@ public:
   TriggerDataHandlerModule(TriggerDataHandlerModule&&) = delete;                 ///< TriggerDataHandlerModule is not move-constructible
   TriggerDataHandlerModule& operator=(TriggerDataHandlerModule&&) = delete;      ///< TriggerDataHandlerModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> cfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> cfg) override;
 
   std::shared_ptr<datahandlinglibs::DataHandlingConcept>
   create_readout(const appmodel::DataHandlerModule* modconf, std::atomic<bool>& run_marker) override;

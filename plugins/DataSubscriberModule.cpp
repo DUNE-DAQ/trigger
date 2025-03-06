@@ -41,14 +41,14 @@ DataSubscriberModule::DataSubscriberModule(const std::string& name)
 {
 
   inherited_mod::register_command("start", &DataSubscriberModule::do_start);
-  inherited_mod::register_command("drain_dataflow", &DataSubscriberModule::do_stop);
+  inherited_mod::register_command("stop_trigger_sources", &DataSubscriberModule::do_stop);
 }
 
 void
-DataSubscriberModule::init(std::shared_ptr<appfwk::ModuleConfiguration> cfg)
+DataSubscriberModule::init(std::shared_ptr<appfwk::ConfigurationManager> cfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto ini = cfg->module<confmodel::DaqModule>(get_name());
+  auto ini = cfg->get_dal<confmodel::DaqModule>(get_name());
   if (ini->get_outputs().size() != 1) {
     throw datahandlinglibs::InitializationError(ERS_HERE, "Only 1 output supported for subscribers");
   }

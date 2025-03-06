@@ -28,7 +28,7 @@ TASetSink::TASetSink(const std::string& name)
 }
 
 void 
-TASetSink::init(std::shared_ptr<dunedaq::appfwk::ModuleConfiguration>)
+TASetSink::init(std::shared_ptr<dunedaq::appfwk::ConfigurationManager>)
 {};
 
 //void
