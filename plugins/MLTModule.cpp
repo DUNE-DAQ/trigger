@@ -88,11 +88,6 @@ MLTModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     if(con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>())
       m_decision_output = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
   }
-
-  auto initial_active_dfo = mtrg->get_configuration()->get_initial_active_dfo();
-  if (initial_active_dfo != nullptr) {
-    m_active_dfo = initial_active_dfo->UID();
-  }
   
   // Get the session to access the detector configuration
   auto session = mcfg->session();
