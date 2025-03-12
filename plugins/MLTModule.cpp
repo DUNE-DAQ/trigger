@@ -291,6 +291,7 @@ MLTModule::do_enable_dfo(const nlohmann::json& args)
   TLOG() << get_name() << ": Setting enabled DFO to " << new_dfo << " (current=" << m_active_dfo << ")";
   m_active_dfo = new_dfo;
 
+  generate_opmon_data();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_enable_dfo() method";
 }
 
