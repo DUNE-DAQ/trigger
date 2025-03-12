@@ -148,6 +148,7 @@ MLTModule::generate_opmon_data()
   info.set_td_paused_count( m_td_paused_count.load() );
   info.set_td_queue_timeout_expired_err_count( m_td_queue_timeout_expired_err_count.load() );
   info.set_td_total_count( m_td_total_count.load() );
+  info.set_active_dfo(m_active_dfo);
 
   if (m_lc_started) {
     info.set_lc_klive( m_livetime_counter->get_time(LivetimeCounter::State::kLive) );

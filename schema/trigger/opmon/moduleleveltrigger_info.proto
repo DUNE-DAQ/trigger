@@ -13,6 +13,7 @@ message ModuleLevelTriggerInfo {
   uint32 lc_klive = 10;                             // Total time [ms] spent in Live state - alive to triggers
   uint32 lc_kpaused = 11;                           // Total time [ms] spent in Paused state - paused to triggers
   uint32 lc_kdead = 12;                             // Total time [ms] spent in Dead state - dead to triggers
+  string active_dfo = 13;                           // Name of the currently-enabled DFO
 }
 
 // Message representing TD Information, these counters are published separately for each TC type
