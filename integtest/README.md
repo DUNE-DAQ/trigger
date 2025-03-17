@@ -10,3 +10,4 @@ pytest -s change_rate_test.py [--nanorc-option log-level debug]  # this nanorc o
 For reference, here are the ideas behind the existing tests:
 * `change_rate_test.py` - Tests whether the change-rate command properly changes the rate of the RTCM and not the FakeHSI
 * `td_leakage_between_runs_test.py` - [Currently Broken] tests whether TriggerDecision messages received by the DFO have the correct run number in certain special conditions
+* `tc_time_outside_window_test.py` - [Currently Broken] tests whether TriggerCandidate fragments with a start time outside the configured readout window get correctly included in the TriggerRecord
