@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(TriggerActivityOverlay_in_out) {
 
     primitive.time_start = i;
     primitive.time_peak = i+1;
-    primitive.time_over_threshold = i+2;
+    primitive.samples_over_threshold = i+2;
     primitive.channel = i+3;
     primitive.adc_integral = i+4; // NOLINT(build/unsigned)
     primitive.adc_peak = i+5;     // NOLINT(build/unsigned)
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE(TriggerActivityOverlay_in_out) {
 
   for(size_t i=0; i<n_primitive; ++i){
     BOOST_CHECK_EQUAL(activity.inputs[i].time_start,          activity_read.inputs[i].time_start);
-    BOOST_CHECK_EQUAL(activity.inputs[i].time_over_threshold, activity_read.inputs[i].time_over_threshold);
+    BOOST_CHECK_EQUAL(activity.inputs[i].samples_over_threshold, activity_read.inputs[i].samples_over_threshold);
     BOOST_CHECK_EQUAL(activity.inputs[i].time_peak,           activity_read.inputs[i].time_peak);
     BOOST_CHECK_EQUAL(activity.inputs[i].channel,             activity_read.inputs[i].channel);
     BOOST_CHECK_EQUAL(activity.inputs[i].adc_integral,        activity_read.inputs[i].adc_integral);

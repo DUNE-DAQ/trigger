@@ -46,7 +46,7 @@ time_serialization(int tps_per_set)
       triggeralgs::TriggerPrimitive tp;
       tp.time_start = 1234963454;
       tp.time_peak = tp.time_start + 10000;
-      tp.time_over_threshold = uniform(generator);
+      tp.samples_over_threshold = uniform(generator);
       tp.channel = uniform(generator);
       tp.adc_integral = uniform(generator);
       tp.adc_peak = uniform(generator);

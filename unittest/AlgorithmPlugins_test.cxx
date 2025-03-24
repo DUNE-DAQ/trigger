@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(TAFactory)
   for (int idx = 0; idx < 10; idx++) {
     tp.time_start = idx;
     tp.time_peak = 1+idx;
-    tp.time_over_threshold = 2;
+    tp.samples_over_threshold = 2;
     tp.adc_integral = 1000+idx;
     tp.adc_peak = 1000+idx;
     tp.channel = 0+idx;
