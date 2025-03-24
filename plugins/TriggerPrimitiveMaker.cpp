@@ -310,7 +310,7 @@ TriggerPrimitiveMaker::do_work(std::atomic<bool>& running_flag,
       tpset.end_time += total_stream_duration;
       for (auto& tp : tpset.objects) {
         tp.time_start += total_stream_duration;
-        tp.time_peak += total_stream_duration;
+        tp.samples_to_peak += total_stream_duration;
       }
       tpset.seqno = seqno;
       ++seqno;

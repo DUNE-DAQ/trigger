@@ -16,7 +16,7 @@
 DUNE_DAQ_SERIALIZE_NON_INTRUSIVE_MSGPACK(dunedaq::trgdataformats,
                                  TriggerPrimitive,
                                  time_start,
-                                 time_peak,
+                                 samples_to_peak,
                                  samples_over_threshold,
                                  channel,
                                  adc_integral,
