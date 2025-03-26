@@ -45,14 +45,12 @@ time_serialization(int tps_per_set)
     for (int j = 0; j < tps_per_set; ++j) {
       triggeralgs::TriggerPrimitive tp;
       tp.time_start = 1234963454;
-      tp.time_peak = tp.time_start + 10000;
-      tp.time_over_threshold = uniform(generator);
+      tp.samples_to_peak = 1000;
+      tp.samples_over_threshold = uniform(generator);
       tp.channel = uniform(generator);
       tp.adc_integral = uniform(generator);
       tp.adc_peak = uniform(generator);
       tp.detid = 1;
-      tp.type = triggeralgs::TriggerPrimitive::Type::kUnknown;
-      tp.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kSimpleThreshold;
       tp.flag = 1;
 
       set.objects.push_back(tp);
