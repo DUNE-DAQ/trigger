@@ -19,6 +19,6 @@ main()
 {
   dunedaq::trigger::TASet taset;
   // NOLINTNEXTLINE(build/unsigned)
-  std::vector<uint8_t> bytes = dunedaq::serialization::serialize_msgpack(taset);
-  dunedaq::trigger::TASet set_recv = dunedaq::serialization::deserialize_msgpack<dunedaq::trigger::TASet>(bytes);
+  std::vector<uint8_t> bytes = dunedaq::serialization::serialize(taset, dunedaq::serialization::kMsgPack);
+  dunedaq::trigger::TASet set_recv = dunedaq::serialization::deserialize<dunedaq::trigger::TASet>(bytes);
 }
