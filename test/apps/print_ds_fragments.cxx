@@ -29,9 +29,9 @@ print_tp(const TriggerPrimitive& prim, size_t offset = 0)
 {
   for (size_t i = 0; i < offset; ++i)
     std::cout << "\t";
-  std::cout << "\t" << prim.time_start << "\t" << prim.time_over_threshold << "\t" << prim.time_peak << "\t"
+  std::cout << "\t" << prim.time_start << "\t" << prim.samples_over_threshold << "\t" << prim.samples_to_peak << "\t"
             << prim.channel << "\t" << prim.adc_integral << "\t" << prim.adc_peak << "\t" << prim.detid << "\t"
-            << prim.type << std::endl;
+            << std::endl;
 }
 
 void
