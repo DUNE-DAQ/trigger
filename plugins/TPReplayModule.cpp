@@ -61,6 +61,14 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     throw ReplayConfigurationProblem(ERS_HERE, get_name(), "No Channel map provided!");
   }
 
+  // Valid Subdetectors (for now)
+  const std::unordered_set<detdataformats::DetID::Subdetector> m_validSubdetectors = {  
+    detdataformats::DetID::Subdetector::kHD_TPC,
+    detdataformats::DetID::Subdetector::kVD_BottomTPC,
+    detdataformats::DetID::Subdetector::kVD_TopTPC,
+    detdataformats::DetID::Subdetector::kNDLAr_TPC
+  };
+
   TLOG() << "### REPLAY CONFIGURATION ###";
   TLOG() << "Will use channel map: " << m_channel_map_name;
   try {
@@ -311,9 +319,14 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
         continue;
       }
 
-      // Get ROU and plane
+      // Store TPs
       auto& tp = tp_array[0];
 
+      // Only select TPC TPs (for now)
+      dunedaq::detdataformats::DetID::Subdetector subdet = static_cast<dunedaq::detdataformats::DetID::Subdetector>(tp.detid);
+      if (!m_validSubdetectors.count(subdet)) { continue; } 
+
+      // Get ROU and plane
       std::string ROU;
       try {
         ROU = m_channel_map->get_tpc_element_from_offline_channel(tp.channel);
