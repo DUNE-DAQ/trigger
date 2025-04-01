@@ -509,7 +509,6 @@ TPReplayModule::do_work(
       if (m_loops > 1 && current_iteration < m_loops) {
         for (auto& tpa : tpv) {
           tpa.tp.time_start += total_stream_duration;
-          tpa.tp.time_peak += total_stream_duration;
         }
       }
 
