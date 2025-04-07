@@ -62,7 +62,7 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
 
   // Valid Subdetectors (for now)
-  const std::unordered_set<detdataformats::DetID::Subdetector> m_validSubdetectors = {  
+  m_validSubdetectors = {  
     detdataformats::DetID::Subdetector::kHD_TPC,
     detdataformats::DetID::Subdetector::kVD_BottomTPC,
     detdataformats::DetID::Subdetector::kVD_TopTPC,

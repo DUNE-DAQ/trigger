@@ -105,7 +105,7 @@ private:
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
   bool m_filter_planes;
   std::vector<int> m_filter_planes_ids;
-  const std::unordered_set<detdataformats::DetID::Subdetector> m_validSubdetectors;
+  std::unordered_set<detdataformats::DetID::Subdetector> m_validSubdetectors;
 
   // opmon
   using metric_counter_type = uint64_t;
