@@ -1,6 +1,6 @@
 # Trigger Primitive Replay Application
 
-This is the new Trigger Primitive (TP) Replay Application (v5+). For the previous version follow [here](https://github.com/DUNE-DAQ/trigger/tree/production/v4/python/trigger/replay_tps). However, it is quite likely this version will work with older types of files as well (not guaranteed).
+This is the new Trigger Primitive (TP) Replay Application (v5). For the previous version follow [here](https://github.com/DUNE-DAQ/trigger/tree/production/v4/python/trigger/replay_tps). This change is after new TP format changes (v5.3).
 
 ## Table of Contents
 - [What is Replay](#what-is-replay)
@@ -131,6 +131,7 @@ Few notes on what happens in this script:
 - parses TPStream files from the provided text file
 - runs basic checks on these files
 - extracts readout units and active (used) planes from the data in the provided files (using the provided channel map). Additional data checks are executed, plane filtering is applied. 
+- (currently the app is set-up to work with TPC TPs only until PDS TPs are fully integrated. It is expected that replay will work easily with PDS TPs as well, but it requires the PDS integration with trigger to happen first)
 - TPStream files are sorted by start time
 - prepare configuration objects for the extracted options (ie number of total planes, required number of source IDs ...). The general approach is to search for an existing template of the specific DAL object and use that as a base. If it does not exist, a new one is created from scratch (from schema).
 - finally, update the local OKS files, including storing the new objects and updating relations / references.<br>
