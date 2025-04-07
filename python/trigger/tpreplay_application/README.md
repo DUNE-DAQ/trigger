@@ -108,10 +108,12 @@ and so on.
 #### Starting a run with the modified configuration
 After a modified configuration is created, one can 'run' with this configuration using `drunc`:
 ```
-drunc-unified-shell ssh-standalone tpreplay-run/example-configs.data.xml local-tpreplay-config
+drunc-unified-shell ssh-standalone tpreplay-run/example-configs.data.xml local-tpreplay-config $USER-replay
 ```
 <== the `tpreplay-run` name needs to be modified if `path` argument was changed from the default value.<br>
 Additionally, the python script modified the `TPReplayApplication` but not the 2 example TPReplay sessions. One can therefore pick `local-tpreplay-config` for a local run or `ehn1-tpreplay-config` for a run with grafana monitoring.
+<br>
+The last argument is the name of a session which can be anything, but should be easy to identify (use `$USER` as part of the name if possible).
 <br><br>
 For more details on `drunc` please see [operating-a-daq-with-drunc](https://dune-daq-sw.readthedocs.io/en/latest/packages/drunc/Running-drunc/#operating-a-daq-with-drunc) and [setting up development area](https://github.com/DUNE-DAQ/daqconf/wiki/Setting-up-a-fddaq%E2%80%90v5.3.0-development-area). 
 <br><br>
