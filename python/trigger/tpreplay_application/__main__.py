@@ -13,6 +13,7 @@ from typing import Dict, Set, List
 import conffwk
 import daqdataformats
 import detchannelmaps
+import detdataformats
 import trgdataformats
 from daqconf.consolidate import copy_configuration
 from hdf5libs import HDF5RawDataFile
@@ -153,6 +154,13 @@ def extract_rous_and_planes(files: List[str], channel_map, planes_to_filter: Set
     all_tpstream_files = []
     rou_plane_data = ROUPlaneData()
 
+    valid_subdetectors = {
+        int(detdataformats.DetID.Subdetector.kHD_TPC),
+        int(detdataformats.DetID.Subdetector.kVD_BottomTPC),
+        int(detdataformats.DetID.Subdetector.kVD_TopTPC),
+        int(detdataformats.DetID.Subdetector.kNDLAr_TPC)
+    }
+
     for tpstream_file in files:
         logging.debug("Processing file: %s", tpstream_file)
         loaded_file = HDF5RawDataFile(tpstream_file)
@@ -184,6 +192,12 @@ def extract_rous_and_planes(files: List[str], channel_map, planes_to_filter: Set
             if i == 0:
                 all_tpstream_files.append(TPStreamFile(tpstream_file, tp.time_start, 0))
                 logging.debug("First time start: %s", tp.time_start)
+
+            # check subdetector
+            subdet = tp.detid
+            print(subdet)
+            if subdet not in valid_subdetectors:
+                continue
 
             plane = channel_map.get_plane_from_offline_channel(tp.channel)
             if plane not in planes_to_filter:
