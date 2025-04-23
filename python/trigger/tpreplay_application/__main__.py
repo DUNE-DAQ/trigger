@@ -8,6 +8,7 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
+from tqdm import tqdm
 from typing import Dict, Set, List
 
 import conffwk
@@ -173,43 +174,48 @@ def extract_rous_and_planes(files: List[str], channel_map, planes_to_filter: Set
         if not all_record_ids:
             logging.error("File %s does not have valid records!", tpstream_file)
             sys.exit(1)
-        first_record = all_record_ids[0]
-        # check has source IDs
-        source_ids = loaded_file.get_source_ids_for_fragment_type(first_record, "Trigger_Primitive")
-        if len(source_ids) == 0:
-            logging.error("File %s does not have valid SourceIDs!", tpstream_file)
-            sys.exit(1)
-        logging.debug("SIDs: %s", source_ids)
 
-        for i, sid in enumerate(source_ids):
-            frag = loaded_file.get_frag(first_record, sid)
-            # check frag has data
-            if frag.get_data_size() < 1:
-                logging.error("File %s has an empty fragment!", tpstream_file)
+        # loop over all records :/
+        first_record = True
+        for a_record in tqdm(all_record_ids, desc="Processing records"):
+
+            # check has source IDs
+            source_ids = loaded_file.get_source_ids_for_fragment_type(a_record, "Trigger_Primitive")
+            if len(source_ids) == 0:
+                logging.error("File %s does not have valid SourceIDs!", tpstream_file)
                 sys.exit(1)
-            tp = trgdataformats.TriggerPrimitive(frag.get_data(0))
+            logging.debug("SIDs: %s", source_ids)
 
-            if i == 0:
-                all_tpstream_files.append(TPStreamFile(tpstream_file, tp.time_start, 0))
-                logging.debug("First time start: %s", tp.time_start)
+            for i, sid in enumerate(source_ids):
+                frag = loaded_file.get_frag(a_record, sid)
+                # check frag has data
+                if frag.get_data_size() < 1:
+                    logging.error("File %s has an empty fragment!", tpstream_file)
+                    sys.exit(1)
+                tp = trgdataformats.TriggerPrimitive(frag.get_data(0))
 
-            # check subdetector
-            subdet = tp.detid
-            print(subdet)
-            if subdet not in valid_subdetectors:
-                continue
+                if first_record == True:
+                    all_tpstream_files.append(TPStreamFile(tpstream_file, tp.time_start, 0))
+                    logging.debug("First time start: %s", tp.time_start)
+                    first_record = False
 
-            plane = channel_map.get_plane_from_offline_channel(tp.channel)
-            if plane not in planes_to_filter:
-                rou = channel_map.get_tpc_element_from_offline_channel(tp.channel)
-                rou_plane_data.add_value(rou, plane)
-                logging.debug("Extracted rou: %s for plane: %s", rou, plane)
-            else:
-                logging.debug("Plane %s filtered", plane)
-            cleanup()
-            del frag, tp
+                # check subdetector
+                subdet = tp.detid
+                if subdet not in valid_subdetectors:
+                    logging.debug("Subdetector %s is not in the map of valid subdetectors!", subdet.to_string)
+                    continue
+
+                plane = channel_map.get_plane_from_offline_channel(tp.channel)
+                if plane not in planes_to_filter:
+                    rou = channel_map.get_tpc_element_from_offline_channel(tp.channel)
+                    rou_plane_data.add_value(rou, plane)
+                    logging.debug("Extracted rou: %s for plane: %s", rou, plane)
+                else:
+                    logging.debug("Plane %s filtered", plane)
+                cleanup()
+                del frag, tp
         cleanup()
-        del loaded_file, first_record, source_ids
+        del loaded_file, a_record, source_ids
 
     # No need for an if verbose check here, as logging level is already set
     logging.info("Extracted ROUs and planes: %s", rou_plane_data.data)

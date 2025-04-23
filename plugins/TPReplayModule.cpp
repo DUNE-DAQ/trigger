@@ -145,14 +145,12 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
                     << con[global_iter + plane_iter]->UID();
       this_stream.tp_sink =
         get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[global_iter + plane_iter]->UID());
-
       this_stream.tpvs = vector_of_tps;
-
+      
       m_earliest_first_tp_timestamp =
         std::min(m_earliest_first_tp_timestamp, this_stream.tpvs.front().front().tp.time_start);
-
       m_latest_last_tp_timestamp = std::max(m_latest_last_tp_timestamp, this_stream.tpvs.back().back().tp.time_start);
-
+      
       m_tp_streams.push_back(std::move(this_stream));
       plane_iter++;
     }
@@ -423,7 +421,6 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
       TLOG() << "  Plane: " << plane << ", Number of vectors: " << vector_of_tps.size();
     }
   }
-  TLOG();
 
   return all_data;
 }
