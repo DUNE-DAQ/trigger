@@ -299,6 +299,22 @@ def update_sid_dal_objects(a_sid, cfg, total_unique_planes):
         logging.debug("Created SID config: %s", temp_sid)
     return all_sids
 
+def update_RandomTCmaker_obj(cfg):
+    """
+    Changes the trigger_rate_hz for RandomTCMakerConf to 0 by default for replay.
+    """
+    randomTCmakers = cfg.get_dals("RandomTCMakerConf")
+    if randomTCmakers:
+        randomTCmaker = randomTCmakers[0]
+        logging.debug("Loaded randomTCmaker object")
+        randomTCmaker.trigger_rate_hz = 0
+        logging.debug("Updated randomTCmaker object")
+        return randomTCmaker
+
+    else:
+        logging.error("No 'RandomTCMakerConf' DAL objects found.")
+        return None
+
 def update_configuration(cfg, tpreplay_app, tprm_conf, sorted_tpstream_files, total_unique_planes, planes_to_filter, path_str, verbose: bool):
     """
     Takes all changes and updates the local database files.
@@ -326,6 +342,8 @@ def update_configuration(cfg, tpreplay_app, tprm_conf, sorted_tpstream_files, to
     tpreplay_app.tp_source_ids = update_sid_dal_objects(a_sid, cfg, total_unique_planes)
     logging.info("Total of %i SID configs created", len(tpreplay_app.tp_source_ids))
 
+    randomTCmaker = update_RandomTCmaker_obj(cfg)
+
     cleanup()
     logging.debug("Committing updated configuration to database")
 
@@ -339,6 +357,8 @@ def update_configuration(cfg, tpreplay_app, tprm_conf, sorted_tpstream_files, to
         db_trigger.update_dal(sid)
     db_trigger.update_dal(tpreplay_app)
     db_modules.update_dal(tprm_conf)
+    if randomTCmaker is not None: 
+        db_modules.update_dal(randomTCmaker)
     db_modules.commit()
     db_trigger.commit()
     logging.info("Local database updated!")
