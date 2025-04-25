@@ -53,7 +53,7 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   // ### Extract relevant objects
   // Clock speed
   clocks_per_us = mcfg->session()->get_detector_configuration()->get_clock_speed_hz() /
-                  1'000'000.0; // please keep the '.' to make this float
+                  double(1'000'000.0); // this is redundant but safer...
 
   // Channel map
   m_channel_map_name = m_conf->get_channel_map();
