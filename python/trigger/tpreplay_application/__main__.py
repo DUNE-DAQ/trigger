@@ -100,7 +100,7 @@ def get_tpreplay_app(cfg: conffwk.Configuration) -> Any:
         logging.debug("Loaded tpreplay application")
         return tpreplay_app
     else:
-        logging.error("No 'TPReplayApplication' DAL objects found.")
+        logging.critical("No 'TPReplayApplication' DAL objects found.")
         sys.exit(1)
 
 def load_channel_map(channel_map_string: str) -> detchannelmaps._daq_detchannelmaps_py.TPCChannelMap:
@@ -113,7 +113,7 @@ def load_channel_map(channel_map_string: str) -> detchannelmaps._daq_detchannelm
         logging.debug(f"Channel map '{channel_map_string}' successfully created.")
         return channel_map
     except Exception as e:
-        print(f"Failed to create the channel map '{channel_map_string}'. Error: {str(e)}")
+        logging.critical(f"Failed to create the channel map '{channel_map_string}'. Error: {str(e)}")
         sys.exit(1)
 
 def get_tpstream_files(filename: str) -> list[str]:
@@ -139,11 +139,11 @@ def check_files(files: list[str]) -> None:
         # check file exist
         path = Path(a_file)
         if not path.exists():
-            logging.error("File %s does not exist!", a_file)
+            logging.critical("File %s does not exist!", a_file)
             sys.exit(1)
         # check it's hdf5
         if not path.suffix.lower() in ('.h5', '.hdf5'):
-            logging.error("File %s does not seem to be hdf5 file!", a_file)
+            logging.critical("File %s does not seem to be hdf5 file!", a_file)
             sys.exit(1)
 
 def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_detchannelmaps_py.TPCChannelMap', planes_to_filter: set[int]) -> (list[TPStreamFile], ROUPlaneData):
@@ -168,12 +168,12 @@ def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_
         loaded_file = HDF5RawDataFile(tpstream_file)
         # check is tpstream
         if not loaded_file.is_timeslice_type:
-            logging.error("File %s is not a TP Stream file!", tpstream_file)
+            logging.critical("File %s is not a TP Stream file!", tpstream_file)
             sys.exit(1)
         # check has records
         all_record_ids = loaded_file.get_all_record_ids()
         if not all_record_ids:
-            logging.error("File %s does not have valid records!", tpstream_file)
+            logging.critical("File %s does not have valid records!", tpstream_file)
             sys.exit(1)
 
         # loop over all records :/
@@ -183,7 +183,7 @@ def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_
             # check has source IDs
             source_ids = loaded_file.get_source_ids_for_fragment_type(a_record, "Trigger_Primitive")
             if len(source_ids) == 0:
-                logging.error("File %s does not have valid SourceIDs!", tpstream_file)
+                logging.critical("File %s does not have valid SourceIDs!", tpstream_file)
                 sys.exit(1)
             logging.debug("SIDs: %s", source_ids)
 
@@ -191,7 +191,7 @@ def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_
                 frag = loaded_file.get_frag(a_record, sid)
                 # check frag has data
                 if frag.get_data_size() < 1:
-                    logging.error("File %s has an empty fragment!", tpstream_file)
+                    logging.critical("File %s has an empty fragment!", tpstream_file)
                     sys.exit(1)
                 tp = trgdataformats.TriggerPrimitive(frag.get_data(0))
 
@@ -203,7 +203,7 @@ def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_
                 # check subdetector
                 subdet = tp.detid
                 if subdet not in valid_subdetectors:
-                    logging.debug("Subdetector %s is not in the map of valid subdetectors!", subdet.to_string)
+                    logging.debug("Subdetector %s is not in the map of valid subdetectors!", detdataformats.DetID.subdetector_to_string( detdataformats.DetID.Subdetector( subdet ) ) )
                     continue
 
                 plane = channel_map.get_plane_from_offline_channel(tp.channel)
@@ -220,6 +220,11 @@ def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_
 
     # No need for an if verbose check here, as logging level is already set
     logging.info("Extracted ROUs and planes: %s", rou_plane_data.data)
+
+    # Case when we didn't extract any valid/useful sourceIDs
+    if not rou_plane_data.data:
+        logging.critical("No valid data was extracted!")
+        sys.exit(1)
 
     return all_tpstream_files, rou_plane_data
 
