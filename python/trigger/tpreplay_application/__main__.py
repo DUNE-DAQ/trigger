@@ -19,6 +19,7 @@ import trgdataformats
 from daqconf.consolidate import copy_configuration
 from hdf5libs import HDF5RawDataFile
 
+
 def setup_logging(verbose: bool):
     """
     Set up logging based on the verbose flag.
@@ -31,13 +32,13 @@ def setup_logging(verbose: bool):
     else:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-def set_mem_limit(verbose: bool):
+def set_mem_limit(mem_limit: int, verbose: bool):
     """
     As a safety measure we set a memory limit for the process.
     Should not be needed here as hdf5 processing is minimal.
     """
     GB = 1024**3
-    memory_limit = 25 * GB 
+    memory_limit = mem_limit * GB 
     resource.setrlimit(resource.RLIMIT_AS, (memory_limit, memory_limit))
     logging.debug("Setting memory limit to %i GBs", memory_limit/GB)
 
@@ -374,6 +375,7 @@ def main():
                              "For more details, visit: https://github.com/DUNE-DAQ/detchannelmaps/blob/develop/docs/channel-maps-table.md")
     parser.add_argument("--config", type=str, default="config/daqsystemtest/example-configs.data.xml", help="Path to OKS configuration file.")
     parser.add_argument("--path", type=str, default="tpreplay-run", help="Path for local output for configuration files.")
+    parser.add_argument("--mem-limit", type=int, default=25, help="This will set a memory limit [GB] to protect the machine.")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging.")
     args = parser.parse_args()
 
@@ -381,7 +383,7 @@ def main():
     setup_logging(args.verbose)
 
     # Set memory limit
-    set_mem_limit(args.verbose) 
+    set_mem_limit(args.mem_limit, args.verbose) 
 
     logging.info("Starting TPStream processing script")
     cfg = setup_configuration(args.path, args.config, args.verbose)
