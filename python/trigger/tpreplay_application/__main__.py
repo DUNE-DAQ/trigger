@@ -130,7 +130,7 @@ def get_tpstream_files(filename: str, verbose: bool) -> List[str]:
 
     return tpstream_files
 
-def check_files(files):
+def check_files(files: List[str]):
     """
     Very basic checks on the provided TPStream files.
     """
@@ -146,7 +146,7 @@ def check_files(files):
             logging.error("File %s does not seem to be hdf5 file!", a_file)
             sys.exit(1)
 
-def extract_rous_and_planes(files: List[str], channel_map, planes_to_filter: Set[int], verbose: bool) -> (List[TPStreamFile], ROUPlaneData):
+def extract_rous_and_planes(files: List[str], channel_map: 'detchannelmaps._daq_detchannelmaps_py.TPCChannelMap', planes_to_filter: Set[int], verbose: bool) -> (List[TPStreamFile], ROUPlaneData):
     """
     This function goes over the provided TPStream files.
     It extracts the readout units used to generate the data in the files.
