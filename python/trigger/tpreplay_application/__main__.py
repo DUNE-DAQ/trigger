@@ -32,7 +32,7 @@ def setup_logging(verbose: bool) -> None:
     else:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-def set_mem_limit(mem_limit: int, verbose: bool) -> None:
+def set_mem_limit(mem_limit: int) -> None:
     """
     As a safety measure we set a memory limit for the process.
     Should not be needed here as hdf5 processing is minimal.
@@ -53,7 +53,7 @@ class ROUPlaneData:
     def add_value(self, rou: str, plane: int) -> None:
         self.data[rou].add(plane)
 
-    def get_values(self, rou: str) -> None:
+    def get_values(self, rou: str) -> set[int]:
         return self.data.get(rou, set())
 
     def total_plane_count(self) -> int:
@@ -66,10 +66,10 @@ class TPStreamFile:
     stime: int
     index: int
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Name: {self.filename}, Stime: {self.stime}, Index: {self.index}"
 
-def setup_configuration(path_str: str, sessions_file: str, verbose: bool):
+def setup_configuration(path_str: str, sessions_file: str, verbose: bool) -> conffwk.Configuration:
     """
     Copies over relevant configuration files for a provided .data.xml file.
     The default is the example-configs.data.xml, which contains the default sessions.
@@ -87,7 +87,7 @@ def setup_configuration(path_str: str, sessions_file: str, verbose: bool):
 
     return conffwk.Configuration(f"oksconflibs:{path}/example-configs.data.xml")
 
-def get_tpreplay_app(cfg):
+def get_tpreplay_app(cfg: conffwk.Configuration) -> Any:
     """
     Retrieves the instance of TPReplayApplication from configuration files.
     If it does not exist, stops the script.
@@ -103,7 +103,7 @@ def get_tpreplay_app(cfg):
         logging.error("No 'TPReplayApplication' DAL objects found.")
         sys.exit(1)
 
-def load_channel_map(channel_map_string):
+def load_channel_map(channel_map_string: str) -> detchannelmaps._daq_detchannelmaps_py.TPCChannelMap:
     """
     Tries to create a channel map using the provided string name.
     If it fails, prints the error and exits.
@@ -116,7 +116,7 @@ def load_channel_map(channel_map_string):
         print(f"Failed to create the channel map '{channel_map_string}'. Error: {str(e)}")
         sys.exit(1)
 
-def get_tpstream_files(filename: str, verbose: bool) -> list[str]:
+def get_tpstream_files(filename: str) -> list[str]:
     """
     Reads in names of tpstream files from provided text file.
     """
@@ -130,7 +130,7 @@ def get_tpstream_files(filename: str, verbose: bool) -> list[str]:
 
     return tpstream_files
 
-def check_files(files: list[str]):
+def check_files(files: list[str]) -> None:
     """
     Very basic checks on the provided TPStream files.
     """
@@ -146,7 +146,7 @@ def check_files(files: list[str]):
             logging.error("File %s does not seem to be hdf5 file!", a_file)
             sys.exit(1)
 
-def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_detchannelmaps_py.TPCChannelMap', planes_to_filter: set[int], verbose: bool) -> (list[TPStreamFile], ROUPlaneData):
+def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_detchannelmaps_py.TPCChannelMap', planes_to_filter: set[int]) -> (list[TPStreamFile], ROUPlaneData):
     """
     This function goes over the provided TPStream files.
     It extracts the readout units used to generate the data in the files.
@@ -236,7 +236,7 @@ def update_tpstream_indices(tpstream_files: list[TPStreamFile]) -> list[TPStream
     logging.debug("Sorted TPSTreamFile objects: %s", sorted_files)
     return sorted_files
 
-def update_tpstream_dal_objects(a_tp_stream, cfg, sorted_tpstream_files):
+def update_tpstream_dal_objects(a_tp_stream: Any, cfg: conffwk.Configuration, sorted_tpstream_files: list[TPStreamFile]) -> list[Any]:
     """
     Creates TPStreamConf dal objects for the provided TP Stream files.
     Additional safety to create these from scratch if an example instance is not found.
@@ -257,7 +257,7 @@ def update_tpstream_dal_objects(a_tp_stream, cfg, sorted_tpstream_files):
         logging.debug("Created TPStream: %s", temp_tp_stream)
     return tp_streams
 
-def update_planes_dal_objects(a_plane, cfg, planes_to_filter):
+def update_planes_dal_objects(a_plane: Any, cfg: conffwk.Configuration, planes_to_filter: list[int]) -> list[Any]:
     """
     Creates PlaneNumberConf dal objects for the provided set of planes.
     Additional safety to create these from scratch if an example instance is not found.
@@ -277,7 +277,7 @@ def update_planes_dal_objects(a_plane, cfg, planes_to_filter):
         logging.debug("Created PlaneNumberConf: %s", temp_plane)
     return planes
 
-def update_sid_dal_objects(a_sid, cfg, total_unique_planes):
+def update_sid_dal_objects(a_sid: Any, cfg: conffwk.Configuration, total_unique_planes: int) -> list[Any]:
     """
     Creates SourceIDConf dal objects needed for each unique plane.
     Additional safety to create these from scratch if an example instance is not found.
@@ -300,7 +300,7 @@ def update_sid_dal_objects(a_sid, cfg, total_unique_planes):
         logging.debug("Created SID config: %s", temp_sid)
     return all_sids
 
-def update_RandomTCmaker_obj(cfg):
+def update_RandomTCmaker_obj(cfg: conffwk.Configuration) -> Any:
     """
     Changes the trigger_rate_hz for RandomTCMakerConf to 0 by default for replay.
     """
@@ -316,7 +316,7 @@ def update_RandomTCmaker_obj(cfg):
         logging.error("No 'RandomTCMakerConf' DAL objects found.")
         return None
 
-def update_configuration(cfg, tpreplay_app, tprm_conf, sorted_tpstream_files, total_unique_planes, planes_to_filter, path_str, verbose: bool):
+def update_configuration(cfg: conffwk.Configuration, tpreplay_app: Any, tprm_conf: Any, sorted_tpstream_files: list[TPStreamFile], total_unique_planes: int, planes_to_filter: list[int], path_str: str) -> None:
     """
     Takes all changes and updates the local database files.
     [total_planes in TPRM
@@ -383,7 +383,7 @@ def main():
     setup_logging(args.verbose)
 
     # Set memory limit
-    set_mem_limit(args.mem_limit, args.verbose) 
+    set_mem_limit(args.mem_limit) 
 
     logging.info("Starting TPStream processing script")
     cfg = setup_configuration(args.path, args.config, args.verbose)
@@ -395,14 +395,14 @@ def main():
     planes_to_filter = set(args.filter_planes)
     logging.debug("Planes to filter: %s", planes_to_filter)
 
-    files = get_tpstream_files(args.files, args.verbose)
+    files = get_tpstream_files(args.files)
     check_files(files)
-    all_tpstream_files, rou_plane_data = extract_rous_and_planes(files, channel_map, planes_to_filter, args.verbose)
+    all_tpstream_files, rou_plane_data = extract_rous_and_planes(files, channel_map, planes_to_filter)
     sorted_tpstream_files = update_tpstream_indices(all_tpstream_files)
 
     total_unique_planes = rou_plane_data.total_plane_count()
     logging.info("Total plane count: %d", total_unique_planes)
-    update_configuration(cfg, tpreplay_app, tprm_conf, sorted_tpstream_files, total_unique_planes, planes_to_filter, args.path, args.verbose)
+    update_configuration(cfg, tpreplay_app, tprm_conf, sorted_tpstream_files, total_unique_planes, planes_to_filter, args.path)
 
 if __name__ == "__main__":
     main()
