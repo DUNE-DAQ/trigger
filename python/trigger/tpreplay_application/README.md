@@ -368,6 +368,7 @@ Additionally, the handler modules used are typical in the sense that they alread
 - [ ] should the initial TP times be shifted (as if they were streamed now) ?
 - [ ] option in python script to pick TA algorithm ?
 - [ ] support for multiple concurrent (different) makers
-- [ ] when TP format changes (relative `tp.time_peak`) looping logic needs adjusting
+- [ ] different filtering options per ROU ?
+- [X] when TP format changes (relative `tp.time_peak`) looping logic needs adjusting
 
 For more details please see [this report](https://docs.dunescience.org/cgi-bin/private/ShowDocument?docid=32918). 
