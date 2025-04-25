@@ -409,16 +409,11 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
   TLOG() << "------------------------------";
   TLOG() << "Files: " << m_tpstream_files.size();
   // Loop through the map and print sizes
-  for (const auto& rou_pair : all_data) {
-    const std::string& ROU = rou_pair.first; // ROU name (key)
-    const auto& plane_map = rou_pair.second; // Map of planes for this ROU
-
+  for (const auto& [ROU, plane_map] : all_data) {
     TLOG() << "ROU: " << ROU << ", Number of planes: " << plane_map.size();
 
     // Loop through each plane for the current ROU
-    for (const auto& plane_pair : plane_map) {
-      int plane = plane_pair.first;                  // Plane number (key)
-      const auto& vector_of_tps = plane_pair.second; // Vector of TriggerPrimitiveTypeAdapter vectors
+    for (const auto& [plane, vector_of_tps] : plane_map) {  
       TLOG() << "  Plane: " << plane << ", Number of vectors: " << vector_of_tps.size();
     }
   }
