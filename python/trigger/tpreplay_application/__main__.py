@@ -9,7 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from tqdm import tqdm
-from typing import Dict, Set, List
+from typing import Any
 
 import conffwk
 import daqdataformats
@@ -20,7 +20,7 @@ from daqconf.consolidate import copy_configuration
 from hdf5libs import HDF5RawDataFile
 
 
-def setup_logging(verbose: bool):
+def setup_logging(verbose: bool) -> None:
     """
     Set up logging based on the verbose flag.
     If verbose flag is provided, set the logging level to DEBUG to show all logs.
@@ -32,7 +32,7 @@ def setup_logging(verbose: bool):
     else:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-def set_mem_limit(mem_limit: int, verbose: bool):
+def set_mem_limit(mem_limit: int, verbose: bool) -> None:
     """
     As a safety measure we set a memory limit for the process.
     Should not be needed here as hdf5 processing is minimal.
@@ -42,21 +42,21 @@ def set_mem_limit(mem_limit: int, verbose: bool):
     resource.setrlimit(resource.RLIMIT_AS, (memory_limit, memory_limit))
     logging.debug("Setting memory limit to %i GBs", memory_limit/GB)
 
-def cleanup():
+def cleanup() -> None:
     gc.collect()
 
 # custom type to hold a map of all (unique) ReadoutUnits and the corresponding planes for each
 @dataclass
 class ROUPlaneData:
-    data: Dict[str, Set[int]] = field(default_factory=lambda: defaultdict(set))
+    data: dict[str, set[int]] = field(default_factory=lambda: defaultdict(set))
 
-    def add_value(self, rou: str, plane: int):
+    def add_value(self, rou: str, plane: int) -> None:
         self.data[rou].add(plane)
 
-    def get_values(self, rou: str):
+    def get_values(self, rou: str) -> None:
         return self.data.get(rou, set())
 
-    def total_plane_count(self):
+    def total_plane_count(self) -> int:
         return sum(len(planes) for planes in self.data.values())
 
 # custom type to hold variables for TPStream, used later to sort & update db
@@ -116,7 +116,7 @@ def load_channel_map(channel_map_string):
         print(f"Failed to create the channel map '{channel_map_string}'. Error: {str(e)}")
         sys.exit(1)
 
-def get_tpstream_files(filename: str, verbose: bool) -> List[str]:
+def get_tpstream_files(filename: str, verbose: bool) -> list[str]:
     """
     Reads in names of tpstream files from provided text file.
     """
@@ -130,7 +130,7 @@ def get_tpstream_files(filename: str, verbose: bool) -> List[str]:
 
     return tpstream_files
 
-def check_files(files: List[str]):
+def check_files(files: list[str]):
     """
     Very basic checks on the provided TPStream files.
     """
@@ -146,7 +146,7 @@ def check_files(files: List[str]):
             logging.error("File %s does not seem to be hdf5 file!", a_file)
             sys.exit(1)
 
-def extract_rous_and_planes(files: List[str], channel_map: 'detchannelmaps._daq_detchannelmaps_py.TPCChannelMap', planes_to_filter: Set[int], verbose: bool) -> (List[TPStreamFile], ROUPlaneData):
+def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_detchannelmaps_py.TPCChannelMap', planes_to_filter: set[int], verbose: bool) -> (list[TPStreamFile], ROUPlaneData):
     """
     This function goes over the provided TPStream files.
     It extracts the readout units used to generate the data in the files.
@@ -223,7 +223,7 @@ def extract_rous_and_planes(files: List[str], channel_map: 'detchannelmaps._daq_
 
     return all_tpstream_files, rou_plane_data
 
-def update_tpstream_indices(tpstream_files: List[TPStreamFile]) -> List[TPStreamFile]:
+def update_tpstream_indices(tpstream_files: list[TPStreamFile]) -> list[TPStreamFile]:
     """
     Sorts the files by the time of the very first TP.
     The data will be sorted in TPRM, but this speeds it up.
@@ -369,7 +369,7 @@ def main():
     parser = argparse.ArgumentParser(description="To be used with TP Replay Application. Process TPStream data and update configuration.",
             formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--files", type=str, required=True, help="Text file with (full) paths to HDF5 TPStream file location. One per line.")
-    parser.add_argument("--filter-planes", type=int, nargs='*', choices=[0, 1, 2], default=[], help="List of planes to filter out. Can be empty or contain any combination of 0 (U), 1 (V), and 2 (X).")
+    parser.add_argument("--filter-planes", type=int, nargs='*', choices=[0, 1, 2], default=[], help="list of planes to filter out. Can be empty or contain any combination of 0 (U), 1 (V), and 2 (X).")
     parser.add_argument("--channel-map", type=str, default='PD2HDChannelMap', 
                         help="Specify the channel map to use. Available examples include: PD2HDChannelMap, PD2VDBottomTPCChannelMap, VDColdboxChannelMap, HDColdboxChannelMap.\n"
                              "For more details, visit: https://github.com/DUNE-DAQ/detchannelmaps/blob/develop/docs/channel-maps-table.md")
