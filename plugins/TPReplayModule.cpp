@@ -151,7 +151,7 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
       m_tp_streams.push_back(std::move(this_stream));
       plane_iter++;
     }
-    global_iter = global_iter + plane_iter;
+    global_iter += plane_iter;
   }
 
   TLOG() << "Total of " << m_tp_streams.size() << " TP streams.";
@@ -355,6 +355,10 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
       // Create a vector of the correct size, and directly associate it with tp_array
       std::vector<TriggerPrimitiveTypeAdapter> tps(reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array),
                                                    reinterpret_cast<TriggerPrimitiveTypeAdapter*>(tp_array) + num_tps);
+
+      if (tps.empty()) {
+        continue;
+      }
 
       // Efficient insertion into deque
       auto& data_deque = all_data[ROU][plane];
