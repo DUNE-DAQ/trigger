@@ -110,8 +110,10 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 
   // Loading sorted TP stream files
   for (auto& stream : m_conf->get_tp_streams()) {
-    std::pair tmp_obj = std::make_pair(stream->get_index(), stream->get_filename());
-    m_tpstream_files.insert(tmp_obj);
+    auto result = m_tpstream_files.insert(std::make_pair(stream->get_index(), stream->get_filename()));
+    if (!result.second) {
+      ers::error(dunedaq::trigger::ReplayStreamFileError(ERS_HERE, get_name(), stream->get_index(), stream->get_filename(), result.first->second )); 
+    }
   }
 
   // Print grouped files
@@ -130,15 +132,10 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   // Now we create streams.
   int global_iter = 0;
   // Loop over ROUs
-  for (const auto& rou_pair : m_all_tp_data) {
-    const std::string& ROU = rou_pair.first;
-    const auto& plane_map = rou_pair.second;
+  for (const auto& [ROU, plane_map] : m_all_tp_data) {
     int plane_iter = 0;
     // Loop over Planes
-    for (const auto& plane_pair : plane_map) {
-      int plane = plane_pair.first;
-      const auto& vector_of_tps = plane_pair.second;
-
+    for (const auto& [plane, vector_of_tps] : plane_map) {
       TPStream this_stream;
       TLOG_DEBUG(1) << "Stream: " << (global_iter + plane_iter) << "; ROU: " << ROU << "; plane: " << plane
                     << "; TP sink is " << con[global_iter + plane_iter]->class_name() << "@"

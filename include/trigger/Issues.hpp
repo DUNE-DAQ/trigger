@@ -276,6 +276,15 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((std::string)name),
                        ERS_EMPTY)
 
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayStreamFileError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Duplicate stream index " << index
+                         << " for file: " << filename
+                         << " (original: " << original << ")",
+                       ((std::string)name),
+                       ((int)index)((std::string)filename)((std::string)original))
+
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_
