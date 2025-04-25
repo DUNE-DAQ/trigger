@@ -444,8 +444,8 @@ TPReplayModule::do_work(
 
   while (running_flag.load()) {
 
-    // Looping logic
-    if (current_iteration >= m_loops) {
+    // Looping logic: exit if m_loops is set and we've reached the limit
+    if ((m_loops != -1) && (current_iteration >= m_loops)) {
       break;
     }
 
@@ -498,11 +498,14 @@ TPReplayModule::do_work(
 
       // Actually send data
       try {
-        if (m_loops > 1) {
-          auto copy = tpv;
-          tp_sink->send(std::move(copy), m_queue_timeout);
-        } else {
+        // Decide whether to move or copy based on loop count
+        if (m_loops == 1) {
+          // Only one loop: safe to move original data
           tp_sink->send(std::move(tpv), m_queue_timeout);
+        } else {
+          // Multiple or infinite loops: send a copy to preserve original
+          auto tpv_copy = tpv;
+          tp_sink->send(std::move(tpv_copy), m_queue_timeout);
         }
       } catch (const dunedaq::iomanager::TimeoutExpired& e) {
         ers::warning(e);
@@ -512,11 +515,12 @@ TPReplayModule::do_work(
 
       // Increase timestamps in the TPs so they don't
       // repeat when we do multiple loops over the file
-      if (m_loops > 1 && current_iteration < m_loops) {
+      bool will_repeat = (m_loops == -1) || (current_iteration + 1 < m_loops);
+      if (will_repeat) {
         for (auto& tpa : tpv) {
           tpa.tp.time_start += total_stream_duration;
         }
-      }
+      }      
 
     } // end loop over tpsets
     ++current_iteration;
