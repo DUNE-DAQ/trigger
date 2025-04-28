@@ -321,7 +321,7 @@ def update_RandomTCmaker_obj(cfg: conffwk.Configuration) -> Any:
         logging.error("No 'RandomTCMakerConf' DAL objects found.")
         return None
 
-def update_configuration(cfg: conffwk.Configuration, tpreplay_app: Any, tprm_conf: Any, sorted_tpstream_files: list[TPStreamFile], total_unique_planes: int, planes_to_filter: list[int], path_str: str, n_loops: int) -> None:
+def update_configuration(cfg: conffwk.Configuration, tpreplay_app: Any, tprm_conf: Any, channel_map: str, sorted_tpstream_files: list[TPStreamFile], total_unique_planes: int, planes_to_filter: list[int], path_str: str, n_loops: int) -> None:
     """
     Takes all changes and updates the local database files.
     [total_planes in TPRM
@@ -333,6 +333,7 @@ def update_configuration(cfg: conffwk.Configuration, tpreplay_app: Any, tprm_con
     logging.info("Updating configuration with new TPStream data")
     tprm_conf.total_planes = total_unique_planes
     tprm_conf.number_of_loops = n_loops
+    tprm_conf.channel_map = channel_map
 
     a_tp_stream = tprm_conf.tp_streams[0] if tprm_conf.tp_streams else None
     tprm_conf.tp_streams = update_tpstream_dal_objects(a_tp_stream, cfg, sorted_tpstream_files)
@@ -409,7 +410,7 @@ def main():
 
     total_unique_planes = rou_plane_data.total_plane_count()
     logging.info("Total plane count: %d", total_unique_planes)
-    update_configuration(cfg, tpreplay_app, tprm_conf, sorted_tpstream_files, total_unique_planes, planes_to_filter, args.path, args.n_loops)
+    update_configuration(cfg, tpreplay_app, tprm_conf, args.channel_map, sorted_tpstream_files, total_unique_planes, planes_to_filter, args.path, args.n_loops)
 
 if __name__ == "__main__":
     main()
