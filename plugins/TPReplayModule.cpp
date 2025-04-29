@@ -81,9 +81,7 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   m_loops = m_conf->get_number_of_loops();
 
   // Plane filtering
-  for (auto& plane_wrap : m_conf->get_filter_out_plane()) {
-    m_filter_planes_ids.push_back(plane_wrap->get_plane());
-  }
+  m_filter_planes_ids = std::set<int>( m_conf->get_filter_out_plane().begin(), m_conf->get_filter_out_plane().end() );
   m_filter_planes = (m_filter_planes_ids.size() > 0) ? true : false;
 
   TLOG() << "Plane filtering: " << m_filter_planes;

@@ -15,7 +15,6 @@
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/opmon/tpreplaymodule_info.pb.h"
 
-#include "appmodel/PlaneNumberConf.hpp"
 #include "appmodel/TPReplayModule.hpp"
 #include "appmodel/TPReplayModuleConf.hpp"
 #include "appmodel/TPStreamConf.hpp"
@@ -106,7 +105,7 @@ private:
   std::string m_channel_map_name;
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
   bool m_filter_planes;
-  std::vector<int> m_filter_planes_ids;
+  std::set<int> m_filter_planes_ids;
   std::unordered_set<detdataformats::DetID::Subdetector> m_validSubdetectors;
 
   // opmon

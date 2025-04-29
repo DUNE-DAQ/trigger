@@ -262,26 +262,6 @@ def update_tpstream_dal_objects(a_tp_stream: Any, cfg: conffwk.Configuration, so
         logging.debug("Created TPStream: %s", temp_tp_stream)
     return tp_streams
 
-def update_planes_dal_objects(a_plane: Any, cfg: conffwk.Configuration, planes_to_filter: list[int]) -> list[Any]:
-    """
-    Creates PlaneNumberConf dal objects for the provided set of planes.
-    Additional safety to create these from scratch if an example instance is not found.
-    """
-    if not a_plane:
-        logging.warning("No template PlaneNumberConf object found")
-        # get template and create from scratch
-        a_plane_template = cfg.create_obj('PlaneNumberConf', "template-PlaneNumberConf")
-        cache = {"PlaneNumberConf": {}}
-        a_plane = a_plane_template.as_dal(cache)
-    planes = []
-    for i in range(0, len(planes_to_filter)):
-        temp_plane = copy.deepcopy(a_plane)
-        temp_plane.id = f"tpreplay-plane-filter-{i+1}"
-        temp_plane.plane = planes_to_filter[i]
-        planes.append(temp_plane)
-        logging.debug("Created PlaneNumberConf: %s", temp_plane)
-    return planes
-
 def update_sid_dal_objects(a_sid: Any, cfg: conffwk.Configuration, total_unique_planes: int) -> list[Any]:
     """
     Creates SourceIDConf dal objects needed for each unique plane.
@@ -321,7 +301,7 @@ def update_RandomTCmaker_obj(cfg: conffwk.Configuration) -> Any:
         logging.error("No 'RandomTCMakerConf' DAL objects found.")
         return None
 
-def update_configuration(cfg: conffwk.Configuration, tpreplay_app: Any, tprm_conf: Any, channel_map: str, sorted_tpstream_files: list[TPStreamFile], total_unique_planes: int, planes_to_filter: list[int], path_str: str, n_loops: int) -> None:
+def update_configuration(cfg: conffwk.Configuration, tpreplay_app: Any, tprm_conf: Any, channel_map: str, sorted_tpstream_files: list[TPStreamFile], total_unique_planes: int, planes_to_filter: set[int], path_str: str, n_loops: int) -> None:
     """
     Takes all changes and updates the local database files.
     [total_planes in TPRM
@@ -340,9 +320,8 @@ def update_configuration(cfg: conffwk.Configuration, tpreplay_app: Any, tprm_con
     logging.info("Total of %i TPStream configs created", len(tprm_conf.tp_streams))
 
     if planes_to_filter:
-        a_plane = tprm_conf.filter_out_plane[0] if tprm_conf.filter_out_plane else None
-        tprm_conf.filter_out_plane = update_planes_dal_objects(a_plane, cfg, list(planes_to_filter))
-        logging.info("Total of %i PlaneNumberConf configs created", len(tprm_conf.filter_out_plane))
+        tprm_conf.filter_out_plane = list(planes_to_filter)
+        logging.info("Total of %i planes to be filtered", len(tprm_conf.filter_out_plane))
     else:
         tprm_conf.filter_out_plane = []
 
@@ -359,8 +338,6 @@ def update_configuration(cfg: conffwk.Configuration, tpreplay_app: Any, tprm_con
     db_trigger = conffwk.Configuration(f"oksconflibs:{path_str}/trigger-segment.data.xml")
     for tpstream in tprm_conf.tp_streams:
         db_modules.update_dal(tpstream)
-    for plane in tprm_conf.filter_out_plane or []:
-        db_modules.update_dal(plane)
     for sid in tpreplay_app.tp_source_ids:
         db_trigger.update_dal(sid)
     db_trigger.update_dal(tpreplay_app)
