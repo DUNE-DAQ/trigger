@@ -62,12 +62,10 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
 
   // Valid Subdetectors (for now)
-  m_validSubdetectors = {  
-    detdataformats::DetID::Subdetector::kHD_TPC,
-    detdataformats::DetID::Subdetector::kVD_BottomTPC,
-    detdataformats::DetID::Subdetector::kVD_TopTPC,
-    detdataformats::DetID::Subdetector::kNDLAr_TPC
-  };
+  m_validSubdetectors = { detdataformats::DetID::Subdetector::kHD_TPC,
+                          detdataformats::DetID::Subdetector::kVD_BottomTPC,
+                          detdataformats::DetID::Subdetector::kVD_TopTPC,
+                          detdataformats::DetID::Subdetector::kNDLAr_TPC };
 
   TLOG() << "### REPLAY CONFIGURATION ###";
   TLOG() << "Will use channel map: " << m_channel_map_name;
@@ -81,7 +79,7 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   m_loops = m_conf->get_number_of_loops();
 
   // Plane filtering
-  m_filter_planes_ids = std::set<int>( m_conf->get_filter_out_plane().begin(), m_conf->get_filter_out_plane().end() );
+  m_filter_planes_ids = std::set<int>(m_conf->get_filter_out_plane().begin(), m_conf->get_filter_out_plane().end());
   m_filter_planes = (m_filter_planes_ids.size() > 0) ? true : false;
 
   TLOG() << "Plane filtering: " << m_filter_planes;
@@ -110,7 +108,8 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   for (auto& stream : m_conf->get_tp_streams()) {
     auto result = m_tpstream_files.insert(std::make_pair(stream->get_index(), stream->get_filename()));
     if (!result.second) {
-      ers::error(dunedaq::trigger::ReplayStreamFileError(ERS_HERE, get_name(), stream->get_index(), stream->get_filename(), result.first->second )); 
+      ers::error(dunedaq::trigger::ReplayStreamFileError(
+        ERS_HERE, get_name(), stream->get_index(), stream->get_filename(), result.first->second));
     }
   }
 
@@ -141,11 +140,11 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
       this_stream.tp_sink =
         get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[global_iter + plane_iter]->UID());
       this_stream.tpvs = vector_of_tps;
-      
+
       m_earliest_first_tp_timestamp =
         std::min(m_earliest_first_tp_timestamp, this_stream.tpvs.front().front().tp.time_start);
       m_latest_last_tp_timestamp = std::max(m_latest_last_tp_timestamp, this_stream.tpvs.back().back().tp.time_start);
-      
+
       m_tp_streams.push_back(std::move(this_stream));
       plane_iter++;
     }
@@ -316,8 +315,11 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
       auto& tp = tp_array[0];
 
       // Only select TPC TPs (for now)
-      dunedaq::detdataformats::DetID::Subdetector subdet = static_cast<dunedaq::detdataformats::DetID::Subdetector>(tp.detid);
-      if (!m_validSubdetectors.count(subdet)) { continue; } 
+      dunedaq::detdataformats::DetID::Subdetector subdet =
+        static_cast<dunedaq::detdataformats::DetID::Subdetector>(tp.detid);
+      if (!m_validSubdetectors.count(subdet)) {
+        continue;
+      }
 
       // Get ROU and plane
       std::string ROU;
@@ -411,7 +413,7 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
     TLOG() << "ROU: " << ROU << ", Number of planes: " << plane_map.size();
 
     // Loop through each plane for the current ROU
-    for (const auto& [plane, vector_of_tps] : plane_map) {  
+    for (const auto& [plane, vector_of_tps] : plane_map) {
       TLOG() << "  Plane: " << plane << ", Number of vectors: " << vector_of_tps.size();
     }
   }
@@ -518,7 +520,7 @@ TPReplayModule::do_work(
         for (auto& tpa : tpv) {
           tpa.tp.time_start += total_stream_duration;
         }
-      }      
+      }
 
     } // end loop over tpsets
     ++current_iteration;

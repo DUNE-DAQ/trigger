@@ -26,8 +26,8 @@
 #include "confmodel/Session.hpp"
 
 #include "daqdataformats/SourceID.hpp"
-#include "detdataformats/DetID.hpp"
 #include "detchannelmaps/TPCChannelMap.hpp"
+#include "detdataformats/DetID.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
 #include "iomanager/Sender.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
