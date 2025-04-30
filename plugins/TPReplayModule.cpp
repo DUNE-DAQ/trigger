@@ -126,11 +126,11 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
 
   // Get earliest time
-  m_earliest_tp_time = get_earliest_time_start( m_all_tp_data ).value_or(0); // Error if 0? 
+  m_earliest_tp_time = get_earliest_time_start(m_all_tp_data).value_or(0); // Error if 0?
   TLOG_DEBUG(1) << "The earliest available TP time_start is: " << m_earliest_tp_time;
 
   // Shift time_starts
-  shift_time_starts( m_all_tp_data, m_earliest_tp_time );
+  shift_time_starts(m_all_tp_data, m_earliest_tp_time);
 
   // Data loaded and sorted.
   // Now we create streams.
@@ -550,39 +550,41 @@ TPReplayModule::do_work(
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
-std::optional<uint64_t> 
-TPReplayModule::get_earliest_time_start(const std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data) {
-    std::optional<uint64_t> earliest;
+std::optional<uint64_t>
+TPReplayModule::get_earliest_time_start(
+  const std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data)
+{
+  std::optional<uint64_t> earliest;
 
-    for (const auto& [str_key, inner_map] : data) {
-        for (const auto& [int_key, dq] : inner_map) {
-            if (!dq.empty() && !dq.front().empty()) {
-                const auto& tp = dq.front().front().tp;  // First TP
-                if (!earliest.has_value() || tp.time_start < *earliest) {
-                    earliest = tp.time_start;
-                }
-            }
+  for (const auto& [str_key, inner_map] : data) {
+    for (const auto& [int_key, dq] : inner_map) {
+      if (!dq.empty() && !dq.front().empty()) {
+        const auto& tp = dq.front().front().tp; // First TP
+        if (!earliest.has_value() || tp.time_start < *earliest) {
+          earliest = tp.time_start;
         }
+      }
     }
+  }
 
-    return earliest;
+  return earliest;
 }
 
-void 
+void
 TPReplayModule::shift_time_starts(
-    std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data,
-    uint64_t earliest_time)
+  std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data,
+  uint64_t earliest_time)
 {
-    for (auto& [str_key, inner_map] : data) {
-        for (auto& [int_key, dq] : inner_map) {
-            for (auto& vec : dq) {
-                for (auto& tpa : vec) {
-                    tpa.tp.time_start -= earliest_time;
-                }
-            }
+  for (auto& [str_key, inner_map] : data) {
+    for (auto& [int_key, dq] : inner_map) {
+      for (auto& vec : dq) {
+        for (auto& tpa : vec) {
+          tpa.tp.time_start -= earliest_time;
         }
+      }
     }
-    return;
+  }
+  return;
 }
 
 } // namespace dunedaq::trigger
