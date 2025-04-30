@@ -56,7 +56,7 @@ One can use this script that will modify the OKS data with data obtained from th
 | Option               | Type         | Default Value  | Description  |
 |----------------------|--------------|----------------|--------------|
 | `--files`            | `str`        | **Required**   | Text file with full paths to HDF5 TPStream file locations. |
-| `--filter-planes`    | `list[int]`  | `[]` (empty)   | List of planes to filter out. Accepts combinations of: <br> `0` (U), `1` (V), `2` (X). Example: `[0, 1]` to filter out both induction planes. |
+| `--filter-planes`    | `list[int]`  | `[]` (empty)   | List of planes to filter out. Accepts combinations of: <br> `0` (U), `1` (V), `2` (X). Example: `0 1` to filter out both induction planes. |
 | `--channel-map`      | `str`        | `PD2HDChannelMap` | Specify channel map. For example: `PD2HDChannelMap`, `PD2VDBottomTPCChannelMap`, etc. For the full list, see: [Channel Maps Documentation](https://github.com/DUNE-DAQ/detchannelmaps/blob/develop/docs/channel-maps-table.md). |
 | `--n-loops`          | `int`        | -1             | Number of times to loop over the provided data. The default is -1 and this results in "infinite" replay. For multiple loops, the time of TPs is modified (shifted). |
 | `--config`           | `str`        | `config/daqsystemtest/example-configs.data.xml` | Path to the base OKS configuration file with `tpreplay` session. |
@@ -80,7 +80,7 @@ An example input text file:
 ```
 --filter-planes 0 1
 ```
-- *channel-map*: valid channel map is needed to extract readout units and planes. Defaults to `PD2HDChannelMap`.
+- *channel-map*: valid channel map is needed to extract readout units and planes from TP data. Defaults to `PD2HDChannelMap`. Make sure you are using the correct channel map for your data!
 - *n-loops*: the application allows to replay the data multiple times by shifting the TP times. If `-1` is used, the replay will continue indefinitely (until the user stops the run).
 - *config*: this is a path to OKS (.data.xml) file that containts default `tpreplay` session. Can be left to use the default.
 - *path*: this is a path that will be created locally to store the modified configurations. By default set to `tpreplay-run`.
@@ -190,7 +190,7 @@ Few notes on what happens in this script:
 ```
 - Configuration options:
 
-| Option                   | Description                                                                                                                 |
+| Option                   | Description                                                          loops                                                       |
 |--------------------------|-----------------------------------------------------------------------------------------------------------------------------|
 | **number_of_loops**      | Allows replaying the TPs multiple times with shifted timestamps.                                                            |
 | **maximum_wait_time_us** | Max buffer time between sending consecutive TP vectors.                                                                     |
