@@ -338,7 +338,7 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 
 - Trigger segment:
 
-![conf_trg](https://github.com/user-attachments/assets/f913afc9-32f7-40b9-980c-47d7cf8de583)
+![conf_trg](https://github.com/user-attachments/assets/1e8fe55a-4f62-4866-956c-df4aa253dabf)
 
 - `TPReplayModule` configuration:
 
