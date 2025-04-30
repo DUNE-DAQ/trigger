@@ -87,6 +87,8 @@ An example input text file:
 - *mem-limit*: a limit on max allowed memory usage (in GBs) of this script to protect the server. Default is 25 GBs.
 - *verbose*: to enable debugging messages.
 
+*The script makes use of `tqdm` package, which needs to be (pip) installed if not available on the system.*
+
 #### Generating custom configuration
 The only required argument is the text file containing the names of TPStream files:
 ```
