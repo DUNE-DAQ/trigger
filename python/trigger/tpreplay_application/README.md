@@ -344,7 +344,7 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 
 ![tpmm](https://github.com/user-attachments/assets/fc0ab564-d57e-47b9-b46a-0fc0690e06b4)
 
-As mentioned, the different plane options are already configured, and can simply be selected as needed.
+For plane filtering, the `filter_out_plane` variable accepts multiple values (but can also be empty).
 
 Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). `TPReplayApplication` is added to the `trg-segment`. You can see an overview [here](#connecting-to-the-daq-system).
 
@@ -366,7 +366,7 @@ Additionally, the handler modules used are typical in the sense that they alread
 - *Memory limits*: Some memory optimization is implemented, however, TPStream files are often very big. Because most processing happens within one module (TPMm), memory usage can be an issue for many files at once. You have been warned.
 
 ### TODO (future)
-- [ ] should the initial TP times be shifted (as if they were streamed now) ?
+- [ ] should the initial TP times be shifted (as if they were streamed 'now') ?
 - [ ] option in python script to pick TA algorithm ?
 - [ ] support for multiple concurrent (different) makers
 - [ ] different filtering options per ROU ?
