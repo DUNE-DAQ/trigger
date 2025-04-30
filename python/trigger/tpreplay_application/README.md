@@ -45,12 +45,12 @@ The easiest way is to use this python module. It helps to retrieve relevant OKS 
 
 ### General procedure
 Replay works via a `TPReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.<br>
-To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration.<br><br>
-Remember, replay is an emulation of readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required.<br><br>
-Finally, configure the `TPReplayModule` that is part of this application. It accepts a list of input HDF5 TPStream files. Additionally, one can choose to filter out planes.
+To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration (CERN's opmon and ers).<br><br>
+Remember, replay is an emulation of readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required (these are typically part of the trigger segment already).<br><br>
+Finally, configure the `TPReplayModule` that is part of this application. It accepts a list of input HDF5 TPStream files. Additionally, one can choose to filter out planes. This python script will take care of creating and modifying the configuration given both the parameters from the command line and parameters extracted from data files.
 
 ### Using this script
-One can use this script that will modify the OKS data with data obtained from the provided files.<br>
+One can use this script that will modify the OKS data with parameters obtained from the provided files.<br>
 
 #### Command-Line Options for TP Replay Application
 | Option               | Type         | Default Value  | Description  |
@@ -58,7 +58,7 @@ One can use this script that will modify the OKS data with data obtained from th
 | `--files`            | `str`        | **Required**   | Text file with full paths to HDF5 TPStream file locations. |
 | `--filter-planes`    | `list[int]`  | `[]` (empty)   | List of planes to filter out. Accepts combinations of: <br> `0` (U), `1` (V), `2` (X). Example: `0 1` to filter out both induction planes. |
 | `--channel-map`      | `str`        | `PD2HDChannelMap` | Specify channel map. For example: `PD2HDChannelMap`, `PD2VDBottomTPCChannelMap`, etc. For the full list, see: [Channel Maps Documentation](https://github.com/DUNE-DAQ/detchannelmaps/blob/develop/docs/channel-maps-table.md). |
-| `--n-loops`          | `int`        | -1             | Number of times to loop over the provided data. The default is -1 and this results in "infinite" replay. For multiple loops, the time of TPs is modified (shifted). |
+| `--n-loops`          | `int`        | -1             | Number of times to loop over the provided data. The default is `-1` and this results in "infinite" replay. For multiple loops, the time of TPs is modified (shifted). |
 | `--config`           | `str`        | `config/daqsystemtest/example-configs.data.xml` | Path to the base OKS configuration file with `tpreplay` session. |
 | `--path`             | `str`        | `tpreplay-run` | Path for local output for configuration files. This directory will be created by this script and modified configurations stored there. |
 | `--mem-limit`        | `int`        | `25`           | Because the HDF5 files are big and need to be loaded into memory to process there is a limit set (in GBs) on the memory the script can use, to preserve the server. |
@@ -184,7 +184,7 @@ Few notes on what happens in this script:
   <attribute name="maximum_wait_time_us" type="u32" init-value="1000" is-not-null="yes"/>
   <attribute name="channel_map" type="string" init-value="PD2HDChannelMap" is-not-null="yes"/>
   <attribute name="total_planes" type="u32" init-value="0" is-not-null="yes"/>
-  <relationship name="filter_out_plane" class-type="PlaneNumberConf" low-cc="zero" high-cc="many" is-composite="no" is-exclusive="no" is-dependent="no"/>
+  <attribute name="filter_out_plane" type="u32" range="0..2" init-value="0" is-multi-value="yes"/>
   <relationship name="tp_streams" class-type="TPStreamConf" low-cc="one" high-cc="many" is-composite="no" is-exclusive="no" is-dependent="no"/>
 </class>
 ```
@@ -198,16 +198,6 @@ Few notes on what happens in this script:
 | **total_planes**         | Represents the total number of unique planes. Required by multiple applications when building modules / linking the system. |
 | **filter_out_plane**     | Option to filter out (ignore) data from a specific plane (Induction 1 / Induction 2 / Collection).                          |
 | **tp_streams**           | List of TPStream HDF5 files to be used as input (multiple files supported).                                                 |
-<br>
- 
-Plane filtering schema:
-```xml
- <class name="PlaneNumberConf">
-  <attribute name="plane" type="u32" init-value="0" is-not-null="yes"/>
- </class>
-```
-The 3 planes are already part of the configuration, so one can simply select 0-2 to use:
-![conf_plane](https://github.com/user-attachments/assets/d49f55af-c578-4cfe-ab4d-d9de2193f476)
 <br>
 
 TPStream configuration:
@@ -352,7 +342,7 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 
 - `TPReplayModule` configuration:
 
-![conf_tpmm](https://github.com/user-attachments/assets/def5662f-2df7-4f88-9d43-182c36109744)
+![tpmm](https://github.com/user-attachments/assets/fc0ab564-d57e-47b9-b46a-0fc0690e06b4)
 
 As mentioned, the different plane options are already configured, and can simply be selected as needed.
 
