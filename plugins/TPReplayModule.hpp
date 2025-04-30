@@ -93,6 +93,11 @@ private:
     std::map<int, std::string>);
   //           ROU             plane                   vectors of TPs (one per frag)
   std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> m_all_tp_data;
+  std::optional<uint64_t> get_earliest_time_start(const std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data);
+  uint64_t m_earliest_tp_time;
+  void shift_time_starts(
+    std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data,
+    uint64_t earliest_time);
 
   // Configuration
   const appmodel::TPReplayModuleConf* m_conf;
