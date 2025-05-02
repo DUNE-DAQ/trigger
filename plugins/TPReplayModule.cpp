@@ -572,12 +572,14 @@ TPReplayModule::get_earliest_time_start(
 }
 
 void
-TPReplayModule::shift_time_starts( std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data )
+TPReplayModule::shift_time_starts(
+  std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data)
 {
   TLOG_DEBUG(10) << "SHIFTING FUNCTION";
-  // Get current time 
-  uint64_t current_time = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                          std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+  // Get current time
+  uint64_t current_time =
+    std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch())
+      .count();
   // Convert to clock ticks (62.5 MHz clock)
   uint64_t current_time_clock = static_cast<uint64_t>(current_time * (625.0 / 10000.0));
   uint64_t diff = current_time_clock - m_earliest_tp_time;
@@ -590,7 +592,7 @@ TPReplayModule::shift_time_starts( std::map<std::string, std::map<int, std::dequ
     for (auto& [int_key, dq] : inner_map) {
       for (auto& vec : dq) {
         for (auto& tpa : vec) {
-          tpa.tp.time_start += diff ;
+          tpa.tp.time_start += diff;
         }
       }
     }
