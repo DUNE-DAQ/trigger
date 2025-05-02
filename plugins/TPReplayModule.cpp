@@ -129,17 +129,18 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   // Now we create streams.
   int global_iter = 0;
   // Loop over ROUs
-  for (const auto& [ROU, plane_map] : m_all_tp_data) {
+  for (auto& [ROU, plane_map] : m_all_tp_data) {
     int plane_iter = 0;
     // Loop over Planes
-    for (const auto& [plane, vector_of_tps] : plane_map) {
-      TPStream this_stream;
+    for (auto& [plane, vector_of_tps] : plane_map) {
+
       TLOG_DEBUG(1) << "Stream: " << (global_iter + plane_iter) << "; ROU: " << ROU << "; plane: " << plane
                     << "; TP sink is " << con[global_iter + plane_iter]->class_name() << "@"
                     << con[global_iter + plane_iter]->UID();
-      this_stream.tp_sink =
-        get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(con[global_iter + plane_iter]->UID());
-      this_stream.tpvs = vector_of_tps;
+
+      TPStream this_stream{ get_iom_sender<std::vector<trigger::TriggerPrimitiveTypeAdapter>>(
+                              con[global_iter + plane_iter]->UID()),
+                            vector_of_tps };
 
       m_earliest_first_tp_timestamp =
         std::min(m_earliest_first_tp_timestamp, this_stream.tpvs.front().front().tp.time_start);
