@@ -127,10 +127,10 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 
   // Get earliest time
   m_earliest_tp_time = get_earliest_time_start(m_all_tp_data).value_or(0); // Error if 0?
-  TLOG_DEBUG(1) << "The earliest available TP time_start is: " << m_earliest_tp_time;
+  TLOG_DEBUG(10) << "The earliest available TP time_start is: " << m_earliest_tp_time;
 
-  // Shift time_starts
-  shift_time_starts(m_all_tp_data, m_earliest_tp_time);
+  // Shift TP times to 'now'
+  shift_time_starts(m_all_tp_data);
 
   // Data loaded and sorted.
   // Now we create streams.
@@ -187,6 +187,7 @@ TPReplayModule::do_start(const nlohmann::json& /*obj*/)
 
   // Start threads for each stream
   for (auto& stream : m_tp_streams) {
+
     m_threads.push_back(std::make_unique<std::thread>(&TPReplayModule::do_work,
                                                       this,
                                                       std::ref(m_running_flag),
@@ -571,15 +572,25 @@ TPReplayModule::get_earliest_time_start(
 }
 
 void
-TPReplayModule::shift_time_starts(
-  std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data,
-  uint64_t earliest_time)
+TPReplayModule::shift_time_starts( std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data )
 {
+  TLOG_DEBUG(10) << "SHIFTING FUNCTION";
+  // Get current time 
+  uint64_t current_time = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                          std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+  // Convert to clock ticks (62.5 MHz clock)
+  uint64_t current_time_clock = static_cast<uint64_t>(current_time * (625.0 / 10000.0));
+  uint64_t diff = current_time_clock - m_earliest_tp_time;
+
+  TLOG_DEBUG(10) << "Current sys time: " << current_time;
+  TLOG_DEBUG(10) << "Current sys time, in ticks: " << current_time_clock;
+  TLOG_DEBUG(10) << "Time diff: " << diff;
+
   for (auto& [str_key, inner_map] : data) {
     for (auto& [int_key, dq] : inner_map) {
       for (auto& vec : dq) {
         for (auto& tpa : vec) {
-          tpa.tp.time_start -= earliest_time;
+          tpa.tp.time_start += diff ;
         }
       }
     }
