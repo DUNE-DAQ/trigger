@@ -40,7 +40,9 @@ TPProcessor::TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& 
 }
 
 TPProcessor::~TPProcessor()
-{}
+{
+  TLOG() << "TPProcessor destructor";
+}
 
 void
 TPProcessor::start(const nlohmann::json& args)
@@ -63,6 +65,7 @@ TPProcessor::stop(const nlohmann::json& args)
   inherited::stop(args);
   m_running_flag.store(false);
   print_opmon_stats();
+  m_tams.clear();  // force algorithm shared_ptr destructor
 }
 
 void
