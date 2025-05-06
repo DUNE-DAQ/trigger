@@ -42,7 +42,9 @@ TAProcessor::TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& 
 }
 
 TAProcessor::~TAProcessor()
-{}
+{
+  m_tcms.clear();
+}
 
 void
 TAProcessor::start(const nlohmann::json& args)
