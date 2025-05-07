@@ -102,6 +102,14 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
 }
 
 void
+TAProcessor::scrap(const nlohmann::json& args)
+{
+  inherited::scrap(args);
+  m_tcms.clear();
+  m_tc_sink.reset();
+}
+
+void
 TAProcessor::generate_opmon_data()
 {
   opmon::TAProcessorInfo info;

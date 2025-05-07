@@ -53,6 +53,8 @@ public:
 
   void conf(const appmodel::DataHandlerModule* conf) override;
 
+  void scrap(const nlohmann::json& args) override;
+
   void generate_opmon_data() override;
 
 protected:

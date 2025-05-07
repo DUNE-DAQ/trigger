@@ -183,6 +183,26 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 }
 
 void
+TCProcessor::scrap(const nlohmann::json& args)
+{
+  m_mandatory_links.clear();
+  m_group_links.clear();
+  m_roi_conf.clear();
+  m_roi_conf_data.clear();
+  m_roi_conf_ids.clear();
+  m_roi_conf_probs.clear();
+  m_roi_conf_probs_c.clear();
+  m_pending_tds.clear();
+  m_trigger_bitwords.clear();
+  m_readout_window_map_data.clear();
+  m_readout_window_map.clear();
+  m_ignored_tc_types.clear();
+  m_td_sink.reset();
+
+  inherited::scrap(args);
+}
+
+void
 TCProcessor::generate_opmon_data()
 {
   opmon::TCProcessorInfo info;

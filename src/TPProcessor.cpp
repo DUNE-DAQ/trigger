@@ -105,6 +105,15 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
 }
 
 void
+TPProcessor::scrap(const nlohmann::json& args)
+{
+  inherited::scrap(args);
+  m_tams.clear();
+  m_ta_sink.reset();
+}
+
+
+void
 TPProcessor::generate_opmon_data()
 {
   opmon::TPProcessorInfo info;
