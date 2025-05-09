@@ -73,7 +73,7 @@ MLTModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   // Get the session to access the detector configuration
   m_session = mcfg->session();
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
@@ -142,7 +142,7 @@ MLTModule::do_configure(const nlohmann::json& /*obj*/)
   // Now do the configuration: dummy for now
   m_configured_flag.store(true);
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting conf() method";
 }
 
 void
@@ -158,7 +158,7 @@ MLTModule::do_scrap(const nlohmann::json& /*obj*/)
   m_subdetector_readout_window_map.clear();
   m_trigger_counters.clear();
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting scrap() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting scrap() method";
 }
 
 void
@@ -248,7 +248,7 @@ MLTModule::do_start(const nlohmann::json& startobj)
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting start() method";
 }
 
 void
@@ -278,7 +278,7 @@ MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
 
   ers::info(TriggerEndOfRun(ERS_HERE, m_run_number));
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting stop() method";
 }
 
 void
@@ -295,7 +295,7 @@ MLTModule::do_pause(const nlohmann::json& /*pauseobj*/)
                      std::chrono::system_clock::now().time_since_epoch())
                      .count();
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting pause() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting pause() method";
 }
 
 void
@@ -313,7 +313,7 @@ MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
                      std::chrono::system_clock::now().time_since_epoch())
                      .count();
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting resume() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting resume() method";
 }
 
 void

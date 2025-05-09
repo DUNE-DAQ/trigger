@@ -40,7 +40,7 @@ TCProcessor::~TCProcessor()
 void
 TCProcessor::start(const nlohmann::json& args)
 {
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering start() method";
 
   m_running_flag.store(true);
   m_send_trigger_decisions_thread = std::thread(&TCProcessor::send_trigger_decisions, this);
@@ -62,13 +62,13 @@ TCProcessor::start(const nlohmann::json& args)
   m_tc_ignored_count.store(0);
   inherited::start(args);
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Exiting start() method";
 }
 
 void
 TCProcessor::stop(const nlohmann::json& args)
 {
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering stop() method";
 
   inherited::stop(args);
   m_running_flag.store(false);
@@ -89,13 +89,13 @@ TCProcessor::stop(const nlohmann::json& args)
 
   print_opmon_stats();
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Exiting stop() method";
 }
 
 void
 TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 {
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering conf() method";
 
   auto m_mtrg = cfg->cast<appmodel::TriggerDataHandlerModule>();	
   if (m_mtrg == nullptr) {
@@ -190,13 +190,13 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 
   inherited::conf(m_mtrg);
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Exiting conf() method";
 }
 
 void
 TCProcessor::scrap(const nlohmann::json& args)
 {
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering scrap() method";
 
   m_mandatory_links.clear();
   m_group_links.clear();
@@ -217,7 +217,7 @@ TCProcessor::scrap(const nlohmann::json& args)
   
   inherited::scrap(args);
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting scrap() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Exiting scrap() method";
 }
 
 void
