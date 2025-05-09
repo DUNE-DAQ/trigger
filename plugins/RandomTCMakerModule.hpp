@@ -9,11 +9,11 @@
 
 #include "trigger/TokenManager.hpp"
 
-#include "appfwk/DAQModule.hpp"
 #include "appfwk/ConfigurationManager.hpp"
+#include "appfwk/DAQModule.hpp"
 #include "confmodel/Connection.hpp"
-#include "confmodel/Session.hpp"
 #include "confmodel/DetectorConfig.hpp"
+#include "confmodel/Session.hpp"
 
 #include "appmodel/RandomTCMakerConf.hpp"
 #include "appmodel/RandomTCMakerModule.hpp"
@@ -27,11 +27,11 @@
 #include "dfmessages/Types.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
-#include "utilities/TimestampEstimator.hpp"
-#include "triggeralgs/TriggerCandidate.hpp"
 #include "trigger/Latency.hpp"
-#include "trigger/opmon/randomtcmaker_info.pb.h"
 #include "trigger/opmon/latency_info.pb.h"
+#include "trigger/opmon/randomtcmaker_info.pb.h"
+#include "triggeralgs/TriggerCandidate.hpp"
+#include "utilities/TimestampEstimator.hpp"
 
 #include "rcif/cmd/Nljs.hpp"
 
@@ -59,14 +59,10 @@ public:
    */
   explicit RandomTCMakerModule(const std::string& name);
 
-  RandomTCMakerModule(const RandomTCMakerModule&) =
-    delete; ///< RandomTCMakerModule is not copy-constructible
-  RandomTCMakerModule& operator=(const RandomTCMakerModule&) =
-    delete; ///< RandomTCMakerModule is not copy-assignable
-  RandomTCMakerModule(RandomTCMakerModule&&) =
-    delete; ///< RandomTCMakerModule is not move-constructible
-  RandomTCMakerModule& operator=(RandomTCMakerModule&&) =
-    delete; ///< RandomTCMakerModule is not move-assignable
+  RandomTCMakerModule(const RandomTCMakerModule&) = delete; ///< RandomTCMakerModule is not copy-constructible
+  RandomTCMakerModule& operator=(const RandomTCMakerModule&) = delete; ///< RandomTCMakerModule is not copy-assignable
+  RandomTCMakerModule(RandomTCMakerModule&&) = delete;            ///< RandomTCMakerModule is not move-constructible
+  RandomTCMakerModule& operator=(RandomTCMakerModule&&) = delete; ///< RandomTCMakerModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
   void generate_opmon_data() override;
@@ -123,7 +119,7 @@ private:
   std::atomic<bool> m_running_flag{ false };
 
   // OpMon variables
-  using metric_counter_type = uint64_t; //decltype(randomtriggercandidatemakerinfo::Info::tc_sent_count);
+  using metric_counter_type = uint64_t; // decltype(randomtriggercandidatemakerinfo::Info::tc_sent_count);
   std::atomic<metric_counter_type> m_tc_made_count{ 0 };
   std::atomic<metric_counter_type> m_tc_sent_count{ 0 };
   std::atomic<metric_counter_type> m_tc_failed_sent_count{ 0 };
