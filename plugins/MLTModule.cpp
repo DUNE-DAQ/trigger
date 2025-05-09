@@ -84,9 +84,7 @@ MLTModule::do_configure(const nlohmann::json& /*obj*/)
   // Get the inputs
   for (auto con : m_mtrg->get_inputs()) {
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
-      if (!m_decision_input) {
         m_decision_input = get_iom_receiver<dfmessages::TriggerDecision>(con->UID());
-      }
     } else if (con->get_data_type() == datatype_to_string<dfmessages::TriggerInhibit>()) {
       m_inhibit_input = get_iom_receiver<dfmessages::TriggerInhibit>(con->UID());
     }
@@ -152,7 +150,7 @@ MLTModule::do_scrap(const nlohmann::json& /*obj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
 
-  // m_decision_input.reset();
+  m_decision_input.reset();
   m_decision_output.reset();
   m_inhibit_input.reset();
 
