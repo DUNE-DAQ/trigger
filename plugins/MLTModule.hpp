@@ -15,30 +15,30 @@
 #define TRIGGER_PLUGINS_MODULELEVELTRIGGER_HPP_
 
 #include "trigger/Issues.hpp"
+#include "trigger/Latency.hpp"
 #include "trigger/LivetimeCounter.hpp"
 #include "trigger/TokenManager.hpp"
-#include "trigger/Latency.hpp"
-#include "trigger/opmon/moduleleveltrigger_info.pb.h"
 #include "trigger/opmon/latency_info.pb.h"
+#include "trigger/opmon/moduleleveltrigger_info.pb.h"
 
 #include "appfwk/DAQModule.hpp"
 
-#include "appmodel/MLTModule.hpp"
 #include "appmodel/MLTConf.hpp"
-#include "appmodel/TCReadoutMap.hpp"
+#include "appmodel/MLTModule.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
 #include "appmodel/SubdetectorReadoutWindowMap.hpp"
+#include "appmodel/TCReadoutMap.hpp"
 
 #include "confmodel/Connection.hpp"
 #include "confmodel/GeoId.hpp"
 
 #include "daqdataformats/SourceID.hpp"
-#include "hdf5libs/HDF5RawDataFile.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
+#include "hdf5libs/HDF5RawDataFile.hpp"
 #include "iomanager/Receiver.hpp"
 #include "trgdataformats/TriggerCandidateData.hpp"
 #include "trgdataformats/Types.hpp"
@@ -141,8 +141,8 @@ private:
   // paused state, in which we don't send triggers
   std::atomic<bool> m_paused;
   std::atomic<bool> m_dfo_is_busy;
-  //std::atomic<bool> m_hsi_passthrough;
-  //std::atomic<bool> m_tc_merging;
+  // std::atomic<bool> m_hsi_passthrough;
+  // std::atomic<bool> m_tc_merging;
 
   dfmessages::trigger_number_t m_last_trigger_number;
 
@@ -228,7 +228,7 @@ private:
     m_subdetector_readout_window_map;
 
   // Opmon variables
-  using metric_counter_type = uint64_t ; //decltype(moduleleveltriggerinfo::Info::tc_received_count);
+  using metric_counter_type = uint64_t; // decltype(moduleleveltriggerinfo::Info::tc_received_count);
   std::atomic<metric_counter_type> m_td_msg_received_count{ 0 };
   std::atomic<metric_counter_type> m_td_sent_count{ 0 };
   std::atomic<metric_counter_type> m_td_total_count{ 0 };
@@ -243,20 +243,23 @@ private:
   bool m_lc_started = false;
 
   // Struct for per TC stats
-  struct TDData {
+  struct TDData
+  {
     std::atomic<metric_counter_type> received{ 0 };
     std::atomic<metric_counter_type> sent{ 0 };
     std::atomic<metric_counter_type> failed_send{ 0 };
     std::atomic<metric_counter_type> paused{ 0 };
     std::atomic<metric_counter_type> inhibited{ 0 };
   };
-  static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types( const dfmessages::trigger_type_t& t) {
+  static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types(const dfmessages::trigger_type_t& t)
+  {
     std::set<trgdataformats::TriggerCandidateData::Type> results;
     if (t == dfmessages::TypeDefaults::s_invalid_trigger_type)
       return results;
     const std::bitset<64> bits(t);
-    for( size_t i = 0; i < bits.size(); ++i ) {
-      if ( bits[i] ) results.insert((trgdataformats::TriggerCandidateData::Type)i);
+    for (size_t i = 0; i < bits.size(); ++i) {
+      if (bits[i])
+        results.insert((trgdataformats::TriggerCandidateData::Type)i);
     }
     return results;
   }
@@ -264,10 +267,12 @@ private:
   std::map<dunedaq::trgdataformats::TriggerCandidateData::Type, TDData> m_trigger_counters;
 
   std::mutex m_trigger_mutex;
-  TDData & get_trigger_counter(trgdataformats::TriggerCandidateData::Type type) {
+  TDData& get_trigger_counter(trgdataformats::TriggerCandidateData::Type type)
+  {
     auto it = m_trigger_counters.find(type);
-    if (it != m_trigger_counters.end()) return it->second;
-    
+    if (it != m_trigger_counters.end())
+      return it->second;
+
     std::lock_guard<std::mutex> guard(m_trigger_mutex);
     return m_trigger_counters[type];
   }

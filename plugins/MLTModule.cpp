@@ -43,7 +43,6 @@ MLTModule::MLTModule(const std::string& name)
   // clang-format on
 }
 
-
 std::map<std::string, int>
 MLTModule::decode_geoid(uint64_t _geoid_int)
 {
@@ -83,33 +82,33 @@ MLTModule::do_configure(const nlohmann::json& /*obj*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
 
   // Get the inputs
-  for(auto con : m_mtrg->get_inputs()){
-    if(con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
+  for (auto con : m_mtrg->get_inputs()) {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
       if (!m_decision_input) {
         m_decision_input = get_iom_receiver<dfmessages::TriggerDecision>(con->UID());
       }
-    } else if(con->get_data_type() == datatype_to_string<dfmessages::TriggerInhibit>()) {
+    } else if (con->get_data_type() == datatype_to_string<dfmessages::TriggerInhibit>()) {
       m_inhibit_input = get_iom_receiver<dfmessages::TriggerInhibit>(con->UID());
     }
   }
 
   // Get the outputs
-  for(auto con : m_mtrg->get_outputs()){
-    if(con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>())
+  for (auto con : m_mtrg->get_outputs()) {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>())
       m_decision_output = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
   }
 
-  hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap = hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_session);
+  hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap =
+    hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_session);
   // Fill the SourceID -- Subdetector map
   for (auto const& [sourceid, geoids] : geoidmap) {
     TLOG() << "SourceID: " << sourceid;
     for (auto const& geoid : geoids) {
       std::map<std::string, int> gidmap = decode_geoid(geoid);
       SubdetectorID detid = static_cast<SubdetectorID>(gidmap["detector_id"]);
-      if (m_srcid_detid_map.contains(sourceid) &&
-          !(m_srcid_detid_map[sourceid]  == detid)) {
-        throw MLTConfigurationProblem(ERS_HERE, get_name(),
-            "Multiple subdetector types for ine SourceID not suported in trigger system!");
+      if (m_srcid_detid_map.contains(sourceid) && !(m_srcid_detid_map[sourceid] == detid)) {
+        throw MLTConfigurationProblem(
+          ERS_HERE, get_name(), "Multiple subdetector types for ine SourceID not suported in trigger system!");
       }
       m_srcid_detid_map[sourceid] = detid;
     }
@@ -120,24 +119,27 @@ MLTModule::do_configure(const nlohmann::json& /*obj*/)
     std::string subdetector_name = subdet_readout_window->get_subdetector();
     SubdetectorID detid = dunedaq::detdataformats::DetID::string_to_subdetector(subdetector_name);
     if (detid == detdataformats::DetID::Subdetector::kUnknown) {
-      throw MLTConfigurationProblem(ERS_HERE, get_name(),
-          "Unknown Subdetector supplied to MLT subdetector-readout window map");
+      throw MLTConfigurationProblem(
+        ERS_HERE, get_name(), "Unknown Subdetector supplied to MLT subdetector-readout window map");
     }
 
     if (m_subdetector_readout_window_map.count(detid)) {
-      throw MLTConfigurationProblem(ERS_HERE, get_name(),
-          "Supplied more than one of the same Subdetector name to MLT subdetector-readout window map");
+      throw MLTConfigurationProblem(
+        ERS_HERE,
+        get_name(),
+        "Supplied more than one of the same Subdetector name to MLT subdetector-readout window map");
     }
 
-    m_subdetector_readout_window_map[detid] = std::make_pair(subdet_readout_window->get_time_before(),
-                                                             subdet_readout_window->get_time_after());
+    m_subdetector_readout_window_map[detid] =
+      std::make_pair(subdet_readout_window->get_time_before(), subdet_readout_window->get_time_after());
 
     TLOG() << "[MLT] Custom readout map for subdetector: " << detid
-      << " time_start: " << subdet_readout_window->get_time_before() << " time_after: " << subdet_readout_window->get_time_after();
+           << " time_start: " << subdet_readout_window->get_time_before()
+           << " time_after: " << subdet_readout_window->get_time_after();
   }
 
   // Latency related
-  m_latency_monitoring.store( m_mtrg->get_configuration()->get_latency_monitoring() );
+  m_latency_monitoring.store(m_mtrg->get_configuration()->get_latency_monitoring());
 
   // Now do the configuration: dummy for now
   m_configured_flag.store(true);
@@ -150,7 +152,7 @@ MLTModule::do_scrap(const nlohmann::json& /*obj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
 
-  //m_decision_input.reset();
+  // m_decision_input.reset();
   m_decision_output.reset();
   m_inhibit_input.reset();
 
@@ -166,28 +168,28 @@ MLTModule::generate_opmon_data()
 {
   opmon::ModuleLevelTriggerInfo info;
 
-  info.set_td_msg_received_count( m_td_msg_received_count.load() );
-  info.set_td_sent_count( m_td_sent_count.load() );
-  info.set_td_inhibited_count( m_td_inhibited_count.load() );
-  info.set_td_paused_count( m_td_paused_count.load() );
-  info.set_td_queue_timeout_expired_err_count( m_td_queue_timeout_expired_err_count.load() );
-  info.set_td_total_count( m_td_total_count.load() );
+  info.set_td_msg_received_count(m_td_msg_received_count.load());
+  info.set_td_sent_count(m_td_sent_count.load());
+  info.set_td_inhibited_count(m_td_inhibited_count.load());
+  info.set_td_paused_count(m_td_paused_count.load());
+  info.set_td_queue_timeout_expired_err_count(m_td_queue_timeout_expired_err_count.load());
+  info.set_td_total_count(m_td_total_count.load());
 
   if (m_lc_started) {
-    info.set_lc_klive( m_livetime_counter->get_time(LivetimeCounter::State::kLive) );
-    info.set_lc_kpaused( m_livetime_counter->get_time(LivetimeCounter::State::kPaused) );
-    info.set_lc_kdead( m_livetime_counter->get_time(LivetimeCounter::State::kDead) );
+    info.set_lc_klive(m_livetime_counter->get_time(LivetimeCounter::State::kLive));
+    info.set_lc_kpaused(m_livetime_counter->get_time(LivetimeCounter::State::kPaused));
+    info.set_lc_kdead(m_livetime_counter->get_time(LivetimeCounter::State::kDead));
   } else {
-    info.set_lc_klive( m_lc_kLive);
-    info.set_lc_kpaused( m_lc_kPaused );
-    info.set_lc_kdead( m_lc_kDead );
+    info.set_lc_klive(m_lc_kLive);
+    info.set_lc_kpaused(m_lc_kPaused);
+    info.set_lc_kdead(m_lc_kDead);
   }
 
   this->publish(std::move(info));
 
   // per TC type
-  std::lock_guard<std::mutex>   guard(m_trigger_mutex);
-  for ( auto & [type, counts] : m_trigger_counters ) {
+  std::lock_guard<std::mutex> guard(m_trigger_mutex);
+  for (auto& [type, counts] : m_trigger_counters) {
     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
     opmon::TriggerDecisionInfo td_info;
     td_info.set_received(counts.received.exchange(0));
@@ -195,21 +197,21 @@ MLTModule::generate_opmon_data()
     td_info.set_failed_send(counts.failed_send.exchange(0));
     td_info.set_paused(counts.paused.exchange(0));
     td_info.set_inhibited(counts.inhibited.exchange(0));
-    this->publish( std::move(td_info), {{"type", name}} );
+    this->publish(std::move(td_info), { { "type", name } });
   }
 
   // latency
-  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+  if (m_latency_monitoring.load() && m_running_flag.load()) {
     // TC in, TD out
     opmon::TriggerLatency lat_info;
-    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
-    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+    lat_info.set_latency_in(m_latency_instance.get_latency_in());
+    lat_info.set_latency_out(m_latency_instance.get_latency_out());
     this->publish(std::move(lat_info));
 
     // vs readout window requests
     opmon::ModuleLevelTriggerRequestLatency lat_request_info;
-    lat_request_info.set_latency_window_start( m_latency_requests_instance.get_latency_in() );
-    lat_request_info.set_latency_window_end( m_latency_requests_instance.get_latency_out() );
+    lat_request_info.set_latency_window_start(m_latency_requests_instance.get_latency_in());
+    lat_request_info.set_latency_window_end(m_latency_requests_instance.get_latency_out());
     this->publish(std::move(lat_request_info));
   }
 }
@@ -259,7 +261,7 @@ MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
   m_running_flag.store(false);
   m_decision_input->remove_callback();
   m_inhibit_input->remove_callback();
-  //m_send_trigger_decisions_thread.join();
+  // m_send_trigger_decisions_thread.join();
   m_lc_kLive_count = m_livetime_counter->get_time(LivetimeCounter::State::kLive);
   m_lc_kPaused_count = m_livetime_counter->get_time(LivetimeCounter::State::kPaused);
   m_lc_kDead_count = m_livetime_counter->get_time(LivetimeCounter::State::kDead);
@@ -272,7 +274,7 @@ MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
 
   TLOG(3) << "LivetimeCounter - total deadtime+paused: " << m_lc_deadtime << std::endl;
   m_livetime_counter.reset(); // Calls LivetimeCounter dtor?
-  m_lc_started = false; 
+  m_lc_started = false;
 
   print_opmon_stats();
 
@@ -317,94 +319,92 @@ MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
 }
 
 void
-MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision )
+MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision)
 {
-    m_td_msg_received_count++;
-    if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( decision.trigger_timestamp );
+  m_td_msg_received_count++;
+  if (m_latency_monitoring.load())
+    m_latency_instance.update_latency_in(decision.trigger_timestamp);
 
-    auto trigger_types = unpack_types(decision.trigger_type);
-    for ( const auto t : trigger_types ) {
-      ++get_trigger_counter(t).received;
+  auto trigger_types = unpack_types(decision.trigger_type);
+  for (const auto t : trigger_types) {
+    ++get_trigger_counter(t).received;
+  }
+
+  auto ts = decision.trigger_timestamp;
+  auto tt = decision.trigger_type;
+  decision.run_number = m_run_number;
+  decision.trigger_number = m_last_trigger_number;
+
+  // Overwrite the component's readout window if we have custom
+  // subdetector--readout window map
+  for (const auto& [subdetectorid, window] : m_subdetector_readout_window_map) {
+    for (auto& request : decision.components) {
+      if (request.component.subsystem != daqdataformats::SourceID::Subsystem::kDetectorReadout) {
+        continue;
+      }
+
+      if (subdetectorid != m_srcid_detid_map[request.component]) {
+        continue;
+      }
+
+      request.window_begin = decision.trigger_timestamp - window.first;
+      request.window_end = decision.trigger_timestamp + window.second;
+    }
+  }
+
+  TLOG() << "Received decision with timestamp " << decision.trigger_timestamp;
+
+  if ((!m_paused.load() && !m_dfo_is_busy.load())) {
+    TLOG_DEBUG(1) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
+                  << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end "
+                  << decision.components.front().window_end << " number of links " << decision.components.size();
+
+    // readout window latency update
+    // TODO: The latency will be different for different components, since they might have different readout windows
+    if (m_latency_monitoring.load()) {
+      m_latency_requests_instance.update_latency_in(decision.components.front().window_begin);
+      m_latency_requests_instance.update_latency_out(decision.components.front().window_end);
     }
 
-    auto ts = decision.trigger_timestamp;
-    auto tt = decision.trigger_type;
-    decision.run_number = m_run_number;
-    decision.trigger_number = m_last_trigger_number;
+    try {
+      m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
+      m_td_sent_count++;
 
-    // Overwrite the component's readout window if we have custom
-    // subdetector--readout window map
-    for ( const auto& [subdetectorid, window] : m_subdetector_readout_window_map ) {
-      for (auto& request: decision.components) {
-        if (request.component.subsystem != daqdataformats::SourceID::Subsystem::kDetectorReadout) {
-          continue;
-        }
+      for (const auto t : trigger_types) {
+        ++get_trigger_counter(t).sent;
+      }
 
-        if (subdetectorid != m_srcid_detid_map[request.component]) {
-          continue;
-        }
+      m_last_trigger_number++;
+      //        add_td(pending_td);
+    } catch (const ers::Issue& e) {
+      ers::error(e);
+      TLOG_DEBUG(1) << "The network is misbehaving: TD send failed for " << m_last_trigger_number;
+      m_td_queue_timeout_expired_err_count++;
 
-        request.window_begin = decision.trigger_timestamp - window.first;
-        request.window_end = decision.trigger_timestamp + window.second;
+      for (const auto t : trigger_types) {
+        ++get_trigger_counter(t).failed_send;
       }
     }
 
-    TLOG() << "Received decision with timestamp "
-             << decision.trigger_timestamp ;
-    
-    if ((!m_paused.load() && !m_dfo_is_busy.load())) {
-      TLOG_DEBUG(1) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
-             << decision.trigger_timestamp << " start " << decision.components.front().window_begin << " end " << decision.components.front().window_end
- 	     << " number of links " << decision.components.size();
-
-      // readout window latency update
-      // TODO: The latency will be different for different components, since they might have different readout windows
-      if (m_latency_monitoring.load()) {
-        m_latency_requests_instance.update_latency_in( decision.components.front().window_begin );
-        m_latency_requests_instance.update_latency_out( decision.components.front().window_end );
-      }
-
-      try {
-        m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
-        m_td_sent_count++;
-
-        for ( const auto t : trigger_types ) {
-          ++get_trigger_counter(t).sent;
-        }
-
-        m_last_trigger_number++;
-//        add_td(pending_td);
-      } catch (const ers::Issue& e) {
-        ers::error(e);
-        TLOG_DEBUG(1) << "The network is misbehaving: TD send failed for "
-                      << m_last_trigger_number;
-        m_td_queue_timeout_expired_err_count++;
-
-        for ( const auto t : trigger_types ) {
-          ++get_trigger_counter(t).failed_send;
-        }
-      }
-
-    } else if (m_paused.load()) {
-      ++m_td_paused_count;
-      for ( const auto t : trigger_types ) {
-        ++get_trigger_counter(t).paused;
-      }
-
-      TLOG_DEBUG(1) << "Triggers are paused. Not sending a TriggerDecision for TD with timestamp and type "
-                    << ts << "/" << tt;
-    } else {
-      ers::warning(TriggerInhibited(ERS_HERE, m_run_number));
-      TLOG_DEBUG(1) << "The DFO is busy. Not sending a TriggerDecision with timestamp and type "
-                    << ts << "/" << tt;
-      m_td_inhibited_count++;
-      for ( const auto t : trigger_types ) {
-        ++get_trigger_counter(t).inhibited;
-      }
-
+  } else if (m_paused.load()) {
+    ++m_td_paused_count;
+    for (const auto t : trigger_types) {
+      ++get_trigger_counter(t).paused;
     }
-    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( decision.trigger_timestamp );
-    m_td_total_count++;
+
+    TLOG_DEBUG(1) << "Triggers are paused. Not sending a TriggerDecision for TD with timestamp and type " << ts << "/"
+                  << tt;
+  } else {
+    ers::warning(TriggerInhibited(ERS_HERE, m_run_number));
+    TLOG_DEBUG(1) << "The DFO is busy. Not sending a TriggerDecision with timestamp and type " << ts << "/" << tt;
+    m_td_inhibited_count++;
+    for (const auto t : trigger_types) {
+      ++get_trigger_counter(t).inhibited;
+    }
+  }
+  if (m_latency_monitoring.load())
+    m_latency_instance.update_latency_out(decision.trigger_timestamp);
+  m_td_total_count++;
 }
 
 void
