@@ -98,6 +98,8 @@ private:
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TimeSync>> m_time_sync_source;
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_candidate_sink;
 
+  // confs
+  const dunedaq::appmodel::RandomTCMakerModule* m_mtrg;
   const appmodel::RandomTCMakerConf* m_conf;
 
   /// @brief Output TC type

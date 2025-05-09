@@ -50,6 +50,14 @@ RandomTCMakerModule::RandomTCMakerModule(const std::string& name)
 void
 RandomTCMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+
+  m_mtrg = mcfg->get_dal<appmodel::RandomTCMakerModule>(get_name());
+
+  // Get the clock speed from detector configuration
+  m_clock_speed_hz = mcfg->session()->get_detector_configuration()->get_clock_speed_hz();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
@@ -75,24 +83,24 @@ RandomTCMakerModule::generate_opmon_data()
 void
 RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
 {
-  auto mtrg = mcfg->get_dal<appmodel::RandomTCMakerModule>(get_name());
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
 
   // Get the output connections
-  for(auto con: mtrg->get_outputs()){
+  for(auto con: m_mtrg->get_outputs()){
     TLOG() << "TC sink is " << con->class_name() << "@" << con->UID();
     m_trigger_candidate_sink =
         get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
   }
 
   // Get the input connections
-  for(auto con: mtrg->get_inputs()) {
+  for(auto con: m_mtrg->get_inputs()) {
     // Get the time sync source
     TLOG() << "TimeSync receiver connection is " << con->class_name() << "@"
            << con->UID() << " with tag " << get_name();
     m_time_sync_source =
       get_iomanager()->get_receiver<dfmessages::TimeSync>(con->UID(), get_name());
   }
-  m_conf = mtrg->get_configuration();
+  m_conf = m_mtrg->get_configuration();
 
   // Get the TC out configuration
   const appmodel::TCReadoutMap* tc_readout = m_conf->get_tc_readout();
@@ -107,20 +115,21 @@ RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
   }
 
   m_latency_monitoring.store( m_conf->get_latency_monitoring() );
-
-  // Get the clock speed from detector configuration
-  m_clock_speed_hz = mcfg->session()->get_detector_configuration()->get_clock_speed_hz();
   m_trigger_rate_hz.store(m_conf->get_trigger_rate_hz());
+
   TLOG() << "RandomTCMaker will output TC of type: " << tc_readout->get_tc_type_name();
   TLOG() << "TC window time before: " << m_tcout_time_before
          << " time after: " << m_tcout_time_after;
   TLOG() << "Clock speed is: " << m_clock_speed_hz;
   TLOG() << "Output trigger rate is: " << m_trigger_rate_hz.load();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) <<  ": Exiting conf() method";
 }
 
 void
 RandomTCMakerModule::do_start(const nlohmann::json& obj)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
   m_run_number = obj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   m_running_flag.store(true);
@@ -155,11 +164,13 @@ RandomTCMakerModule::do_start(const nlohmann::json& obj)
 
   m_send_trigger_candidates_thread = std::thread(&RandomTCMakerModule::send_trigger_candidates, this);
   pthread_setname_np(m_send_trigger_candidates_thread.native_handle(), "random-tc-maker");
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) <<  ": Exiting start() method";
 }
 
 void
 RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop() method";
   m_running_flag.store(false);
 
   m_send_trigger_candidates_thread.join();
@@ -171,23 +182,28 @@ RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
 
   print_opmon_stats();
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) <<  ": Exiting stop() method";
 }
 
 void
 RandomTCMakerModule::do_scrap(const nlohmann::json& /*obj*/)
 {
-  m_time_sync_source.reset(nullptr);
-  m_trigger_candidate_sink.reset(nullptr);
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
+  m_time_sync_source.reset();
+  m_trigger_candidate_sink.reset();
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) <<  ": Exiting scrap() method";
 }
 
 void
 RandomTCMakerModule::do_change_trigger_rate(const nlohmann::json& obj)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering change-rate() method";
   auto change_rate_params = obj.get<rcif::cmd::ChangeRateParams>();
 
   TLOG() << "Changing trigger rate from " << m_trigger_rate_hz.load() << " to " << change_rate_params.trigger_rate;
 
   m_trigger_rate_hz.store(change_rate_params.trigger_rate);
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) <<  ": Exiting change-rate() method";
 }
 
 triggeralgs::TriggerCandidate
