@@ -83,11 +83,16 @@ private:
   void do_stop(const nlohmann::json& obj);
   void do_pause(const nlohmann::json& obj);
   void do_resume(const nlohmann::json& obj);
+  void do_configure(const nlohmann::json& /*obj*/);
+  void do_scrap(const nlohmann::json& /*obj*/);
 
   void trigger_decisions_callback(dfmessages::TriggerDecision& decision);
   void dfo_busy_callback(dfmessages::TriggerInhibit& inhibit);
 
   std::map<std::string, int> decode_geoid(uint64_t _geoid_int);
+
+  const dunedaq::appmodel::MLTModule* m_mtrg;
+  const dunedaq::confmodel::Session* m_session;
 
   // Queue sources and sinks
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerDecision>> m_decision_input;

@@ -34,12 +34,12 @@ MLTModule::MLTModule(const std::string& name)
   , m_run_number(0)
 {
   // clang-format off
-  //register_command("conf",   &MLTModule::do_configure);
+  register_command("conf",   &MLTModule::do_configure);
   register_command("start",  &MLTModule::do_start);
   register_command("stop",   &MLTModule::do_stop);
   register_command("disable_triggers",  &MLTModule::do_pause);
   register_command("enable_triggers", &MLTModule::do_resume);
-//  register_command("scrap",  &MLTModule::do_scrap);
+  register_command("scrap",  &MLTModule::do_scrap);
   // clang-format on
 }
 
@@ -50,7 +50,7 @@ MLTModule::decode_geoid(uint64_t _geoid_int)
 
   std::map<std::string, int> geoid;
 
-      // Extract stream_id (stored in the top 16 bits)
+  // Extract stream_id (stored in the top 16 bits)
   geoid["stream_id"] = (_geoid_int >> 48) & 0xFFFF;
 
   // Extract slot_id (stored in the next 16 bits)
@@ -68,30 +68,38 @@ MLTModule::decode_geoid(uint64_t _geoid_int)
 void
 MLTModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
-  auto mtrg = mcfg->get_dal<appmodel::MLTModule>(get_name());
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+
+  m_mtrg = mcfg->get_dal<appmodel::MLTModule>(get_name());
+  // Get the session to access the detector configuration
+  m_session = mcfg->session();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting init() method";
+}
+
+void
+MLTModule::do_configure(const nlohmann::json& /*obj*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
 
   // Get the inputs
-  std::string candidate_input;
-  std::string inhibit_input;
-  for(auto con : mtrg->get_inputs()){
+  for(auto con : m_mtrg->get_inputs()){
     if(con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
-      m_decision_input = get_iom_receiver<dfmessages::TriggerDecision>(con->UID());
+      if (!m_decision_input) {
+        m_decision_input = get_iom_receiver<dfmessages::TriggerDecision>(con->UID());
+      }
     } else if(con->get_data_type() == datatype_to_string<dfmessages::TriggerInhibit>()) {
       m_inhibit_input = get_iom_receiver<dfmessages::TriggerInhibit>(con->UID());
     }
   }
 
   // Get the outputs
-  for(auto con : mtrg->get_outputs()){
+  for(auto con : m_mtrg->get_outputs()){
     if(con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>())
       m_decision_output = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
   }
 
-  // Get the session to access the detector configuration
-  auto session = mcfg->session();
-
-  hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap = hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(session);
-
+  hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap = hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_session);
   // Fill the SourceID -- Subdetector map
   for (auto const& [sourceid, geoids] : geoidmap) {
     TLOG() << "SourceID: " << sourceid;
@@ -108,7 +116,7 @@ MLTModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     TLOG() << " * Subdetector type: " << m_srcid_detid_map[sourceid];
   }
 
-  for (auto subdet_readout_window : mtrg->get_configuration()->get_subdetector_readout_map()) {
+  for (auto subdet_readout_window : m_mtrg->get_configuration()->get_subdetector_readout_map()) {
     std::string subdetector_name = subdet_readout_window->get_subdetector();
     SubdetectorID detid = dunedaq::detdataformats::DetID::string_to_subdetector(subdetector_name);
     if (detid == detdataformats::DetID::Subdetector::kUnknown) {
@@ -129,10 +137,28 @@ MLTModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
 
   // Latency related
-  m_latency_monitoring.store( mtrg->get_configuration()->get_latency_monitoring() );
+  m_latency_monitoring.store( m_mtrg->get_configuration()->get_latency_monitoring() );
 
   // Now do the configuration: dummy for now
   m_configured_flag.store(true);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting conf() method";
+}
+
+void
+MLTModule::do_scrap(const nlohmann::json& /*obj*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
+
+  //m_decision_input.reset();
+  m_decision_output.reset();
+  m_inhibit_input.reset();
+
+  m_srcid_detid_map.clear();
+  m_subdetector_readout_window_map.clear();
+  m_trigger_counters.clear();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting scrap() method";
 }
 
 void
@@ -191,6 +217,8 @@ MLTModule::generate_opmon_data()
 void
 MLTModule::do_start(const nlohmann::json& startobj)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
+
   m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
   // We get here at start of run, so reset the trigger number
   m_last_trigger_number = 1;
@@ -219,11 +247,15 @@ MLTModule::do_start(const nlohmann::json& startobj)
   m_decision_input->add_callback(std::bind(&MLTModule::trigger_decisions_callback, this, std::placeholders::_1));
 
   ers::info(TriggerStartOfRun(ERS_HERE, m_run_number));
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting start() method";
 }
 
 void
 MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop() method";
+
   m_running_flag.store(false);
   m_decision_input->remove_callback();
   m_inhibit_input->remove_callback();
@@ -245,11 +277,14 @@ MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
   print_opmon_stats();
 
   ers::info(TriggerEndOfRun(ERS_HERE, m_run_number));
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting stop() method";
 }
 
 void
 MLTModule::do_pause(const nlohmann::json& /*pauseobj*/)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering pause() method";
 
   m_paused.store(true);
   m_livetime_counter->set_state(LivetimeCounter::State::kPaused);
@@ -259,11 +294,15 @@ MLTModule::do_pause(const nlohmann::json& /*pauseobj*/)
                 << std::chrono::duration_cast<std::chrono::microseconds>(
                      std::chrono::system_clock::now().time_since_epoch())
                      .count();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting pause() method";
 }
 
 void
 MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering resume() method";
+
   ers::info(TriggerActive(ERS_HERE));
   TLOG() << "******* Triggers RESUMED! in run " << m_run_number << " *********";
   m_livetime_counter->set_state(LivetimeCounter::State::kLive);
@@ -273,6 +312,8 @@ MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
                 << std::chrono::duration_cast<std::chrono::microseconds>(
                      std::chrono::system_clock::now().time_since_epoch())
                      .count();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting resume() method";
 }
 
 void
