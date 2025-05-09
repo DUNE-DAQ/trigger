@@ -50,6 +50,31 @@ RandomTCMakerModule::RandomTCMakerModule(const std::string& name)
 void
 RandomTCMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
+}
+
+void
+RandomTCMakerModule::generate_opmon_data()
+{
+  opmon::RandomTCMakerInfo info;
+
+  info.set_tc_made_count( m_tc_made_count.load() );
+  info.set_tc_sent_count( m_tc_sent_count.load() );
+  info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );
+
+  this->publish(std::move(info));
+
+  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+    opmon::TriggerLatencyStandalone lat_info;
+
+    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+
+    this->publish(std::move(lat_info));
+  }
+}
+
+void
+RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
+{
   auto mtrg = mcfg->get_dal<appmodel::RandomTCMakerModule>(get_name());
 
   // Get the output connections
@@ -91,32 +116,6 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
          << " time after: " << m_tcout_time_after;
   TLOG() << "Clock speed is: " << m_clock_speed_hz;
   TLOG() << "Output trigger rate is: " << m_trigger_rate_hz.load();
-}
-
-void
-RandomTCMakerModule::generate_opmon_data()
-{
-  opmon::RandomTCMakerInfo info;
-
-  info.set_tc_made_count( m_tc_made_count.load() );
-  info.set_tc_sent_count( m_tc_sent_count.load() );
-  info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );
-
-  this->publish(std::move(info));
-
-  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
-    opmon::TriggerLatencyStandalone lat_info;
-
-    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
-
-    this->publish(std::move(lat_info));
-  }
-}
-
-void
-RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
-{
-  //m_conf = obj.get<randomtriggercandidatemaker::Conf>();
 }
 
 void
@@ -176,8 +175,10 @@ RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 
 void
 RandomTCMakerModule::do_scrap(const nlohmann::json& /*obj*/)
-{}
-
+{
+  m_time_sync_source.reset(nullptr);
+  m_trigger_candidate_sink.reset(nullptr);
+}
 
 void
 RandomTCMakerModule::do_change_trigger_rate(const nlohmann::json& obj)
