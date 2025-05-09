@@ -40,6 +40,8 @@ TCProcessor::~TCProcessor()
 void
 TCProcessor::start(const nlohmann::json& args)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
+
   m_running_flag.store(true);
   m_send_trigger_decisions_thread = std::thread(&TCProcessor::send_trigger_decisions, this);
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-dec"); // TODO: originally mlt-trig-dec
@@ -59,11 +61,15 @@ TCProcessor::start(const nlohmann::json& args)
   m_tds_cleared_tc_count.store(0);
   m_tc_ignored_count.store(0);
   inherited::start(args);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting start() method";
 }
 
 void
 TCProcessor::stop(const nlohmann::json& args)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop() method";
+
   inherited::stop(args);
   m_running_flag.store(false);
 
@@ -83,16 +89,19 @@ TCProcessor::stop(const nlohmann::json& args)
 
   print_opmon_stats();
 
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting stop() method";
 }
 
 void
 TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 {
-  auto mtrg = cfg->cast<appmodel::TriggerDataHandlerModule>();	
-  if (mtrg == nullptr) {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
+
+  auto m_mtrg = cfg->cast<appmodel::TriggerDataHandlerModule>();	
+  if (m_mtrg == nullptr) {
     throw(InvalidConfiguration(ERS_HERE, "Provided null TriggerDataHandlerModule configuration!"));
   }
-  for (auto output : mtrg->get_outputs()) {
+  for (auto output : m_mtrg->get_outputs()) {
    try {
       if (output->get_data_type() == "TriggerDecision") {
          m_td_sink = get_iom_sender<dfmessages::TriggerDecision>(output->UID());
@@ -102,17 +111,17 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
     }
   }
 
-  auto dp = mtrg->get_module_configuration()->get_data_processor();
+  auto dp = m_mtrg->get_module_configuration()->get_data_processor();
   auto proc_conf = dp->cast<appmodel::TCDataProcessor>();
 
   // Add all Source IDs to mandatoy links for now...
-  for(auto const& link : mtrg->get_mandatory_source_ids()){
+  for(auto const& link : m_mtrg->get_mandatory_source_ids()){
     m_mandatory_links.push_back(
         dfmessages::SourceID{
         daqdataformats::SourceID::string_to_subsystem(link->get_subsystem()),
         link->get_sid()});
   }  
-  for(auto const& link : mtrg->get_enabled_source_ids()){
+  for(auto const& link : m_mtrg->get_enabled_source_ids()){
     m_mandatory_links.push_back(
         dfmessages::SourceID{
         daqdataformats::SourceID::string_to_subsystem(link->get_subsystem()),
@@ -179,7 +188,36 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::add_postprocess_task(std::bind(&TCProcessor::make_td, this, std::placeholders::_1));
 
-  inherited::conf(mtrg);
+  inherited::conf(m_mtrg);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting conf() method";
+}
+
+void
+TCProcessor::scrap(const nlohmann::json& args)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
+
+  m_mandatory_links.clear();
+  m_group_links.clear();
+  m_roi_conf.clear();
+  m_roi_conf_data.clear();
+  m_roi_conf_ids.clear();
+  m_roi_conf_probs.clear();
+  m_roi_conf_probs_c.clear();
+  m_pending_tds.clear();
+  m_readout_window_map_data.clear();
+  m_readout_window_map.clear();
+  m_ignored_tc_types.clear();
+  
+  m_td_sink.reset();
+  
+  m_group_links_data.clear();
+  m_pending_tds.clear();
+  
+  inherited::scrap(args);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting scrap() method";
 }
 
 void

@@ -16,6 +16,7 @@
 #include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
+#include "appmodel/TriggerDataHandlerModule.hpp"
 
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
@@ -53,6 +54,8 @@ public:
 
   void conf(const appmodel::DataHandlerModule* conf) override;
 
+  void scrap(const nlohmann::json& args) override;
+
   void generate_opmon_data() override;
 
 protected:
@@ -80,6 +83,8 @@ private:
                                                                          triggeralgs::timestamp_t end);
   void add_requests_to_decision(dfmessages::TriggerDecision& decision,
                                 std::vector<dfmessages::ComponentRequest> requests);
+
+  const appmodel::TriggerDataHandlerModule* m_mtrg;
 
   // ROI
   bool m_use_roi_readout;
