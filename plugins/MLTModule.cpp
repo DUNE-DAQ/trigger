@@ -350,7 +350,7 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision)
     }
   }
 
-  TLOG() << "Received decision with timestamp " << decision.trigger_timestamp;
+  TLOG_DEBUG(2) << "Received decision with timestamp " << decision.trigger_timestamp;
 
   if ((!m_paused.load() && !m_dfo_is_busy.load())) {
     TLOG_DEBUG(1) << "Sending a decision with triggernumber " << decision.trigger_number << " timestamp "
