@@ -22,6 +22,11 @@ TPRequestHandler::conf(const appmodel::DataHandlerModule* conf) {
    inherited2::conf(conf);
 }
 
+void
+TPRequestHandler::scrap(const nlohmann::json& args) {
+  m_tpset_sink.reset();
+}
+
 void 
 TPRequestHandler::start(const nlohmann::json& args) {
 

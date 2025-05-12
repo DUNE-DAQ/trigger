@@ -63,6 +63,7 @@ public:
  
   void conf(const appmodel::DataHandlerModule* conf) override;
   void start(const nlohmann::json& args) override;
+  void scrap(const nlohmann::json& args) override;
   void periodic_data_transmission() override;
   
 private:
