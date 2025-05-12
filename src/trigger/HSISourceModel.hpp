@@ -51,7 +51,12 @@ public:
    * @param name Instance name for this SourceModel instance
    */
   HSISourceModel(): datahandlinglibs::SourceConcept() {}
-  ~HSISourceModel() {}
+  ~HSISourceModel()
+  {
+    m_data_receiver.reset();
+    m_data_sender.reset();
+    m_signals.clear();
+  }
 
   void init(const confmodel::DaqModule* cfg) override
   {
