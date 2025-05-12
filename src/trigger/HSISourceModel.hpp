@@ -51,7 +51,7 @@ public:
    * @param name Instance name for this SourceModel instance
    */
   HSISourceModel(): datahandlinglibs::SourceConcept() {}
-  ~HSISourceModel()
+  ~HSISourceModel() override
   {
     m_data_receiver.reset();
     m_data_sender.reset();
