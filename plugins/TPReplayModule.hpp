@@ -81,7 +81,7 @@ private:
   struct TPStream
   {
     std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>> tp_sink;
-    std::deque<std::vector<TriggerPrimitiveTypeAdapter>> tpvs;
+    std::deque<std::vector<TriggerPrimitiveTypeAdapter>>& tpvs; // use ref for mem optimization
   };
   std::vector<TPStream> m_tp_streams;
   std::map<int, std::string> m_tpstream_files;
