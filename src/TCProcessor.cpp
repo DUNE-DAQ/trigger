@@ -860,11 +860,11 @@ TCProcessor::print_opmon_stats()
 {
   TLOG() << "TCProcessor opmon counters summary:";
   TLOG() << "------------------------------";
-  TLOG() << "TDs created: \t\t" << m_tds_created_count << " \t(" << m_tds_created_tc_count << " TCs)";
+  TLOG() << "TDs created: \t\t\t" << m_tds_created_count << " \t(" << m_tds_created_tc_count << " TCs)";
   TLOG() << "TDs sent: \t\t\t" << m_tds_sent_count << " \t(" << m_tds_sent_tc_count << " TCs)";
-  TLOG() << "TDs dropped: \t\t" << m_tds_dropped_count << " \t(" << m_tds_dropped_tc_count << " TCs)";
+  TLOG() << "TDs dropped: \t\t\t" << m_tds_dropped_count << " \t(" << m_tds_dropped_tc_count << " TCs)";
   TLOG() << "TDs failed bitword check: \t" << m_tds_failed_bitword_count << " \t(" << m_tds_failed_bitword_tc_count << " TCs)";
-  TLOG() << "TDs cleared: \t\t" << m_tds_cleared_count << " \t(" << m_tds_cleared_tc_count << " TCs)";
+  TLOG() << "TDs cleared: \t\t\t" << m_tds_cleared_count << " \t(" << m_tds_cleared_tc_count << " TCs)";
   TLOG() << "------------------------------";
   TLOG() << "TCs received: \t" << m_tc_received_count;
   TLOG() << "TCs ignored: \t" << m_tc_ignored_count;

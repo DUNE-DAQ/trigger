@@ -424,7 +424,7 @@ MLTModule::print_opmon_stats()
 {
   TLOG() << "MLT opmon counters summary:";
   TLOG() << "------------------------------";
-  TLOG() << "Received TD messages: \t" << m_td_msg_received_count;
+  TLOG() << "Received TD messages: \t\t" << m_td_msg_received_count;
   TLOG() << "Sent TDs: \t\t\t" << m_td_sent_count;
   TLOG() << "Inhibited TDs: \t\t" << m_td_inhibited_count;
   TLOG() << "Paused TDs: \t\t\t" << m_td_paused_count;
