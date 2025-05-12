@@ -106,7 +106,7 @@ MLTModule::do_configure(const nlohmann::json& /*obj*/)
       SubdetectorID detid = static_cast<SubdetectorID>(gidmap["detector_id"]);
       if (m_srcid_detid_map.contains(sourceid) && !(m_srcid_detid_map[sourceid] == detid)) {
         throw MLTConfigurationProblem(
-          ERS_HERE, get_name(), "Multiple subdetector types for ine SourceID not suported in trigger system!");
+          ERS_HERE, get_name(), "Multiple subdetector types for one SourceID not supported in trigger system!");
       }
       m_srcid_detid_map[sourceid] = detid;
     }

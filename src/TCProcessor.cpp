@@ -213,7 +213,6 @@ TCProcessor::scrap(const nlohmann::json& args)
   m_td_sink.reset();
   
   m_group_links_data.clear();
-  m_pending_tds.clear();
   
   inherited::scrap(args);
 
