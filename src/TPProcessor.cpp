@@ -45,6 +45,7 @@ TPProcessor::~TPProcessor()
 void
 TPProcessor::start(const nlohmann::json& args)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TPProcessor: Entering start() method";
 
   // Reset stats
   m_tp_received_count.store(0);
@@ -55,19 +56,27 @@ TPProcessor::start(const nlohmann::json& args)
   m_running_flag.store(true);
 
   inherited::start(args);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TPProcessor: Exiting start() method";
 }
 
 void
 TPProcessor::stop(const nlohmann::json& args)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TPProcessor: Entering stop() method";
+  
   inherited::stop(args);
   m_running_flag.store(false);
   print_opmon_stats();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TPProcessor: Exiting stop() method";
 }
 
 void
 TPProcessor::conf(const appmodel::DataHandlerModule* conf)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TPProcessor: Entering conf() method";
+
   for (auto output : conf->get_outputs()) {
    try {
       if (output->get_data_type() == "TriggerActivity") {
@@ -102,6 +111,17 @@ TPProcessor::conf(const appmodel::DataHandlerModule* conf)
   m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::conf(conf);
 
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TPProcessor: Exiting conf() method";
+}
+
+void
+TPProcessor::scrap(const nlohmann::json& args)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TPProcessor: Entering scrap() method";
+  m_tams.clear();
+  m_ta_sink.reset();
+  inherited::scrap(args);
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TPProcessor: Exiting scrap() method";
 }
 
 void
