@@ -373,7 +373,7 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision)
       }
 
       m_last_trigger_number++;
-      //        add_td(pending_td);
+      // add_td(pending_td);
     } catch (const ers::Issue& e) {
       ers::error(e);
       TLOG_DEBUG(1) << "The network is misbehaving: TD send failed for " << m_last_trigger_number;

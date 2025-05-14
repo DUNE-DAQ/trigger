@@ -84,8 +84,6 @@ private:
   void add_requests_to_decision(dfmessages::TriggerDecision& decision,
                                 std::vector<dfmessages::ComponentRequest> requests);
 
-  const appmodel::TriggerDataHandlerModule* m_mtrg;
-
   // ROI
   bool m_use_roi_readout;
   struct roi_group
