@@ -16,6 +16,7 @@
 #include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
+#include "appmodel/TriggerDataHandlerModule.hpp"
 
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
@@ -52,6 +53,8 @@ public:
   void stop(const nlohmann::json& args) override;
 
   void conf(const appmodel::DataHandlerModule* conf) override;
+
+  void scrap(const nlohmann::json& args) override;
 
   void generate_opmon_data() override;
 

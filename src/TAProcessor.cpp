@@ -47,6 +47,7 @@ TAProcessor::~TAProcessor()
 void
 TAProcessor::start(const nlohmann::json& args)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Entering start() method";
 
   // Reset stats
   m_ta_received_count.store(0);
@@ -57,19 +58,27 @@ TAProcessor::start(const nlohmann::json& args)
   m_running_flag.store(true);
 
   inherited::start(args);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Exiting start() method";
 }
 
 void
 TAProcessor::stop(const nlohmann::json& args)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Entering stop() method";
+
   inherited::stop(args);
   m_running_flag.store(false);
   print_opmon_stats();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Exiting stop() method";
 }
 
 void
 TAProcessor::conf(const appmodel::DataHandlerModule* conf)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Entering conf() method";
+
   for (auto output : conf->get_outputs()) {
    try {
       if (output->get_data_type() == "TriggerCandidate") {
@@ -99,6 +108,18 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
   }
   m_latency_monitoring.store( dp->get_latency_monitoring() );
   inherited::conf(conf);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Exiting conf() method";
+}
+
+void
+TAProcessor::scrap(const nlohmann::json& args)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Entering scrap() method";
+  m_tcms.clear();
+  m_tc_sink.reset();
+  inherited::scrap(args);
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Exiting scrap() method";
 }
 
 void
@@ -153,8 +174,8 @@ TAProcessor::print_opmon_stats()
   TLOG() << "TAProcessor opmon counters summary:";
   TLOG() << "------------------------------";
   TLOG() << "TAs received: \t\t" << m_ta_received_count;
-  TLOG() << "TCs made: \t\t\t" << m_tc_made_count;
-  TLOG() << "TCs sent: \t\t\t" << m_tc_sent_count;
+  TLOG() << "TCs made: \t\t" << m_tc_made_count;
+  TLOG() << "TCs sent: \t\t" << m_tc_sent_count;
   TLOG() << "TCs failed to send: \t" << m_tc_failed_sent_count;
   TLOG();
 }

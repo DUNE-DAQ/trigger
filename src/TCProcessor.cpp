@@ -40,6 +40,8 @@ TCProcessor::~TCProcessor()
 void
 TCProcessor::start(const nlohmann::json& args)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering start() method";
+
   m_running_flag.store(true);
   m_send_trigger_decisions_thread = std::thread(&TCProcessor::send_trigger_decisions, this);
   pthread_setname_np(m_send_trigger_decisions_thread.native_handle(), "mlt-dec"); // TODO: originally mlt-trig-dec
@@ -59,11 +61,15 @@ TCProcessor::start(const nlohmann::json& args)
   m_tds_cleared_tc_count.store(0);
   m_tc_ignored_count.store(0);
   inherited::start(args);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Exiting start() method";
 }
 
 void
 TCProcessor::stop(const nlohmann::json& args)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering stop() method";
+
   inherited::stop(args);
   m_running_flag.store(false);
 
@@ -83,11 +89,14 @@ TCProcessor::stop(const nlohmann::json& args)
 
   print_opmon_stats();
 
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Exiting stop() method";
 }
 
 void
 TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering conf() method";
+
   auto mtrg = cfg->cast<appmodel::TriggerDataHandlerModule>();	
   if (mtrg == nullptr) {
     throw(InvalidConfiguration(ERS_HERE, "Provided null TriggerDataHandlerModule configuration!"));
@@ -180,6 +189,34 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   inherited::add_postprocess_task(std::bind(&TCProcessor::make_td, this, std::placeholders::_1));
 
   inherited::conf(mtrg);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Exiting conf() method";
+}
+
+void
+TCProcessor::scrap(const nlohmann::json& args)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering scrap() method";
+
+  m_mandatory_links.clear();
+  m_group_links.clear();
+  m_roi_conf.clear();
+  m_roi_conf_data.clear();
+  m_roi_conf_ids.clear();
+  m_roi_conf_probs.clear();
+  m_roi_conf_probs_c.clear();
+  m_pending_tds.clear();
+  m_readout_window_map_data.clear();
+  m_readout_window_map.clear();
+  m_ignored_tc_types.clear();
+  
+  m_td_sink.reset();
+  
+  m_group_links_data.clear();
+  
+  inherited::scrap(args);
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Exiting scrap() method";
 }
 
 void
@@ -822,11 +859,11 @@ TCProcessor::print_opmon_stats()
 {
   TLOG() << "TCProcessor opmon counters summary:";
   TLOG() << "------------------------------";
-  TLOG() << "TDs created: \t\t" << m_tds_created_count << " \t(" << m_tds_created_tc_count << " TCs)";
+  TLOG() << "TDs created: \t\t\t" << m_tds_created_count << " \t(" << m_tds_created_tc_count << " TCs)";
   TLOG() << "TDs sent: \t\t\t" << m_tds_sent_count << " \t(" << m_tds_sent_tc_count << " TCs)";
-  TLOG() << "TDs dropped: \t\t" << m_tds_dropped_count << " \t(" << m_tds_dropped_tc_count << " TCs)";
+  TLOG() << "TDs dropped: \t\t\t" << m_tds_dropped_count << " \t(" << m_tds_dropped_tc_count << " TCs)";
   TLOG() << "TDs failed bitword check: \t" << m_tds_failed_bitword_count << " \t(" << m_tds_failed_bitword_tc_count << " TCs)";
-  TLOG() << "TDs cleared: \t\t" << m_tds_cleared_count << " \t(" << m_tds_cleared_tc_count << " TCs)";
+  TLOG() << "TDs cleared: \t\t\t" << m_tds_cleared_count << " \t(" << m_tds_cleared_tc_count << " TCs)";
   TLOG() << "------------------------------";
   TLOG() << "TCs received: \t" << m_tc_received_count;
   TLOG() << "TCs ignored: \t" << m_tc_ignored_count;
