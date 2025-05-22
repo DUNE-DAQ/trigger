@@ -43,17 +43,28 @@ TPReplayModule::TPReplayModule(const std::string& name)
 void
 TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+
   // ### Access configuration
-  auto mtrg = mcfg->get_dal<appmodel::TPReplayModule>(get_name());
-  m_conf = mtrg->get_configuration();
-  if (!m_conf) {
-    throw ReplayConfigurationProblem(ERS_HERE, get_name(), "Missing configuration!");
-  }
+  m_mtrg = mcfg->get_dal<appmodel::TPReplayModule>(get_name());
 
   // ### Extract relevant objects
   // Clock speed
-  clocks_per_us = mcfg->session()->get_detector_configuration()->get_clock_speed_hz() /
-                  double(1'000'000.0); // this is redundant but safer...
+  m_clocks_per_us = mcfg->session()->get_detector_configuration()->get_clock_speed_hz() /
+                    double(1'000'000.0); // this is redundant but safer...
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+}
+
+void
+TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
+
+  m_conf = m_mtrg->get_configuration();
+  if (!m_conf) {
+    throw ReplayConfigurationProblem(ERS_HERE, get_name(), "Missing configuration!");
+  }
 
   // Channel map
   m_channel_map_name = m_conf->get_channel_map();
@@ -98,7 +109,7 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   // even when they don't all start or end at the same time.
 
   // Output queues
-  auto con = mtrg->get_outputs();
+  auto con = m_mtrg->get_outputs();
 
   // Global times
   m_earliest_first_tp_timestamp = std::numeric_limits<triggeralgs::timestamp_t>::max();
@@ -153,17 +164,14 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
 
   TLOG() << "Total of " << m_tp_streams.size() << " TP streams.";
-}
 
-void
-TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
-{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting conf() method";
 }
 
 void
 TPReplayModule::do_start(const nlohmann::json& /*obj*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
 
   m_running_flag.store(true);
 
@@ -194,13 +202,15 @@ TPReplayModule::do_start(const nlohmann::json& /*obj*/)
     pthread_setname_np(m_threads[i]->native_handle(), name.c_str());
   }
   TLOG() << "Total of " << m_threads.size() << " replay threads.";
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting start() method";
 }
 
 void
 TPReplayModule::do_stop(const nlohmann::json& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop() method";
+
   m_running_flag.store(false);
   for (auto& thr : m_threads) {
     if (thr != nullptr && thr->joinable()) {
@@ -222,18 +232,24 @@ TPReplayModule::do_stop(const nlohmann::json& /*args*/)
   TLOG() << "Failed to push TP vectors: " << m_tpv_failed_sent_count;
   TLOG();
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting stop() method";
 }
 
 void
 TPReplayModule::do_scrap(const nlohmann::json& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
+
   m_tp_streams.clear();
   m_threads.clear();
+  m_tpstream_files.clear();
   m_all_tp_data.clear();
   m_filter_planes_ids.clear();
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
+  m_validSubdetectors.clear();
+
+  m_channel_map.reset();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting scrap() method";
 }
 
 void
@@ -429,7 +445,8 @@ TPReplayModule::do_work(
   std::shared_ptr<iomanager::SenderConcept<std::vector<trigger::TriggerPrimitiveTypeAdapter>>>& tp_sink,
   std::chrono::steady_clock::time_point earliest_timestamp_time)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+
   int current_iteration = 0; // NOLINT(build/unsigned)
 
   uint64_t prev_tpv_start_time = 0; // NOLINT(build/unsigned)
@@ -464,10 +481,10 @@ TPReplayModule::do_work(
       auto wait_time_us = 0;
       std::chrono::steady_clock::time_point next_tpv_send_time;
       if (prev_tpv_start_time == 0) {
-        wait_time_us = (tpv.front().tp.time_start - m_earliest_first_tp_timestamp) / clocks_per_us;
+        wait_time_us = (tpv.front().tp.time_start - m_earliest_first_tp_timestamp) / m_clocks_per_us;
         next_tpv_send_time = earliest_timestamp_time + std::chrono::microseconds(wait_time_us);
       } else {
-        wait_time_us = (tpv.front().tp.time_start - prev_tpv_start_time) / clocks_per_us;
+        wait_time_us = (tpv.front().tp.time_start - prev_tpv_start_time) / m_clocks_per_us;
         next_tpv_send_time = prev_tpv_send_time + std::chrono::microseconds(wait_time_us);
       }
 
@@ -541,7 +558,7 @@ TPReplayModule::do_work(
   TLOG() << "Failed to push TP vectors: " << local_tpv_failed;
   TLOG();
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
 } // namespace dunedaq::trigger
