@@ -1,6 +1,6 @@
 # Trigger
 
-*(Last updated Nov 2024, MiR, AO & AS)*
+*(Last updated May 2025, MiR, AO & AS)*
 
 The `trigger` package contains the modules that make up the DUNE FD DAQ trigger system. Implementations of the physics algorithms that produce data selection objects (trigger primitive, trigger activity and trigger candidates) live in the [`tpglibs`](https://github.com/DUNE-DAQ/tpglibs) and [`triggeralgs`](https://github.com/DUNE-DAQ/triggeralgs) packages. The configuration schema & code that generates trigger application live in [`appmodel`](https://github.com/DUNE-DAQ/appmodel)
 <hr>
