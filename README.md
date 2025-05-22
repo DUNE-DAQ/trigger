@@ -111,7 +111,7 @@ The instructions for running with real hardware change often. Please follow:
 * Daqconf wiki: [link](https://github.com/DUNE-DAQ/daqconf/wiki)
 
 ### offline
-**Offline live emulation currently not supported in v5**
+One can use the `TPReplayApplication`: [tpreplay_application](./python/trigger/tpreplay_application)
 
 ## Development
 * [Development workflow](https://dune-daq-sw.readthedocs.io/en/latest/packages/daq-release/development_workflow_gitflow/)
