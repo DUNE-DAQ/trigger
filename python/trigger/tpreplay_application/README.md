@@ -240,7 +240,7 @@ Some additional notes:
 <br>
 
 #### Connecting to the DAQ system
-![session dot](https://github.com/user-attachments/assets/a4e56fe8-c0ac-4b42-b837-d14ef4be25ac)
+![session](https://github.com/user-attachments/assets/a09fc6f0-b65f-4701-a193-078dbdc78bfd)
 - the TPReplayApplication is part of the `trg-segment`
 - it has an input from `DFApplication`: readout requests
 - it publishes TAs to a `TriggerApplication`; this creates TCs and passes onwards to `MLT`
@@ -336,11 +336,15 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 
 - TPReplay session:
 
-![replay_ses](https://github.com/user-attachments/assets/8456a4bb-8f51-40b3-99dc-e4d8f2654c7d)
+![config_session](https://github.com/user-attachments/assets/1184c148-22de-4785-809a-88579f222100)
 
-- Trigger segment:
+- tpreplay-root-segment:
 
-![conf_trg](https://github.com/user-attachments/assets/1e8fe55a-4f62-4866-956c-df4aa253dabf)
+![config_root-segment](https://github.com/user-attachments/assets/f5d41461-cf48-45b1-99b0-80bbe98915eb)
+
+- tpreplay-segment:
+
+![config_replay-segment](https://github.com/user-attachments/assets/fa7268de-a5d9-43d9-a874-b72cef3112c8)
 
 - `TPReplayModule` configuration:
 
@@ -363,7 +367,7 @@ Additionally, the handler modules used are typical in the sense that they alread
 ### Issues / Perks
 - *Plane filtering*: The code pretends that for APA1 ("APA_P02SU") the collection plane is induction plane 2, and vice-versa. This is by choice, as for NP04 running plane 2 was used as an effective collection plane for APA1.
 - *Configuration management*: Current implementation uses 1 queue description and 1 `TPHandler` configuration, which is then used for all the instances of queues and handler objects (with unique names of course). This means that for a file with 3 active planes, the handler for each plane would be using the same algorithm (same for readout).
-- *Init stage*: A lot is happening inside the `TPReplayModule` at the init stage: parsing configuration, multiple checks on HDF5 files, extracting ROUs, actually extracting TP data, plane filtering... Depending on the number of files this can take a lot of time. If needed, portions of this can be moved to different run stages.
+- *conf stage*: A lot is happening inside the `TPReplayModule` at the conf stage: parsing configuration, multiple checks on HDF5 files, extracting ROUs, actually extracting TP data, plane filtering... Depending on the number of files this can take a lot of time. If needed, the conf step timeout may need to be extended.
 - *Expectations ?*: There are many places in the current dune-daq code where expectations are baked in (but not necessarily documented), for example, an expectation for queues that are at times not obvious (ie `TPRequestHandler` is expected to link to `FragmentAggregatorModule`, but this module is not required outside readout).
 - *Memory limits*: Some memory optimization is implemented, however, TPStream files are often very big. Because most processing happens within one module (TPMm), memory usage can be an issue for many files at once. You have been warned.
 
