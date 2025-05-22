@@ -44,8 +44,8 @@ Process:
 The easiest way is to use this python module. It helps to retrieve relevant OKS configuration data and modify it given user-provided selection. However, replay can also be run on any (valid) OKS configuration generated outside of this script.<br> 
 
 ### General procedure
-Replay works via a `TPReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.<br>
-To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration (CERN's opmon and ers).<br><br>
+Replay works via a `TPReplayApplication`, a smart DAQ application that can be used inside your OKS session.<br>
+To use it, simply add this application to the appropriate segment in your session. There are example sessions available, both local and with ehn1 integration (CERN's opmon and ers). The implementation in these default sessions includes new `tpreplay-root-segment`, that only contains the `TPReplayApplication`. This is then linked with the usual (example) trigger and df segments. This exact approach is also adopted by this python script. However, one can choose to include the `TPReplayApplication` in already existing segments. <br><br>
 Remember, replay is an emulation of readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required (these are typically part of the trigger segment already).<br><br>
 Finally, configure the `TPReplayModule` that is part of this application. It accepts a list of input HDF5 TPStream files. Additionally, one can choose to filter out planes. This python script will take care of creating and modifying the configuration given both the parameters from the command line and parameters extracted from data files.
 
