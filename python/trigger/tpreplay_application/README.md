@@ -45,8 +45,8 @@ The easiest way is to use this python module. It helps to retrieve relevant OKS 
 
 ### General procedure
 Replay works via a `TPReplayApplication`, a smart DAQ application that can be used inside your OKS session.<br>
-To use it, simply add this application to the appropriate segment in your session. There are example sessions available, both local and with ehn1 integration (CERN's opmon and ers). The implementation in these default sessions includes new `tpreplay-root-segment`, that only contains the `TPReplayApplication`. This is then linked with the usual (example) trigger and df segments. This exact approach is also adopted by this python script. However, one can choose to include the `TPReplayApplication` in already existing segments. <br><br>
-Remember, replay is an emulation of readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required (these are typically part of the trigger segment already).<br><br>
+To use it, simply add this application to the appropriate segment in your session. There are example sessions available, both local and with ehn1 integration (CERN's opmon and ers). The implementation in these default sessions includes new `tpreplay-segment`, that only contains the `TPReplayApplication`. This is then linked with the usual (example) trigger and dataflow segments. This exact approach is also adopted by this python script. However, one can choose to include the `TPReplayApplication` in already existing segments. <br><br>
+Remember, replay is an emulation of readout and it simply outputs TAs. Therefore, for a full stream a trigger application creating TCs and an MLT application are required (these are typically part of the trigger segment already).<br><br>
 Finally, configure the `TPReplayModule` that is part of this application. It accepts a list of input HDF5 TPStream files. Additionally, one can choose to filter out planes. This python script will take care of creating and modifying the configuration given both the parameters from the command line and parameters extracted from data files.
 
 ### Using this script
@@ -146,7 +146,7 @@ Few notes on what happens in this script:
 - currently the app is set-up to work with TPC TPs only until PDS TPs are fully integrated. It is expected that replay will work easily with PDS TPs as well, but it requires the PDS integration with trigger to happen first.
 - TPStream files are sorted by start time
 - prepare configuration objects for the extracted options (ie number of total planes, required number of source IDs ...). The general approach is to search for an existing template of the specific DAL object and use that as a base. If it does not exist, a new one is created from scratch (from schema).
-- the Random Trigger Candidate Maker is set up to have a rate of 0 (no TC generation from RTCM) as to not mix with the replay TX objects. This can be modified in the final configuration if needed.
+- the Random Trigger Candidate Maker is set up to have a rate of 0 (no TC generation from RTCM) as to not mix with the replay TX objects. This can be modified in the final configuration if needed. Additionally, one can also change the rate directly from drunc using `change-rate --trigger-rate X` command.
 - finally, update the local OKS files, including storing the new objects and updating relations / references.<br>
 
 ### Appmodel schemas
@@ -228,7 +228,7 @@ It should be mentioned that the application is fully integrated with the rest of
 ### Set-up
 #### TPReplayApplication
 - Example TP Replay application for 1 ROU and 1 active plane:
-![replay dot](https://github.com/user-attachments/assets/7c00a8a9-1ffd-4c3f-89cb-598a82c1b444)
+![replay_app](https://github.com/user-attachments/assets/b24ecb1b-64d0-4594-8c71-84b1799742af)
 - Another example using 2 ROUs and 2 active planes:
 ![replay3 dot](https://github.com/user-attachments/assets/cdb442e5-0361-43f5-9ca6-d6b9edd91600)
 
@@ -241,10 +241,10 @@ Some additional notes:
 
 #### Connecting to the DAQ system
 ![session](https://github.com/user-attachments/assets/a09fc6f0-b65f-4701-a193-078dbdc78bfd)
-- the TPReplayApplication is part of the `trg-segment`
+- the TPReplayApplication is part of the `tpreplay-segment` (the only application there)
 - it has an input from `DFApplication`: readout requests
 - it publishes TAs to a `TriggerApplication`; this creates TCs and passes onwards to `MLT`
-- generally, the flow is similar to having a readout application replaced
+- generally, the flow is similar to having a readout application replaced (or the whole readout-segment with tpreplay-segment)
 
 ### TPReplayModule
 The `TPReplayModule` module is the base of replay.
@@ -337,14 +337,17 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 - TPReplay session:
 
 ![config_session](https://github.com/user-attachments/assets/1184c148-22de-4785-809a-88579f222100)
+<br> -- the session makes use of 'custom' `tpreplay-root-segment`.
 
 - tpreplay-root-segment:
 
 ![config_root-segment](https://github.com/user-attachments/assets/f5d41461-cf48-45b1-99b0-80bbe98915eb)
+<br> -- the root segment contains the `tpreplay-segment` itself (which containst the `TPReplayApplication`), and additionally `trg-segment` (which contains trigger and MLT applications) and `df-segment` (which is needed for data-flow: readout requests). 
 
 - tpreplay-segment:
 
 ![config_replay-segment](https://github.com/user-attachments/assets/fa7268de-a5d9-43d9-a874-b72cef3112c8)
+<br> -- this segment contains the `TPReplayApplication`. It should be noted that this is the suggested example set-up, but in theory one only needs to include the `TPReplayApplication` (properly configured) in their session (no need for special segments).
 
 - `TPReplayModule` configuration:
 
@@ -352,7 +355,7 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 
 For plane filtering, the `filter_out_plane` variable accepts multiple values (but can also be empty).
 
-Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). `TPReplayApplication` is added to the `trg-segment`. You can see an overview [here](#connecting-to-the-daq-system).
+Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). You can see an overview [here](#connecting-to-the-daq-system).
 
 ## Operational Monitoring
 A graph showing opmon data from `TPReplayModule` is available on Grafana: 
