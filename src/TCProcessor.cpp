@@ -553,7 +553,7 @@ TCProcessor::print_trigger_bitwords()
 }
 
 bool
-TCProcessor::check_trigger_bitwords()
+TCProcessor::check_trigger_bitwords(const TDBitset& td_bitword)
 {
   bool trigger_check = false;
   for (auto bitword : m_trigger_bitwords) {
