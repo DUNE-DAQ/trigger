@@ -16,6 +16,8 @@
 #include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
+#include "appmodel/TriggerDataHandlerModule.hpp"
+#include "appmodel/TriggerBitword.hpp"
 
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
@@ -42,6 +44,8 @@ public:
   using inherited = datahandlinglibs::TaskRawDataProcessorModel<TCWrapper>;
   using tcptr = TCWrapper*;
   using consttcptr = const TCWrapper*;
+  using TCType = triggeralgs::TriggerCandidate::Type;
+  using TDBitset = std::bitset<64>;
 
   explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
 
@@ -60,7 +64,6 @@ protected:
   void make_td(const TCWrapper* tc);
 
 private:
-  using TCType = triggeralgs::TriggerCandidate::Type;
   void send_trigger_decisions();
   std::thread m_send_trigger_decisions_thread;
 
@@ -142,16 +145,11 @@ private:
 
   // Bitwords logic
   bool m_use_bitwords;
-  nlohmann::json m_trigger_bitwords_json;
-  bool m_bitword_check;
-  std::bitset<64> m_TD_bitword;
-  std::vector<std::bitset<64>> m_trigger_bitwords;
-  std::bitset<64> get_TD_bitword(const PendingTD& ready_td);
-  void print_trigger_bitwords(std::vector<std::bitset<64>> trigger_bitwords);
-  bool check_trigger_bitwords();
-  void print_bitword_flags(nlohmann::json m_trigger_bitwords_json);
-  void set_trigger_bitwords();
-  void set_trigger_bitwords(const std::vector<std::string>& _bitwords);
+  std::vector<TDBitset> m_trigger_bitwords;
+  TDBitset get_TD_bitword(const PendingTD& ready_td);
+  void print_trigger_bitwords();
+  bool check_trigger_bitwords(const TDBitset& td_bitword);
+  void set_trigger_bitwords(std::vector<const appmodel::TriggerBitword*> _bitwords);
 
   // Readout map config
   bool m_use_readout_map;
