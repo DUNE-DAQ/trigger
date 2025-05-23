@@ -144,12 +144,11 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   m_ignoring_tc_types = !m_ignored_tc_types.empty();
 
   // Trigger bitwords
-  std::vector<std::string> bitwords = proc_conf->get_trigger_bitwords();
+  std::vector<const appmodel::TriggerBitword*> bitwords = proc_conf->get_trigger_bitwords();
   m_use_bitwords = !bitwords.empty();
   if(m_use_bitwords){
-    // TODO: Print_bitword_flags(m_trigger_bitwords)
     set_trigger_bitwords(bitwords);
-    print_trigger_bitwords(m_trigger_bitwords);
+    print_trigger_bitwords();
   }
   TLOG_DEBUG(3) << "Use bitwords: " << m_use_bitwords;
   TLOG_DEBUG(3) << "Allow merging: " << m_tc_merging;
@@ -209,6 +208,7 @@ TCProcessor::scrap(const nlohmann::json& args)
   m_readout_window_map_data.clear();
   m_readout_window_map.clear();
   m_ignored_tc_types.clear();
+  m_trigger_bitwords.clear();
   
   m_td_sink.reset();
   
@@ -309,10 +309,10 @@ TCProcessor::create_decision(const PendingTD& pending_td)
   decision.trigger_timestamp = pending_td.contributing_tcs[m_earliest_tc_index].time_candidate;
   decision.readout_type = dfmessages::ReadoutType::kLocalized;
 
-  m_TD_bitword = get_TD_bitword(pending_td);
-  TLOG_DEBUG(5) << "[MLT] TD has bitword: " << m_TD_bitword << " "
-                                     << static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong());
-  decision.trigger_type = static_cast<dfmessages::trigger_type_t>(m_TD_bitword.to_ulong()); // m_trigger_type;
+  TDBitset td_bitword = get_TD_bitword(pending_td);
+  TLOG_DEBUG(5) << "[MLT] TD has bitword: " << td_bitword << " "
+                                     << static_cast<dfmessages::trigger_type_t>(td_bitword.to_ulong());
+  decision.trigger_type = static_cast<dfmessages::trigger_type_t>(td_bitword.to_ulong()); // m_trigger_type;
 
     //decision.trigger_type = 1; // m_trigger_type;
 
@@ -371,31 +371,29 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
 
   if (m_use_bitwords) {
     // Check trigger bitwords
-    m_TD_bitword = get_TD_bitword(pending_td);
-    m_bitword_check = check_trigger_bitwords();
-    if (m_bitword_check == false) {
+    TDBitset td_bitword = get_TD_bitword(pending_td);
+    if (!check_trigger_bitwords(td_bitword)) {
+      // Don't process further if the bitword check failed
       m_tds_failed_bitword_count++;
       m_tds_failed_bitword_tc_count += pending_td.contributing_tcs.size();
+      return;
     }
   }
 
-  if ((!m_use_bitwords) || (m_bitword_check)) {
+  dfmessages::TriggerDecision decision = create_decision(pending_td);
+  auto tn = decision.trigger_number;
+  auto td_ts = decision.trigger_timestamp;
 
-    dfmessages::TriggerDecision decision = create_decision(pending_td);
-    auto tn = decision.trigger_number;
-    auto td_ts = decision.trigger_timestamp;
-
-    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( pending_td.contributing_tcs.front().time_start );
-    if(!m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
-      ers::warning(TDDropped(ERS_HERE, tn, td_ts));
-      m_tds_dropped_count++;
-      m_tds_dropped_tc_count += pending_td.contributing_tcs.size();
-    }
-    else {
-      m_tds_sent_count++;
-      m_tds_sent_tc_count += pending_td.contributing_tcs.size();
-    }
-  } 
+  if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( pending_td.contributing_tcs.front().time_start );
+  if(!m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
+    ers::warning(TDDropped(ERS_HERE, tn, td_ts));
+    m_tds_dropped_count++;
+    m_tds_dropped_tc_count += pending_td.contributing_tcs.size();
+  }
+  else {
+    m_tds_sent_count++;
+    m_tds_sent_tc_count += pending_td.contributing_tcs.size();
+  }
 }
 
 
@@ -584,23 +582,12 @@ TCProcessor::check_trigger_type_ignore(unsigned int tc_type)
 }
 
 void
-TCProcessor::print_trigger_bitwords(std::vector<std::bitset<64>> trigger_bitwords)
+TCProcessor::print_trigger_bitwords()
 {
   TLOG_DEBUG(3) << "Configured trigger words:";
-  for (auto bitword : trigger_bitwords) {
+  for (auto bitword : m_trigger_bitwords) {
     TLOG_DEBUG(3) << bitword;
   }
-  return;
-}
-
-void
-TCProcessor::print_bitword_flags(nlohmann::json m_trigger_bitwords_json)
-{
-  TLOG_DEBUG(3) << "Configured trigger flags:";
-  for (auto bitflag : m_trigger_bitwords_json) {
-    TLOG_DEBUG(3) << bitflag;
-  }
-  return;
 }
 
 bool
@@ -608,9 +595,9 @@ TCProcessor::check_trigger_bitwords()
 {
   bool trigger_check = false;
   for (auto bitword : m_trigger_bitwords) {
-    TLOG_DEBUG(15) << "TD word: " << m_TD_bitword << ", bitword: " << bitword;
-    trigger_check = ((m_TD_bitword & bitword) == bitword);
-    TLOG_DEBUG(15) << "&: " << (m_TD_bitword & bitword);
+    TLOG_DEBUG(15) << "TD word: " << td_bitword << ", bitword: " << bitword;
+    trigger_check = ((td_bitword & bitword) == bitword);
+    TLOG_DEBUG(15) << "&: " << (td_bitword & bitword);
     TLOG_DEBUG(15) << "trigger?: " << trigger_check;
     if (trigger_check == true)
       break;
@@ -619,23 +606,23 @@ TCProcessor::check_trigger_bitwords()
 }
 
 void
-TCProcessor::set_trigger_bitwords()
+TCProcessor::set_trigger_bitwords(std::vector<const appmodel::TriggerBitword*> _bitwords)
 {
-  for (auto flag : m_trigger_bitwords_json) {
-    std::bitset<64> temp_bitword = 0b0000000000000000;
-    for (auto bit : flag) {
-      temp_bitword.set(bit);
+  for (const appmodel::TriggerBitword* bitword : _bitwords) {
+    TDBitset temp_bitword;
+
+    for (const std::string& tctype_str: bitword->get_bitword()) {
+      TCType tc_type = static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(tctype_str));
+
+      if (tc_type == TCType::kUnknown) {
+        throw(InvalidConfiguration(ERS_HERE, "Provided an unknown TC type in the TCReadoutMap for the TCProcessor"));
+      }
+
+      temp_bitword.set(static_cast<uint64_t>(tc_type));
     }
+
     m_trigger_bitwords.push_back(temp_bitword);
   }
-  return;
-}
-
-void
-TCProcessor::set_trigger_bitwords(const std::vector<std::string>& /*_bitwords*/)
-{
-  TLOG_DEBUG() << "Warning, bitwords not implemented with OKS (for now) and won't be used!";
-  m_use_bitwords = false;
 }
 
 void
@@ -836,7 +823,7 @@ TCProcessor::roi_readout_make_requests(dfmessages::TriggerDecision& decision)
   return;
 }
 
-std::bitset<64>
+TCProcessor::TDBitset
 TCProcessor::get_TD_bitword(const PendingTD& ready_td)
 {
   // get only unique types
@@ -847,7 +834,7 @@ TCProcessor::get_TD_bitword(const PendingTD& ready_td)
   tc_types.erase(std::unique(tc_types.begin(), tc_types.end()), tc_types.end());
 
   // form TD bitword
-  std::bitset<64> td_bitword;
+  TDBitset td_bitword;
   for (auto tc_type : tc_types) {
     td_bitword.set(tc_type);
   }
