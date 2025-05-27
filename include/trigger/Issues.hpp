@@ -213,6 +213,78 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        ((std::string)name),
                        ((std::string)item))
 
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayConfigurationProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Configuration error: " << item,
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayChannelMapProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Specified channel map: " << item << " does not exist!",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayFileProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Specified HDF5 file: " << item << " does not exist!",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayNoFragments,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Specified HDF5 file: " << item << " does not contain valid paths!",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayEmptyFrag,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Fragment from file: " << item << " is empty!",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayROUError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Cannot retrieve ROU from file: " << item << " !",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayPlaneError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Cannot retrieve plane from file: " << item << " !",
+                       ((std::string)name),
+                       ((std::string)item))
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayNoValidFiles,
+                       appfwk::GeneralDAQModuleIssue,
+                       "No valid files to use!",
+                       ((std::string)name),
+		       ERS_EMPTY)
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayNoValidTPs,
+                       appfwk::GeneralDAQModuleIssue,
+                       "TP array does not contain valid TPs!",
+                       ((std::string)name),
+                       ERS_EMPTY)
+
+ERS_DECLARE_ISSUE_BASE(trigger,
+                       ReplayStreamFileError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Duplicate stream index " << index
+                         << " for file: " << filename
+                         << " (original: " << original << ")",
+                       ((std::string)name),
+                       ((int)index)((std::string)filename)((std::string)original))
+
 } // namespace dunedaq
 
 #endif // TRIGGER_INCLUDE_TRIGGER_ISSUES_HPP_
