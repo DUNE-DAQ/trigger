@@ -577,7 +577,7 @@ TCProcessor::set_trigger_bitwords(const std::vector<const appmodel::TriggerBitwo
       TCType tc_type = static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(tctype_str));
 
       if (tc_type == TCType::kUnknown) {
-        throw(InvalidConfiguration(ERS_HERE, "Provided an unknown TC type in the TCReadoutMap for the TCProcessor"));
+        throw(InvalidConfiguration(ERS_HERE, "Provided an unknown/non-existent TC type as a trigger bitword!"));
       }
 
       temp_bitword.set(static_cast<uint64_t>(tc_type));
