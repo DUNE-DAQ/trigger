@@ -568,7 +568,7 @@ TCProcessor::check_trigger_bitwords(const TDBitset& td_bitword) const
 }
 
 void
-TCProcessor::set_trigger_bitwords(std::vector<const appmodel::TriggerBitword*> _bitwords)
+TCProcessor::set_trigger_bitwords(const std::vector<const appmodel::TriggerBitword*>& _bitwords)
 {
   for (const appmodel::TriggerBitword* bitword : _bitwords) {
     TDBitset temp_bitword;
