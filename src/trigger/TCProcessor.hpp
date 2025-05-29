@@ -146,7 +146,7 @@ private:
   // Bitwords logic
   bool m_use_bitwords;
   std::vector<TDBitset> m_trigger_bitwords;
-  TDBitset get_TD_bitword(const PendingTD& ready_td);
+  TDBitset get_TD_bitword(const PendingTD& ready_td) const;
   void print_trigger_bitwords();
   bool check_trigger_bitwords(const TDBitset& td_bitword);
   void set_trigger_bitwords(std::vector<const appmodel::TriggerBitword*> _bitwords);
