@@ -786,7 +786,7 @@ TCProcessor::roi_readout_make_requests(dfmessages::TriggerDecision& decision)
 }
 
 TCProcessor::TDBitset
-TCProcessor::get_TD_bitword(const PendingTD& ready_td)
+TCProcessor::get_TD_bitword(const PendingTD& ready_td) const
 {
   // get only unique types
   std::vector<int> tc_types;
