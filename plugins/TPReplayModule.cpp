@@ -81,7 +81,7 @@ TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
   TLOG() << "### REPLAY CONFIGURATION ###";
   TLOG() << "Will use channel map: " << m_channel_map_name;
   try {
-    m_channel_map = dunedaq::detchannelmaps::make_map(m_channel_map_name);
+    m_channel_map = dunedaq::detchannelmaps::make_tpc_map(m_channel_map_name);
   } catch (const detchannelmaps::ChannelMapCreationFailed& e) {
     ers::error(dunedaq::trigger::ReplayChannelMapProblem(ERS_HERE, get_name(), m_channel_map_name));
   }

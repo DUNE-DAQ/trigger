@@ -109,7 +109,7 @@ def load_channel_map(channel_map_string: str) -> detchannelmaps._daq_detchannelm
     If it fails, prints the error and exits.
     """
     try: 
-        channel_map = detchannelmaps.make_map(channel_map_string)
+        channel_map = detchannelmaps.make_tpc_map(channel_map_string)
         logging.debug(f"Channel map '{channel_map_string}' successfully created.")
         return channel_map
     except Exception as e:
