@@ -556,7 +556,7 @@ bool
 TCProcessor::check_trigger_bitwords(const TDBitset& td_bitword) const
 {
   bool trigger_check = false;
-  for (auto bitword : m_trigger_bitwords) {
+  for (const auto& bitword : m_trigger_bitwords) {
     TLOG_DEBUG(15) << "TD word: " << td_bitword << ", bitword: " << bitword;
     trigger_check = ((td_bitword & bitword) == bitword);
     TLOG_DEBUG(15) << "&: " << (td_bitword & bitword);
