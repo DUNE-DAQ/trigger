@@ -149,7 +149,7 @@ private:
   TDBitset get_TD_bitword(const PendingTD& ready_td) const;
   void print_trigger_bitwords();
   bool check_trigger_bitwords(const TDBitset& td_bitword) const;
-  void set_trigger_bitwords(std::vector<const appmodel::TriggerBitword*> _bitwords);
+  void set_trigger_bitwords(const std::vector<const appmodel::TriggerBitword*>& _bitwords);
 
   // Readout map config
   bool m_use_readout_map;
