@@ -547,7 +547,7 @@ void
 TCProcessor::print_trigger_bitwords()
 {
   TLOG_DEBUG(3) << "Configured trigger words:";
-  for (auto bitword : m_trigger_bitwords) {
+  for (const auto& bitword : m_trigger_bitwords) {
     TLOG_DEBUG(3) << bitword;
   }
 }
