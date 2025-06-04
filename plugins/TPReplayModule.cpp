@@ -59,6 +59,9 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 void
 TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
 {
+
+#if 0
+  
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
 
   m_conf = m_mtrg->get_configuration();
@@ -166,6 +169,9 @@ TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
   TLOG() << "Total of " << m_tp_streams.size() << " TP streams.";
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting conf() method";
+
+#endif // Of #if 0
+
 }
 
 void
@@ -274,6 +280,8 @@ TPReplayModule::generate_opmon_data()
 std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>
 TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
 {
+
+#if 0
   std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> all_data;
 
   // Loop over each file
@@ -436,6 +444,9 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
   }
 
   return all_data;
+#else  // closes #if 0 above
+  return std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>{};
+#endif
 }
 
 void
