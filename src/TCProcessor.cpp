@@ -289,6 +289,7 @@ TCProcessor::make_td(const TCWrapper* tcw)
     m_cv.notify_one();
     TLOG_DEBUG(10) << "pending tds size: " << m_pending_tds.size();
   }
+  m_last_processed_daq_ts = tc.time_start;
   return;
 }
 

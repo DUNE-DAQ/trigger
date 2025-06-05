@@ -168,6 +168,7 @@ TPProcessor::find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<tri
       }
       tas.pop_back();
   }
+  m_last_processed_daq_ts = tp->tp.time_start;
   return;
 }
 
