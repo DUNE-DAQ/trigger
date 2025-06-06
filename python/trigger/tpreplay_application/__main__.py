@@ -109,7 +109,7 @@ def load_channel_map(channel_map_string: str) -> detchannelmaps._daq_detchannelm
     If it fails, prints the error and exits.
     """
     try: 
-        channel_map = detchannelmaps.make_map(channel_map_string)
+        channel_map = detchannelmaps.make_tpc_map(channel_map_string)
         logging.debug(f"Channel map '{channel_map_string}' successfully created.")
         return channel_map
     except Exception as e:
@@ -208,7 +208,7 @@ def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_
 
                 plane = channel_map.get_plane_from_offline_channel(tp.channel)
                 if plane not in planes_to_filter:
-                    rou = channel_map.get_tpc_element_from_offline_channel(tp.channel)
+                    rou = channel_map.get_element_name_from_offline_channel(tp.channel)
                     rou_plane_data.add_value(rou, plane)
                     logging.debug("Extracted rou: %s for plane: %s", rou, plane)
                 else:
@@ -354,8 +354,8 @@ def main():
             formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--files", type=str, required=True, help="Text file with (full) paths to HDF5 TPStream file location. One per line.")
     parser.add_argument("--filter-planes", type=int, nargs='*', choices=[0, 1, 2], default=[], help="list of planes to filter out. Can be empty or contain any combination of 0 (U), 1 (V), and 2 (X).")
-    parser.add_argument("--channel-map", type=str, default='PD2HDChannelMap', 
-                        help="Specify the channel map to use. Available examples include: PD2HDChannelMap, PD2VDBottomTPCChannelMap, VDColdboxChannelMap, HDColdboxChannelMap.\n"
+    parser.add_argument("--channel-map", type=str, default='PD2HDTPCChannelMap', 
+                        help="Specify the channel map to use. Available examples include: PD2HDTPCChannelMap, PD2VDBottomTPCChannelMap, VDColdboxTPCChannelMap, HDColdboxTPCChannelMap.\n"
                              "For more details, visit: https://github.com/DUNE-DAQ/detchannelmaps/blob/develop/docs/channel-maps-table.md")
     parser.add_argument("--n-loops", type=int, default=-1, help="Number of times to loop over the provided data.")
     parser.add_argument("--config", type=str, default="config/daqsystemtest/example-configs.data.xml", help="Path to OKS configuration file.")

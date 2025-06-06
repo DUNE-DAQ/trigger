@@ -60,8 +60,6 @@ void
 TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
 {
 
-#if 0
-  
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
 
   m_conf = m_mtrg->get_configuration();
@@ -84,7 +82,7 @@ TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
   TLOG() << "### REPLAY CONFIGURATION ###";
   TLOG() << "Will use channel map: " << m_channel_map_name;
   try {
-    m_channel_map = dunedaq::detchannelmaps::make_map(m_channel_map_name);
+    m_channel_map = dunedaq::detchannelmaps::make_tpc_map(m_channel_map_name);
   } catch (const detchannelmaps::ChannelMapCreationFailed& e) {
     ers::error(dunedaq::trigger::ReplayChannelMapProblem(ERS_HERE, get_name(), m_channel_map_name));
   }
@@ -169,9 +167,6 @@ TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
   TLOG() << "Total of " << m_tp_streams.size() << " TP streams.";
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting conf() method";
-
-#endif // Of #if 0
-
 }
 
 void
@@ -281,7 +276,6 @@ std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeA
 TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
 {
 
-#if 0
   std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>> all_data;
 
   // Loop over each file
@@ -349,7 +343,7 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
       // Get ROU and plane
       std::string ROU;
       try {
-        ROU = m_channel_map->get_tpc_element_from_offline_channel(tp.channel);
+        ROU = m_channel_map->get_element_name_from_offline_channel(tp.channel);
         local_rous.insert(ROU);
       } catch (...) {
         ers::error(dunedaq::trigger::ReplayROUError(ERS_HERE, get_name(), filename));
@@ -444,9 +438,6 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
   }
 
   return all_data;
-#else  // closes #if 0 above
-  return std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>{};
-#endif
 }
 
 void
