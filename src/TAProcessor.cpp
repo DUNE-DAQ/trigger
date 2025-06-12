@@ -165,6 +165,7 @@ TAProcessor::find_tc(const TAWrapper* ta,  std::shared_ptr<triggeralgs::TriggerC
       m_tc_sent_count++;
     }
   }
+  m_last_processed_daq_ts = ta->activity.time_start;
   return;
 }
 
