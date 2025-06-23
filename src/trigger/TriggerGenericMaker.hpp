@@ -74,6 +74,7 @@ public:
     register_command("start", &TriggerGenericMaker::do_start);
     register_command("stop", &TriggerGenericMaker::do_stop);
     register_command("conf", &TriggerGenericMaker::do_configure);
+    register_command("scrap", &TriggerGenericMaker::do_scrap);
   }
 
   virtual ~TriggerGenericMaker() {}
@@ -212,6 +213,11 @@ private:
 
     // worker should be notified that configuration potentially changed
     worker.reconfigure();
+  }
+
+  void do_scrap(const nlohmann::json& obj) 
+  {
+    m_maker.reset();
   }
 
   void do_work(std::atomic<bool>& m_running_flag)
