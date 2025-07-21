@@ -207,6 +207,14 @@ def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_
                     continue
 
                 plane = channel_map.get_plane_from_offline_channel(tp.channel)
+
+                # Hack for APA1 :/ 
+                if plane in (1, 2):
+                    rou = channel_map.get_element_name_from_offline_channel(tp.channel)
+                    if rou == "APA_P02SU":
+                        # Remap the plane
+                        plane = 2 if plane == 1 else 1
+
                 if plane not in planes_to_filter:
                     rou = channel_map.get_element_name_from_offline_channel(tp.channel)
                     rou_plane_data.add_value(rou, plane)
