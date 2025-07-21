@@ -17,9 +17,9 @@
 #include "trigger/TriggerActivity_serialization.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
-MSGPACK_ADD_ENUM(triggeralgs::TriggerCandidate::Type)
+DUNE_DAQ_SERIALIZE_ENUM(triggeralgs::TriggerCandidate::Type)
 
-MSGPACK_ADD_ENUM(triggeralgs::TriggerCandidate::Algorithm)
+DUNE_DAQ_SERIALIZE_ENUM(triggeralgs::TriggerCandidate::Algorithm)
 
                                  
 DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(triggeralgs,
