@@ -20,8 +20,8 @@
 #include "logging/Logging.hpp"
 #include "trgdataformats/Types.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
-#include "utilities/TimestampEstimator.hpp"
 #include "utilities/TimestampEstimatorSystem.hpp"
+#include "utilities/TimestampEstimatorTimeSync.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -138,11 +138,11 @@ RandomTCMakerModule::do_start(const nlohmann::json& obj)
 
   std::string timestamp_method = m_conf->get_timestamp_method();
   if (timestamp_method == "kTimeSync") {
-    TLOG_DEBUG(0) << "Creating TimestampEstimator";
-    m_timestamp_estimator.reset(new utilities::TimestampEstimator(m_run_number, m_clock_speed_hz));
+    TLOG_DEBUG(0) << "Creating TimestampEstimatorTimeSync";
+    m_timestamp_estimator.reset(new utilities::TimestampEstimatorTimeSync(m_run_number, m_clock_speed_hz));
     m_time_sync_source->add_callback(
-      std::bind(&utilities::TimestampEstimator::timesync_callback<dfmessages::TimeSync>,
-                reinterpret_cast<utilities::TimestampEstimator*>(m_timestamp_estimator.get()),
+      std::bind(&utilities::TimestampEstimatorTimeSync::timesync_callback<dfmessages::TimeSync>,
+                reinterpret_cast<utilities::TimestampEstimatorTimeSync*>(m_timestamp_estimator.get()),
                 std::placeholders::_1));
   } else if (timestamp_method == "kSystemClock") {
     TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
@@ -243,13 +243,13 @@ RandomTCMakerModule::send_trigger_candidates()
   m_tc_sent_count.store(0);
 
   std::mt19937 gen(m_run_number);
+  dfmessages::timestamp_t initial_timestamp;
   // Wait for there to be a valid timestamp estimate before we start
-  if (m_timestamp_estimator->wait_for_valid_timestamp(m_running_flag) ==
+  if (m_timestamp_estimator->wait_for_valid_timestamp(m_running_flag, initial_timestamp) ==
       utilities::TimestampEstimatorBase::kInterrupted) {
     return;
   }
 
-  dfmessages::timestamp_t initial_timestamp = m_timestamp_estimator->get_timestamp_estimate();
   dfmessages::timestamp_t next_trigger_timestamp = initial_timestamp;
   TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp;
 
@@ -261,17 +261,17 @@ RandomTCMakerModule::send_trigger_candidates()
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       continue;
     }
-
-    if (m_timestamp_estimator->wait_for_timestamp(next_trigger_timestamp, m_running_flag) ==
+    
+    dfmessages::timestamp_t actual_timestamp;
+    if (m_timestamp_estimator->wait_for_requested_timestamp(next_trigger_timestamp, m_running_flag, actual_timestamp) ==
         utilities::TimestampEstimatorBase::kInterrupted) {
       break;
     }
-    next_trigger_timestamp = m_timestamp_estimator->get_timestamp_estimate();
-    triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
+    triggeralgs::TriggerCandidate candidate = create_candidate(actual_timestamp);
 
     m_tc_made_count++;
 
-    TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
+    TLOG_DEBUG(1) << get_name() << " at timestamp " << actual_timestamp
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
 
     if (m_latency_monitoring.load())
@@ -284,7 +284,7 @@ RandomTCMakerModule::send_trigger_candidates()
       m_tc_failed_sent_count++;
     }
 
-    next_trigger_timestamp += get_interval(gen);
+    next_trigger_timestamp = actual_timestamp + get_interval(gen);
   }
 }
 
