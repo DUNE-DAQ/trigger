@@ -31,7 +31,7 @@
 #include "trigger/opmon/latency_info.pb.h"
 #include "trigger/opmon/randomtcmaker_info.pb.h"
 #include "triggeralgs/TriggerCandidate.hpp"
-#include "utilities/TimestampEstimator.hpp"
+#include "utilities/TimestampEstimatorBase.hpp"
 
 #include "rcif/cmd/Nljs.hpp"
 
