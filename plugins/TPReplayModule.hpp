@@ -100,8 +100,9 @@ private:
     std::map<std::string, std::map<int, std::deque<std::vector<TriggerPrimitiveTypeAdapter>>>>& data);
 
   // Configuration
+  const appmodel::TPReplayModule* m_mtrg;
   const appmodel::TPReplayModuleConf* m_conf;
-  double clocks_per_us;
+  double m_clocks_per_us;
   int m_loops;
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::steady_clock::time_point m_run_start_time;

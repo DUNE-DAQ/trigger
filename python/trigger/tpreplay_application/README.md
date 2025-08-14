@@ -44,9 +44,9 @@ Process:
 The easiest way is to use this python module. It helps to retrieve relevant OKS configuration data and modify it given user-provided selection. However, replay can also be run on any (valid) OKS configuration generated outside of this script.<br> 
 
 ### General procedure
-Replay works via a `TPReplayApplication`, a smart DAQ application that can be used inside the trigger segment of your OKS session.<br>
-To use it, simply add this application to the trigger segment in your session. There are example sessions available, both local and with ehn1 integration (CERN's opmon and ers).<br><br>
-Remember, replay is an emulation of readout and it simply outputs TAs, so for a full stream, a trigger application creating TCs and an MLT application are required (these are typically part of the trigger segment already).<br><br>
+Replay works via a `TPReplayApplication`, a smart DAQ application that can be used inside your OKS session.<br>
+To use it, simply add this application to the appropriate segment in your session. There are example sessions available, both local and with ehn1 integration (CERN's opmon and ers). The implementation in these default sessions includes new `tpreplay-segment`, that only contains the `TPReplayApplication`. This is then linked with the usual (example) trigger and dataflow segments. This exact approach is also adopted by this python script. However, one can choose to include the `TPReplayApplication` in already existing segments. <br><br>
+Remember, replay is an emulation of readout and it simply outputs TAs. Therefore, for a full stream a trigger application creating TCs and an MLT application are required (these are typically part of the trigger segment already).<br><br>
 Finally, configure the `TPReplayModule` that is part of this application. It accepts a list of input HDF5 TPStream files. Additionally, one can choose to filter out planes. This python script will take care of creating and modifying the configuration given both the parameters from the command line and parameters extracted from data files.
 
 ### Using this script
@@ -57,7 +57,7 @@ One can use this script that will modify the OKS data with parameters obtained f
 |----------------------|--------------|----------------|--------------|
 | `--files`            | `str`        | **Required**   | Text file with full paths to HDF5 TPStream file locations. |
 | `--filter-planes`    | `list[int]`  | `[]` (empty)   | List of planes to filter out. Accepts combinations of: <br> `0` (U), `1` (V), `2` (X). Example: `0 1` to filter out both induction planes. |
-| `--channel-map`      | `str`        | `PD2HDChannelMap` | Specify channel map. For example: `PD2HDChannelMap`, `PD2VDBottomTPCChannelMap`, etc. For the full list, see: [Channel Maps Documentation](https://github.com/DUNE-DAQ/detchannelmaps/blob/develop/docs/channel-maps-table.md). |
+| `--channel-map`      | `str`        | `PD2HDTPCChannelMap` | Specify channel map. For example: `PD2HDTPCChannelMap`, `PD2VDBottomTPCChannelMap`, etc. For the full list, see: [Channel Maps Documentation](https://github.com/DUNE-DAQ/detchannelmaps/blob/develop/docs/channel-maps-table.md). |
 | `--n-loops`          | `int`        | -1             | Number of times to loop over the provided data. The default is `-1` and this results in "infinite" replay. For multiple loops, the time of TPs is modified (shifted). |
 | `--config`           | `str`        | `config/daqsystemtest/example-configs.data.xml` | Path to the base OKS configuration file with `tpreplay` session. |
 | `--path`             | `str`        | `tpreplay-run` | Path for local output for configuration files. This directory will be created by this script and modified configurations stored there. |
@@ -80,7 +80,7 @@ An example input text file:
 ```
 --filter-planes 0 1
 ```
-- *channel-map*: valid channel map is needed to extract readout units and planes from TP data. Defaults to `PD2HDChannelMap`. Make sure you are using the correct channel map for your data!
+- *channel-map*: valid channel map is needed to extract readout units and planes from TP data. Defaults to `PD2HDTPCChannelMap`. Make sure you are using the correct channel map for your data!
 - *n-loops*: the application allows to replay the data multiple times by shifting the TP times. If `-1` is used, the replay will continue indefinitely (until the user stops the run).
 - *config*: this is a path to OKS (.data.xml) file that containts default `tpreplay` session. Can be left to use the default.
 - *path*: this is a path that will be created locally to store the modified configurations. By default set to `tpreplay-run`.
@@ -146,7 +146,7 @@ Few notes on what happens in this script:
 - currently the app is set-up to work with TPC TPs only until PDS TPs are fully integrated. It is expected that replay will work easily with PDS TPs as well, but it requires the PDS integration with trigger to happen first.
 - TPStream files are sorted by start time
 - prepare configuration objects for the extracted options (ie number of total planes, required number of source IDs ...). The general approach is to search for an existing template of the specific DAL object and use that as a base. If it does not exist, a new one is created from scratch (from schema).
-- the Random Trigger Candidate Maker is set up to have a rate of 0 (no TC generation from RTCM) as to not mix with the replay TX objects. This can be modified in the final configuration if needed.
+- the Random Trigger Candidate Maker is set up to have a rate of 0 (no TC generation from RTCM) as to not mix with the replay TX objects. This can be modified in the final configuration if needed. Additionally, one can also change the rate directly from drunc using `change-rate --trigger-rate X` command.
 - finally, update the local OKS files, including storing the new objects and updating relations / references.<br>
 
 ### Appmodel schemas
@@ -184,7 +184,7 @@ Few notes on what happens in this script:
   <attribute name="template_for" type="class" init-value="TPReplayModule"/>
   <attribute name="number_of_loops" type="u32" init-value="1" is-not-null="yes"/>
   <attribute name="maximum_wait_time_us" type="u32" init-value="1000" is-not-null="yes"/>
-  <attribute name="channel_map" type="string" init-value="PD2HDChannelMap" is-not-null="yes"/>
+  <attribute name="channel_map" type="string" init-value="PD2HDTPCChannelMap" is-not-null="yes"/>
   <attribute name="total_planes" type="u32" init-value="0" is-not-null="yes"/>
   <attribute name="filter_out_plane" type="u32" range="0..2" init-value="0" is-multi-value="yes"/>
   <relationship name="tp_streams" class-type="TPStreamConf" low-cc="one" high-cc="many" is-composite="no" is-exclusive="no" is-dependent="no"/>
@@ -228,7 +228,7 @@ It should be mentioned that the application is fully integrated with the rest of
 ### Set-up
 #### TPReplayApplication
 - Example TP Replay application for 1 ROU and 1 active plane:
-![replay dot](https://github.com/user-attachments/assets/7c00a8a9-1ffd-4c3f-89cb-598a82c1b444)
+![replay_app](https://github.com/user-attachments/assets/b24ecb1b-64d0-4594-8c71-84b1799742af)
 - Another example using 2 ROUs and 2 active planes:
 ![replay3 dot](https://github.com/user-attachments/assets/cdb442e5-0361-43f5-9ca6-d6b9edd91600)
 
@@ -240,11 +240,11 @@ Some additional notes:
 <br>
 
 #### Connecting to the DAQ system
-![session dot](https://github.com/user-attachments/assets/a4e56fe8-c0ac-4b42-b837-d14ef4be25ac)
-- the TPReplayApplication is part of the `trg-segment`
+![session](https://github.com/user-attachments/assets/a09fc6f0-b65f-4701-a193-078dbdc78bfd)
+- the TPReplayApplication is part of the `tpreplay-segment` (the only application there)
 - it has an input from `DFApplication`: readout requests
 - it publishes TAs to a `TriggerApplication`; this creates TCs and passes onwards to `MLT`
-- generally, the flow is similar to having a readout application replaced
+- generally, the flow is similar to having a readout application replaced (or the whole readout-segment with tpreplay-segment)
 
 ### TPReplayModule
 The `TPReplayModule` module is the base of replay.
@@ -274,7 +274,7 @@ Verbose logging is available in the `TPReplayModule`:
 - Configuration:
 ```
 ### REPLAY CONFIGURATION ###
-Will use channel map: PD2HDChannelMap
+Will use channel map: PD2HDTPCChannelMap
 Plane filtering: 1
 Planes to filter:
 0
@@ -336,11 +336,18 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 
 - TPReplay session:
 
-![replay_ses](https://github.com/user-attachments/assets/8456a4bb-8f51-40b3-99dc-e4d8f2654c7d)
+![config_session](https://github.com/user-attachments/assets/1184c148-22de-4785-809a-88579f222100)
+<br> -- the session makes use of 'custom' `tpreplay-root-segment`.
 
-- Trigger segment:
+- tpreplay-root-segment:
 
-![conf_trg](https://github.com/user-attachments/assets/1e8fe55a-4f62-4866-956c-df4aa253dabf)
+![config_root-segment](https://github.com/user-attachments/assets/f5d41461-cf48-45b1-99b0-80bbe98915eb)
+<br> -- the root segment contains the `tpreplay-segment` itself (which containst the `TPReplayApplication`), and additionally `trg-segment` (which contains trigger and MLT applications) and `df-segment` (which is needed for data-flow: readout requests). 
+
+- tpreplay-segment:
+
+![config_replay-segment](https://github.com/user-attachments/assets/fa7268de-a5d9-43d9-a874-b72cef3112c8)
+<br> -- this segment contains the `TPReplayApplication`. It should be noted that this is the suggested example set-up, but in theory one only needs to include the `TPReplayApplication` (properly configured) in their session (no need for special segments).
 
 - `TPReplayModule` configuration:
 
@@ -348,7 +355,7 @@ Two example replay sessions are available as part of example-configs in `daqsyst
 
 For plane filtering, the `filter_out_plane` variable accepts multiple values (but can also be empty).
 
-Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). `TPReplayApplication` is added to the `trg-segment`. You can see an overview [here](#connecting-to-the-daq-system).
+Otherwise, the sessions are kept minimal. Most applications that are not needed are disabled (but can be used of course). You can see an overview [here](#connecting-to-the-daq-system).
 
 ## Operational Monitoring
 A graph showing opmon data from `TPReplayModule` is available on Grafana: 
@@ -363,7 +370,7 @@ Additionally, the handler modules used are typical in the sense that they alread
 ### Issues / Perks
 - *Plane filtering*: The code pretends that for APA1 ("APA_P02SU") the collection plane is induction plane 2, and vice-versa. This is by choice, as for NP04 running plane 2 was used as an effective collection plane for APA1.
 - *Configuration management*: Current implementation uses 1 queue description and 1 `TPHandler` configuration, which is then used for all the instances of queues and handler objects (with unique names of course). This means that for a file with 3 active planes, the handler for each plane would be using the same algorithm (same for readout).
-- *Init stage*: A lot is happening inside the `TPReplayModule` at the init stage: parsing configuration, multiple checks on HDF5 files, extracting ROUs, actually extracting TP data, plane filtering... Depending on the number of files this can take a lot of time. If needed, portions of this can be moved to different run stages.
+- *conf stage*: A lot is happening inside the `TPReplayModule` at the conf stage: parsing configuration, multiple checks on HDF5 files, extracting ROUs, actually extracting TP data, plane filtering... Depending on the number of files this can take a lot of time. If needed, the conf step timeout may need to be extended.
 - *Expectations ?*: There are many places in the current dune-daq code where expectations are baked in (but not necessarily documented), for example, an expectation for queues that are at times not obvious (ie `TPRequestHandler` is expected to link to `FragmentAggregatorModule`, but this module is not required outside readout).
 - *Memory limits*: Some memory optimization is implemented, however, TPStream files are often very big. Because most processing happens within one module (TPMm), memory usage can be an issue for many files at once. You have been warned.
 

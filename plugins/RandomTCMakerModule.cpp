@@ -12,16 +12,16 @@
 #include "trigger/Issues.hpp"
 
 #include "daqdataformats/ComponentRequest.hpp"
-#include "trgdataformats/Types.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
-#include "utilities/TimestampEstimator.hpp"
-#include "utilities/TimestampEstimatorSystem.hpp"
+#include "trgdataformats/Types.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
+#include "utilities/TimestampEstimatorSystem.hpp"
+#include "utilities/TimestampEstimatorTimeSync.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -50,47 +50,14 @@ RandomTCMakerModule::RandomTCMakerModule(const std::string& name)
 void
 RandomTCMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
-  auto mtrg = mcfg->get_dal<appmodel::RandomTCMakerModule>(get_name());
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
-  // Get the output connections
-  for(auto con: mtrg->get_outputs()){
-    TLOG() << "TC sink is " << con->class_name() << "@" << con->UID();
-    m_trigger_candidate_sink =
-        get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
-  }
-
-  // Get the input connections
-  for(auto con: mtrg->get_inputs()) {
-    // Get the time sync source
-    TLOG() << "TimeSync receiver connection is " << con->class_name() << "@"
-           << con->UID() << " with tag " << get_name();
-    m_time_sync_source =
-      get_iomanager()->get_receiver<dfmessages::TimeSync>(con->UID(), get_name());
-  }
-  m_conf = mtrg->get_configuration();
-
-  // Get the TC out configuration
-  const appmodel::TCReadoutMap* tc_readout = m_conf->get_tc_readout();
-  m_tcout_time_before = tc_readout->get_time_before();
-  m_tcout_time_after = tc_readout->get_time_after();
-  m_tcout_type = static_cast<TCType>(
-      dunedaq::trgdataformats::string_to_trigger_candidate_type(tc_readout->get_tc_type_name()));
-
-  // Throw error if unknown TC type
-  if (m_tcout_type == TCType::kUnknown) {
-    throw(InvalidConfiguration(ERS_HERE, "Provided an unknown TC type output to RandomTCMakerModule!"));
-  }
-
-  m_latency_monitoring.store( m_conf->get_latency_monitoring() );
+  m_mtrg = mcfg->get_dal<appmodel::RandomTCMakerModule>(get_name());
 
   // Get the clock speed from detector configuration
   m_clock_speed_hz = mcfg->session()->get_detector_configuration()->get_clock_speed_hz();
-  m_trigger_rate_hz.store(m_conf->get_trigger_rate_hz());
-  TLOG() << "RandomTCMaker will output TC of type: " << tc_readout->get_tc_type_name();
-  TLOG() << "TC window time before: " << m_tcout_time_before
-         << " time after: " << m_tcout_time_after;
-  TLOG() << "Clock speed is: " << m_clock_speed_hz;
-  TLOG() << "Output trigger rate is: " << m_trigger_rate_hz.load();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
@@ -98,16 +65,16 @@ RandomTCMakerModule::generate_opmon_data()
 {
   opmon::RandomTCMakerInfo info;
 
-  info.set_tc_made_count( m_tc_made_count.load() );
-  info.set_tc_sent_count( m_tc_sent_count.load() );
-  info.set_tc_failed_sent_count( m_tc_failed_sent_count.load() );
+  info.set_tc_made_count(m_tc_made_count.load());
+  info.set_tc_sent_count(m_tc_sent_count.load());
+  info.set_tc_failed_sent_count(m_tc_failed_sent_count.load());
 
   this->publish(std::move(info));
 
-  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+  if (m_latency_monitoring.load() && m_running_flag.load()) {
     opmon::TriggerLatencyStandalone lat_info;
 
-    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+    lat_info.set_latency_out(m_latency_instance.get_latency_out());
 
     this->publish(std::move(lat_info));
   }
@@ -116,12 +83,50 @@ RandomTCMakerModule::generate_opmon_data()
 void
 RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
 {
-  //m_conf = obj.get<randomtriggercandidatemaker::Conf>();
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
+
+  // Get the output connections
+  for (auto con : m_mtrg->get_outputs()) {
+    TLOG() << "TC sink is " << con->class_name() << "@" << con->UID();
+    m_trigger_candidate_sink = get_iom_sender<triggeralgs::TriggerCandidate>(con->UID());
+  }
+
+  // Get the input connections
+  for (auto con : m_mtrg->get_inputs()) {
+    // Get the time sync source
+    TLOG() << "TimeSync receiver connection is " << con->class_name() << "@" << con->UID() << " with tag "
+           << get_name();
+    m_time_sync_source = get_iomanager()->get_receiver<dfmessages::TimeSync>(con->UID(), get_name());
+  }
+  m_conf = m_mtrg->get_configuration();
+
+  // Get the TC out configuration
+  const appmodel::TCReadoutMap* tc_readout = m_conf->get_tc_readout();
+  m_tcout_time_before = tc_readout->get_time_before();
+  m_tcout_time_after = tc_readout->get_time_after();
+  m_tcout_type =
+    static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(tc_readout->get_tc_type_name()));
+
+  // Throw error if unknown TC type
+  if (m_tcout_type == TCType::kUnknown) {
+    throw(InvalidConfiguration(ERS_HERE, "Provided an unknown TC type output to RandomTCMakerModule!"));
+  }
+
+  m_latency_monitoring.store(m_conf->get_latency_monitoring());
+  m_trigger_rate_hz.store(m_conf->get_trigger_rate_hz());
+
+  TLOG() << "RandomTCMaker will output TC of type: " << tc_readout->get_tc_type_name();
+  TLOG() << "TC window time before: " << m_tcout_time_before << " time after: " << m_tcout_time_after;
+  TLOG() << "Clock speed is: " << m_clock_speed_hz;
+  TLOG() << "Output trigger rate is: " << m_trigger_rate_hz.load();
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting conf() method";
 }
 
 void
 RandomTCMakerModule::do_start(const nlohmann::json& obj)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
   m_run_number = obj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   m_running_flag.store(true);
@@ -133,17 +138,16 @@ RandomTCMakerModule::do_start(const nlohmann::json& obj)
 
   std::string timestamp_method = m_conf->get_timestamp_method();
   if (timestamp_method == "kTimeSync") {
-    TLOG_DEBUG(0) << "Creating TimestampEstimator";
-    m_timestamp_estimator.reset(new utilities::TimestampEstimator(m_run_number, m_clock_speed_hz));
-    m_time_sync_source->add_callback(std::bind(&utilities::TimestampEstimator::timesync_callback<dfmessages::TimeSync>,
-          reinterpret_cast<utilities::TimestampEstimator*>(m_timestamp_estimator.get()),
-          std::placeholders::_1));
-  }
-  else if(timestamp_method == "kSystemClock"){
+    TLOG_DEBUG(0) << "Creating TimestampEstimatorTimeSync";
+    m_timestamp_estimator.reset(new utilities::TimestampEstimatorTimeSync(m_run_number, m_clock_speed_hz));
+    m_time_sync_source->add_callback(
+      std::bind(&utilities::TimestampEstimatorTimeSync::timesync_callback<dfmessages::TimeSync>,
+                reinterpret_cast<utilities::TimestampEstimatorTimeSync*>(m_timestamp_estimator.get()),
+                std::placeholders::_1));
+  } else if (timestamp_method == "kSystemClock") {
     TLOG_DEBUG(0) << "Creating TimestampEstimatorSystem";
     m_timestamp_estimator.reset(new utilities::TimestampEstimatorSystem(m_clock_speed_hz));
-  }
-  else{
+  } else {
     // TODO: write some error message
   }
 
@@ -156,11 +160,13 @@ RandomTCMakerModule::do_start(const nlohmann::json& obj)
 
   m_send_trigger_candidates_thread = std::thread(&RandomTCMakerModule::send_trigger_candidates, this);
   pthread_setname_np(m_send_trigger_candidates_thread.native_handle(), "random-tc-maker");
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting start() method";
 }
 
 void
 RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop() method";
   m_running_flag.store(false);
 
   m_send_trigger_candidates_thread.join();
@@ -172,21 +178,28 @@ RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
   m_timestamp_estimator.reset(nullptr); // Calls TimestampEstimator dtor
 
   print_opmon_stats();
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting stop() method";
 }
 
 void
 RandomTCMakerModule::do_scrap(const nlohmann::json& /*obj*/)
-{}
-
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
+  m_time_sync_source.reset();
+  m_trigger_candidate_sink.reset();
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting scrap() method";
+}
 
 void
 RandomTCMakerModule::do_change_trigger_rate(const nlohmann::json& obj)
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering change-rate() method";
   auto change_rate_params = obj.get<rcif::cmd::ChangeRateParams>();
 
   TLOG() << "Changing trigger rate from " << m_trigger_rate_hz.load() << " to " << change_rate_params.trigger_rate;
 
   m_trigger_rate_hz.store(change_rate_params.trigger_rate);
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting change-rate() method";
 }
 
 triggeralgs::TriggerCandidate
@@ -212,14 +225,12 @@ RandomTCMakerModule::get_interval(std::mt19937& gen)
 
   uint64_t interval = m_clock_speed_hz / m_trigger_rate_hz.load();
 
-  if( time_distribution == "kUniform"){
+  if (time_distribution == "kUniform") {
     return interval;
-  }
-  else if(time_distribution == "kPoisson"){
+  } else if (time_distribution == "kPoisson") {
     std::exponential_distribution<double> d(1.0 / interval);
     return static_cast<uint64_t>(0.5 + d(gen));
-  }
-  else{
+  } else {
     TLOG_DEBUG(1) << get_name() << " unknown distribution! Using kUniform.";
   }
   return interval;
@@ -232,13 +243,13 @@ RandomTCMakerModule::send_trigger_candidates()
   m_tc_sent_count.store(0);
 
   std::mt19937 gen(m_run_number);
+  dfmessages::timestamp_t initial_timestamp;
   // Wait for there to be a valid timestamp estimate before we start
-  if (m_timestamp_estimator->wait_for_valid_timestamp(m_running_flag) ==
+  if (m_timestamp_estimator->wait_for_valid_timestamp(m_running_flag, initial_timestamp) ==
       utilities::TimestampEstimatorBase::kInterrupted) {
     return;
   }
 
-  dfmessages::timestamp_t initial_timestamp = m_timestamp_estimator->get_timestamp_estimate();
   dfmessages::timestamp_t next_trigger_timestamp = initial_timestamp;
   TLOG_DEBUG(1) << get_name() << " initial timestamp estimate is " << initial_timestamp;
 
@@ -246,25 +257,26 @@ RandomTCMakerModule::send_trigger_candidates()
     // If trigger rate is 0, just sleep. Need to use small number here because
     // of floating point precision...
     constexpr float epsilon = 1e-9;
-    if ( m_trigger_rate_hz.load() <= epsilon) {
+    if (m_trigger_rate_hz.load() <= epsilon) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       continue;
     }
-
-    if (m_timestamp_estimator->wait_for_timestamp(next_trigger_timestamp, m_running_flag) ==
+    
+    dfmessages::timestamp_t actual_timestamp;
+    if (m_timestamp_estimator->wait_for_requested_timestamp(next_trigger_timestamp, m_running_flag, actual_timestamp) ==
         utilities::TimestampEstimatorBase::kInterrupted) {
       break;
     }
-    next_trigger_timestamp = m_timestamp_estimator->get_timestamp_estimate();
-    triggeralgs::TriggerCandidate candidate = create_candidate(next_trigger_timestamp);
+    triggeralgs::TriggerCandidate candidate = create_candidate(actual_timestamp);
 
     m_tc_made_count++;
 
-    TLOG_DEBUG(1) << get_name() << " at timestamp " << m_timestamp_estimator->get_timestamp_estimate()
+    TLOG_DEBUG(1) << get_name() << " at timestamp " << actual_timestamp
                   << ", pushing a candidate with timestamp " << candidate.time_candidate;
 
-    if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( candidate.time_candidate );
-    try{
+    if (m_latency_monitoring.load())
+      m_latency_instance.update_latency_out(candidate.time_candidate);
+    try {
       m_trigger_candidate_sink->send(std::move(candidate), std::chrono::milliseconds(10));
       m_tc_sent_count++;
     } catch (const ers::Issue& e) {
@@ -272,7 +284,7 @@ RandomTCMakerModule::send_trigger_candidates()
       m_tc_failed_sent_count++;
     }
 
-    next_trigger_timestamp += get_interval(gen);
+    next_trigger_timestamp = actual_timestamp + get_interval(gen);
   }
 }
 
@@ -281,8 +293,8 @@ RandomTCMakerModule::print_opmon_stats()
 {
   TLOG() << "RandomTCMaker opmon counters summary:";
   TLOG() << "------------------------------";
-  TLOG() << "Made TCs: \t\t" << m_tc_made_count;
-  TLOG() << "Sent TCs: \t\t" << m_tc_sent_count;
+  TLOG() << "Made TCs: \t\t\t" << m_tc_made_count;
+  TLOG() << "Sent TCs: \t\t\t" << m_tc_sent_count;
   TLOG() << "Failed to send TCs: \t" << m_tc_failed_sent_count;
   TLOG();
 }
