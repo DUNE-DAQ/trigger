@@ -141,11 +141,20 @@ TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
   m_earliest_tp_time = get_earliest_time_start(m_all_tp_data).value_or(0); // Error if 0?
   TLOG_DEBUG(10) << "The earliest available TP time_start is: " << m_earliest_tp_time;
 
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting conf() method";
+}
+
+void
+TPReplayModule::do_start(const nlohmann::json& /*obj*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
+
   // Shift TP times to 'now'
   shift_time_starts(m_all_tp_data);
 
   // Data loaded and sorted.
   // Now we create streams.
+  auto con = m_mtrg->get_outputs();
   int global_iter = 0;
   // Loop over ROUs
   for (auto& [ROU, plane_map] : m_all_tp_data) {
@@ -172,14 +181,6 @@ TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
   }
 
   TLOG() << "Total of " << m_tp_streams.size() << " TP streams.";
-
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting conf() method";
-}
-
-void
-TPReplayModule::do_start(const nlohmann::json& /*obj*/)
-{
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
 
   m_running_flag.store(true);
 
