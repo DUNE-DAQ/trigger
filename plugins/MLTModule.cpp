@@ -71,13 +71,13 @@ MLTModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 
   m_mtrg = mcfg->get_dal<appmodel::MLTModule>(get_name());
   // Get the session to access the detector configuration
-  m_session = mcfg->session();
+  m_session = mcfg->get_session();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
-MLTModule::do_configure(const nlohmann::json& /*obj*/)
+MLTModule::do_configure(const CommandData_t& /*obj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
 
@@ -146,7 +146,7 @@ MLTModule::do_configure(const nlohmann::json& /*obj*/)
 }
 
 void
-MLTModule::do_scrap(const nlohmann::json& /*obj*/)
+MLTModule::do_scrap(const CommandData_t& /*obj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
 
@@ -215,7 +215,7 @@ MLTModule::generate_opmon_data()
 }
 
 void
-MLTModule::do_start(const nlohmann::json& startobj)
+MLTModule::do_start(const CommandData_t& startobj)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
 
@@ -252,7 +252,7 @@ MLTModule::do_start(const nlohmann::json& startobj)
 }
 
 void
-MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
+MLTModule::do_stop(const CommandData_t& /*stopobj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop() method";
 
@@ -282,7 +282,7 @@ MLTModule::do_stop(const nlohmann::json& /*stopobj*/)
 }
 
 void
-MLTModule::do_pause(const nlohmann::json& /*pauseobj*/)
+MLTModule::do_pause(const CommandData_t& /*pauseobj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering pause() method";
 
@@ -299,7 +299,7 @@ MLTModule::do_pause(const nlohmann::json& /*pauseobj*/)
 }
 
 void
-MLTModule::do_resume(const nlohmann::json& /*resumeobj*/)
+MLTModule::do_resume(const CommandData_t& /*resumeobj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering resume() method";
 

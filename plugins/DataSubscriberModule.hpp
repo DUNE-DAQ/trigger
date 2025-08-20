@@ -41,8 +41,8 @@ public:
 
   std::shared_ptr<datahandlinglibs::SourceConcept> create_data_subscriber(const confmodel::DaqModule* cfg);
 private:
-  void do_start(const nlohmann::json& /*args*/);
-  void do_stop(const nlohmann::json& /*args*/);
+  void do_start(const CommandData_t& /*args*/);
+  void do_stop(const CommandData_t& /*args*/);
 
   // Internal
   std::shared_ptr<datahandlinglibs::SourceConcept> m_source_concept;

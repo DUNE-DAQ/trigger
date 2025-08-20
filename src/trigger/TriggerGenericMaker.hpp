@@ -75,7 +75,7 @@ public:
   TriggerGenericMaker(TriggerGenericMaker&&) = delete;
   TriggerGenericMaker& operator=(TriggerGenericMaker&&) = delete;
 
-  //void init(const nlohmann::json& obj) override
+  //void init(const CommandData_t& obj) override
   //{
   //  // TODO: Reimplement as OKS
   //  //m_input_queue = get_iom_receiver<IN>(appfwk::connection_uid(obj, "input"));
@@ -142,7 +142,7 @@ private:
   // Should also call set_algorithm_name and set_geoid/set_windowing (if desired)
   virtual std::unique_ptr<MAKER> make_maker(const nlohmann::json& obj) = 0;
 
-  void do_start(const nlohmann::json& startobj)
+  void do_start(const CommandData_t& startobj)
   {
     m_received_count = 0;
     m_sent_count = 0;
@@ -152,12 +152,12 @@ private:
     m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
   }
 
-  void do_stop(const nlohmann::json& /*obj*/)
+  void do_stop(const CommandData_t& /*obj*/)
   {
     m_thread.stop_working_thread();
   }
 
-  void do_configure(const nlohmann::json& obj)
+  void do_configure(const CommandData_t& obj)
   {
     // P. Rodrigues 2022-07-13
     // We stash the config here and don't actually create the maker
@@ -170,7 +170,7 @@ private:
     worker.reconfigure();
   }
 
-  void do_scrap(const nlohmann::json& obj)
+  void do_scrap(const CommandData_t& obj)
   {
     m_input_queue.reset();
     m_output_queue.reset();

@@ -79,12 +79,12 @@ public:
 
 private:
   // Commands
-  void do_start(const nlohmann::json& obj);
-  void do_stop(const nlohmann::json& obj);
-  void do_pause(const nlohmann::json& obj);
-  void do_resume(const nlohmann::json& obj);
-  void do_configure(const nlohmann::json& /*obj*/);
-  void do_scrap(const nlohmann::json& /*obj*/);
+  void do_start(const CommandData_t& obj);
+  void do_stop(const CommandData_t& obj);
+  void do_pause(const CommandData_t& obj);
+  void do_resume(const CommandData_t& obj);
+  void do_configure(const CommandData_t& /*obj*/);
+  void do_scrap(const CommandData_t& /*obj*/);
 
   void trigger_decisions_callback(dfmessages::TriggerDecision& decision);
   void dfo_busy_callback(dfmessages::TriggerInhibit& inhibit);

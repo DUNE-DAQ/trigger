@@ -32,14 +32,14 @@ TASetSink::init(std::shared_ptr<dunedaq::appfwk::ConfigurationManager>)
 {};
 
 //void
-//TASetSink::init(const nlohmann::json& obj)
+//TASetSink::init(const CommandData_t& obj)
 //{
 //  // TODO: Reimplement as OKS
 //  //m_taset_source = get_iom_receiver<TASet>(appfwk::connection_uid(obj, "taset_source"));
 //}
 
 void
-TASetSink::do_start(const nlohmann::json& /*obj*/)
+TASetSink::do_start(const CommandData_t& /*obj*/)
 {
   m_running_flag.store(true);
   m_thread = std::thread(&TASetSink::do_work, this);
@@ -47,14 +47,14 @@ TASetSink::do_start(const nlohmann::json& /*obj*/)
 }
 
 void
-TASetSink::do_stop(const nlohmann::json& /*obj*/)
+TASetSink::do_stop(const CommandData_t& /*obj*/)
 {
   m_running_flag.store(false);
   m_thread.join();
 }
 
 void
-TASetSink::do_conf(const nlohmann::json& obj)
+TASetSink::do_conf(const CommandData_t& obj)
 {
   m_conf=obj;
   if (m_conf.output_filename != "") {
