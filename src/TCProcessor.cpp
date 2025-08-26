@@ -38,7 +38,7 @@ TCProcessor::~TCProcessor()
 {}
 
 void
-TCProcessor::start(const nlohmann::json& args)
+TCProcessor::start(const appfwk::DAQModule::CommandData_t& args)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering start() method";
 
@@ -66,7 +66,7 @@ TCProcessor::start(const nlohmann::json& args)
 }
 
 void
-TCProcessor::stop(const nlohmann::json& args)
+TCProcessor::stop(const appfwk::DAQModule::CommandData_t& args)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering stop() method";
 
@@ -193,7 +193,7 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 }
 
 void
-TCProcessor::scrap(const nlohmann::json& args)
+TCProcessor::scrap(const appfwk::DAQModule::CommandData_t& args)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering scrap() method";
 

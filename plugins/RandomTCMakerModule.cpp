@@ -55,7 +55,7 @@ RandomTCMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   m_mtrg = mcfg->get_dal<appmodel::RandomTCMakerModule>(get_name());
 
   // Get the clock speed from detector configuration
-  m_clock_speed_hz = mcfg->session()->get_detector_configuration()->get_clock_speed_hz();
+  m_clock_speed_hz = mcfg->get_session()->get_detector_configuration()->get_clock_speed_hz();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -81,7 +81,7 @@ RandomTCMakerModule::generate_opmon_data()
 }
 
 void
-RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
+RandomTCMakerModule::do_configure(const CommandData_t& /*obj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
 
@@ -124,7 +124,7 @@ RandomTCMakerModule::do_configure(const nlohmann::json& /*obj*/)
 }
 
 void
-RandomTCMakerModule::do_start(const nlohmann::json& obj)
+RandomTCMakerModule::do_start(const CommandData_t& obj)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
   m_run_number = obj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
@@ -164,7 +164,7 @@ RandomTCMakerModule::do_start(const nlohmann::json& obj)
 }
 
 void
-RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
+RandomTCMakerModule::do_stop(const CommandData_t& /*obj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop() method";
   m_running_flag.store(false);
@@ -182,7 +182,7 @@ RandomTCMakerModule::do_stop(const nlohmann::json& /*obj*/)
 }
 
 void
-RandomTCMakerModule::do_scrap(const nlohmann::json& /*obj*/)
+RandomTCMakerModule::do_scrap(const CommandData_t& /*obj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
   m_time_sync_source.reset();
@@ -191,7 +191,7 @@ RandomTCMakerModule::do_scrap(const nlohmann::json& /*obj*/)
 }
 
 void
-RandomTCMakerModule::do_change_trigger_rate(const nlohmann::json& obj)
+RandomTCMakerModule::do_change_trigger_rate(const CommandData_t& obj)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering change-rate() method";
   auto change_rate_params = obj.get<rcif::cmd::ChangeRateParams>();

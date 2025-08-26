@@ -70,17 +70,17 @@ public:
 private:
   using TCType = triggeralgs::TriggerCandidate::Type;
   // Commands
-  void do_configure(const nlohmann::json& obj);
-  void do_start(const nlohmann::json& obj);
-  void do_stop(const nlohmann::json& obj);
-  void do_scrap(const nlohmann::json& obj);
+  void do_configure(const CommandData_t& obj);
+  void do_start(const CommandData_t& obj);
+  void do_stop(const CommandData_t& obj);
+  void do_scrap(const CommandData_t& obj);
 
   /**
    * @brief Command function to change the output trigger rate
    *
    * @param obj descriprice json object with the ChangeRateParams
    */
-  void do_change_trigger_rate(const nlohmann::json& obj);
+  void do_change_trigger_rate(const CommandData_t& obj);
 
   void send_trigger_candidates();
   std::thread m_send_trigger_candidates_thread;

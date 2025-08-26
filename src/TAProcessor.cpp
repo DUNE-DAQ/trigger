@@ -45,7 +45,7 @@ TAProcessor::~TAProcessor()
 {}
 
 void
-TAProcessor::start(const nlohmann::json& args)
+TAProcessor::start(const appfwk::DAQModule::CommandData_t& args)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Entering start() method";
 
@@ -63,7 +63,7 @@ TAProcessor::start(const nlohmann::json& args)
 }
 
 void
-TAProcessor::stop(const nlohmann::json& args)
+TAProcessor::stop(const appfwk::DAQModule::CommandData_t& args)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Entering stop() method";
 
@@ -113,7 +113,7 @@ TAProcessor::conf(const appmodel::DataHandlerModule* conf)
 }
 
 void
-TAProcessor::scrap(const nlohmann::json& args)
+TAProcessor::scrap(const appfwk::DAQModule::CommandData_t& args)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TAProcessor: Entering scrap() method";
   m_tcms.clear();

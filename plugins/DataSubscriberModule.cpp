@@ -62,12 +62,14 @@ DataSubscriberModule::init(std::shared_ptr<appfwk::ConfigurationManager> cfg)
 }
 
 void
-DataSubscriberModule::do_start(const nlohmann::json& /*args*/) {
+DataSubscriberModule::do_start(const CommandData_t& /*args*/)
+{
   m_source_concept->start();
 }
 
 void
-DataSubscriberModule::do_stop(const nlohmann::json& /*args*/) {
+DataSubscriberModule::do_stop(const CommandData_t& /*args*/)
+{
   m_source_concept->stop();
 }
 
