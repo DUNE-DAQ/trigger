@@ -351,6 +351,7 @@ TCProcessor::send_trigger_decisions() {
  std::unique_lock<std::mutex> lock(m_td_vector_mutex);
 
  while (m_running_flag) {
+    // TODO: think about better implementation (notify?, something event driven)
     m_cv.wait_for(lock, std::chrono::microseconds(100));
     auto ready_tds = get_ready_tds(m_pending_tds);
     TLOG_DEBUG(10) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size();
