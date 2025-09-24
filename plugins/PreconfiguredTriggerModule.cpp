@@ -14,6 +14,7 @@
 #include "appmodel/SourceIDConf.hpp"
 #include "trigger/opmon/latency_info.pb.h"
 #include "trigger/opmon/randomtcmaker_info.pb.h"
+#include "trigger/TriggerCandidate_serialization.hpp"
 #include "appmodel/TCReadoutMap.hpp"
 
 namespace dunedaq::trigger {
