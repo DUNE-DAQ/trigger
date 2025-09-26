@@ -49,6 +49,8 @@ private:
   std::chrono::milliseconds m_wait_time;
   /// @brief Output TC type
   TCType m_tcout_type;
+  uint32_t m_time_before;
+  uint32_t m_time_after;
 
   // Runtime
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_sender;

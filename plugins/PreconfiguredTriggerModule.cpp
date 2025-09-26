@@ -55,6 +55,8 @@ PreconfiguredTriggerModule::init(std::shared_ptr<appfwk::ConfigurationManager> c
   const appmodel::TCReadoutMap* tc_readout = m_conf->get_tc_readout();
   m_tcout_type =
     static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(tc_readout->get_tc_type_name()));
+  m_time_before = tc_readout->get_time_before();
+  m_time_after = tc_readout->get_time_after();
 }
 
 void
@@ -94,8 +96,8 @@ triggeralgs::TriggerCandidate
 PreconfiguredTriggerModule::create_candidate(dfmessages::timestamp_t time_start, dfmessages::timestamp_t time_end)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_start = time_start;
-  candidate.time_end = time_end;
+  candidate.time_start = time_start - m_time_before;
+  candidate.time_end = time_end + m_time_after;
   candidate.time_candidate = time_start;
   candidate.detid = { 0 };
   candidate.type = m_tcout_type;
