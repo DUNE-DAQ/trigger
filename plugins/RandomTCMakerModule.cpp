@@ -206,9 +206,9 @@ triggeralgs::TriggerCandidate
 RandomTCMakerModule::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_start = (timestamp - m_tcout_time_before);
-  candidate.time_end = (timestamp + m_tcout_time_after);
-  candidate.time_candidate = timestamp;
+  candidate.time_start = timestamp; //(timestamp - m_tcout_time_before);
+  candidate.time_end = timestamp + m_tcout_time_before + m_tcout_time_after; //(timestamp + m_tcout_time_after);
+  candidate.time_candidate = timestamp + m_tcout_time_before; //timestamp;
   candidate.detid = { 0 };
   candidate.type = m_tcout_type;
 
