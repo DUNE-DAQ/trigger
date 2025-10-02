@@ -64,10 +64,10 @@ public:
 
 private:
   // Commands
-  void do_configure(const nlohmann::json& /*obj*/);
-  void do_start(const nlohmann::json& obj);
-  void do_stop(const nlohmann::json& obj);
-  void do_scrap(const nlohmann::json& obj);
+  void do_configure(const CommandData_t& /*obj*/);
+  void do_start(const CommandData_t& obj);
+  void do_stop(const CommandData_t& obj);
+  void do_scrap(const CommandData_t& obj);
 
   // Threading
   void do_work(std::atomic<bool>&,

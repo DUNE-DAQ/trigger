@@ -23,13 +23,15 @@ TPRequestHandler::conf(const appmodel::DataHandlerModule* conf) {
 }
 
 void
-TPRequestHandler::scrap(const nlohmann::json& args) {
+TPRequestHandler::scrap(const appfwk::DAQModule::CommandData_t& args)
+{
   m_tpset_sink.reset();
   inherited2::scrap(args);
 }
 
 void 
-TPRequestHandler::start(const nlohmann::json& args) {
+TPRequestHandler::start(const appfwk::DAQModule::CommandData_t& args)
+{
 
    m_oldest_ts=0;
    m_newest_ts=0;

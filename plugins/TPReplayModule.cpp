@@ -50,14 +50,14 @@ TPReplayModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 
   // ### Extract relevant objects
   // Clock speed
-  m_clocks_per_us = mcfg->session()->get_detector_configuration()->get_clock_speed_hz() /
+  m_clocks_per_us = mcfg->get_session()->get_detector_configuration()->get_clock_speed_hz() /
                     double(1'000'000.0); // this is redundant but safer...
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
-TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
+TPReplayModule::do_configure(const CommandData_t& /*obj*/)
 {
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering conf() method";
@@ -170,7 +170,7 @@ TPReplayModule::do_configure(const nlohmann::json& /*obj*/)
 }
 
 void
-TPReplayModule::do_start(const nlohmann::json& /*obj*/)
+TPReplayModule::do_start(const CommandData_t& /*obj*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start() method";
 
@@ -208,7 +208,7 @@ TPReplayModule::do_start(const nlohmann::json& /*obj*/)
 }
 
 void
-TPReplayModule::do_stop(const nlohmann::json& /*args*/)
+TPReplayModule::do_stop(const CommandData_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop() method";
 
@@ -237,7 +237,7 @@ TPReplayModule::do_stop(const nlohmann::json& /*args*/)
 }
 
 void
-TPReplayModule::do_scrap(const nlohmann::json& /*args*/)
+TPReplayModule::do_scrap(const CommandData_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
 

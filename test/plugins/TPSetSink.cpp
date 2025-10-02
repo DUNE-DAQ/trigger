@@ -32,14 +32,14 @@ TPSetSink::init(std::shared_ptr<dunedaq::appfwk::ConfigurationManager>)
 {};
 
 //void
-//TPSetSink::init(const nlohmann::json& obj)
+//TPSetSink::init(const CommandData_t& obj)
 //{
 //  // TODO Reimplement as OKS
 //  // m_tpset_source = get_iom_receiver<TPSet>(appfwk::connection_uid(obj, "tpset_source"));
 //}
 
 void
-TPSetSink::do_start(const nlohmann::json& /*obj*/)
+TPSetSink::do_start(const CommandData_t& /*obj*/)
 {
   m_running_flag.store(true);
   m_thread = std::thread(&TPSetSink::do_work, this);
@@ -47,7 +47,7 @@ TPSetSink::do_start(const nlohmann::json& /*obj*/)
 }
 
 void
-TPSetSink::do_stop(const nlohmann::json& /*obj*/)
+TPSetSink::do_stop(const CommandData_t& /*obj*/)
 {
   m_running_flag.store(false);
   m_thread.join();

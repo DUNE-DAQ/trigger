@@ -51,13 +51,13 @@ public:
 
   ~TCProcessor();
 
-  void start(const nlohmann::json& args) override;
+  void start(const appfwk::DAQModule::CommandData_t& args) override;
 
-  void stop(const nlohmann::json& args) override;
+  void stop(const appfwk::DAQModule::CommandData_t& args) override;
 
   void conf(const appmodel::DataHandlerModule* conf) override;
 
-  void scrap(const nlohmann::json& args) override;
+  void scrap(const appfwk::DAQModule::CommandData_t& args) override;
 
   void generate_opmon_data() override;
 
