@@ -36,6 +36,9 @@ public:
 
   // Transform input data type to readout
   std::vector<ReadoutType> transform_payload(IDT& original) const override;
+
+  // Actions postprocess scheduler takes if no data arrives in a configured time
+  void invoke_postprocess_schedule_timeout_policy() const override;
 };
 
 } // namespace dunedaq::trigger
