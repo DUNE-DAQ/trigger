@@ -74,7 +74,7 @@ conf_dict["hsi"]["use_timing_hsi"] = False
 
 conf_dict["readout"]["data_files"] = []
 datafile_conf = {}
-datafile_conf["data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
+datafile_conf["data_file"] = "asset://?checksum=370df564205290d27cab47e44ae4ca47" # WIBEth
 datafile_conf["detector_id"] = 3
 conf_dict["readout"]["data_files"].append(datafile_conf)
 
