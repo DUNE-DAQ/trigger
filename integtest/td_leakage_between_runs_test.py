@@ -74,8 +74,9 @@ conf_dict["hsi"]["use_timing_hsi"] = False
 
 conf_dict["readout"]["data_files"] = []
 datafile_conf = {}
-datafile_conf["data_file"] = "asset://?checksum=370df564205290d27cab47e44ae4ca47" # WIBEth
 datafile_conf["detector_id"] = 3
+# We use default values for all other data-file-related parameters, including the
+# data file that is replayed to emulate the detector data.
 conf_dict["readout"]["data_files"].append(datafile_conf)
 
 confgen_arguments={"MinimalSystem": conf_dict}  # (required)
