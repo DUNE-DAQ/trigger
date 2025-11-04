@@ -27,7 +27,15 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
                               "min_size_bytes": 72, "max_size_bytes": 216}
-ignored_logfile_problems={}
+ignored_logfile_problems = {
+    "-controller": [
+        r"Worker \(pid:\d+\) was sent SIGHUP"  # ignoring SIGHUP messages pending investigation, 03-Nov, KAB/PMP/JCF
+    ],
+    "connectivity-service": [
+        "errorlog: -",
+        r"Worker \(pid:\d+\) was sent SIGHUP"  # ignoring SIGHUP messages pending investigation, 03-Nov, KAB/PMP/JCF
+    ],
+}
 
 # The next several variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
