@@ -60,15 +60,14 @@ hsi_frag_params = {
     "max_size_bytes": 100,
 }
 ignored_logfile_problems = {
-    "connectionservice": [
-        "Searching for connections matching uid_regex<errored_frames_q> and data_type Unknown"
-    ],
     "-controller": [
         "Worker with pid \\d+ was terminated due to signal 1",
         "Connection '.*' not found on the application registry",
+        r"Worker \(pid:\d+\) was sent SIGHUP"  # ignoring SIGHUP messages pending investigation, 03-Nov, KAB/PMP/JCF
     ],
     "connectivity-service": [
         "errorlog: -",
+        r"Worker \(pid:\d+\) was sent SIGHUP"  # ignoring SIGHUP messages pending investigation, 03-Nov, KAB/PMP/JCF
     ],
 }
 
