@@ -1,35 +1,34 @@
 /**
- * @file PreconfiguredTriggerModule.cpp Implementation of a Preconfigured Trigger
+ * @file FixedTimeTCMakerModule.cpp Implementation of the Fixed-Time TC Maker
  *
  * This is part of the DUNE DAQ , copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "PreconfiguredTriggerModule.hpp"
+#include "FixedTimeTCMakerModule.hpp"
 
-#include "appmodel/PreconfiguredTriggerModule.hpp"
-#include "appmodel/PreconfiguredTriggerModuleConf.hpp"
-#include "appmodel/PreconfiguredTriggerModuleTrigger.hpp"
+#include "appmodel/FixedTimeTCMakerModule.hpp"
+#include "appmodel/FixedTimeTCMakerModuleConf.hpp"
+#include "appmodel/FixedTimeTCConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
 #include "trigger/opmon/latency_info.pb.h"
 #include "trigger/opmon/randomtcmaker_info.pb.h"
 #include "trigger/TriggerCandidate_serialization.hpp"
-#include "appmodel/TCReadoutMap.hpp"
 
 namespace dunedaq::trigger {
-PreconfiguredTriggerModule::PreconfiguredTriggerModule(const std::string& module_name)
+FixedTimeTCMakerModule::FixedTimeTCMakerModule(const std::string& module_name)
   : appfwk::DAQModule(module_name)
   , m_send_trigger_candidates_thread(
-      std::bind(&PreconfiguredTriggerModule::send_trigger_candidates, this, std::placeholders::_1))
+      std::bind(&FixedTimeTCMakerModule::send_trigger_candidates, this, std::placeholders::_1))
 {
-  register_command("enable_triggers", &PreconfiguredTriggerModule::do_enable_triggers);
+  register_command("enable_triggers", &FixedTimeTCMakerModule::do_enable_triggers);
 }
 
 void
-PreconfiguredTriggerModule::init(std::shared_ptr<appfwk::ConfigurationManager> cfg)
+FixedTimeTCMakerModule::init(std::shared_ptr<appfwk::ConfigurationManager> cfg)
 {
-  auto mdal = cfg->get_dal<appmodel::PreconfiguredTriggerModule>(get_name());
+  auto mdal = cfg->get_dal<appmodel::FixedTimeTCMakerModule>(get_name());
 
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
@@ -50,17 +49,12 @@ PreconfiguredTriggerModule::init(std::shared_ptr<appfwk::ConfigurationManager> c
 
   m_latency_monitoring.store(m_conf->get_latency_monitoring());
   m_wait_time = std::chrono::milliseconds(m_conf->get_wait_time_ms());
-
-  // Get the TC out configuration
-  const appmodel::TCReadoutMap* tc_readout = m_conf->get_tc_readout();
   m_tcout_type =
-    static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(tc_readout->get_tc_type_name()));
-  m_time_before = tc_readout->get_time_before();
-  m_time_after = tc_readout->get_time_after();
+    static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(m_conf->get_tc_type_name()));
 }
 
 void
-PreconfiguredTriggerModule::generate_opmon_data()
+FixedTimeTCMakerModule::generate_opmon_data()
 {
   opmon::RandomTCMakerInfo info;
 
@@ -80,12 +74,12 @@ PreconfiguredTriggerModule::generate_opmon_data()
 }
 
 void
-PreconfiguredTriggerModule::do_enable_triggers(const CommandData_t& /*cmd*/)
+FixedTimeTCMakerModule::do_enable_triggers(const CommandData_t& /*cmd*/)
 {
   m_send_trigger_candidates_thread.start_working_thread("PCTRIG");
 }
 void
-PreconfiguredTriggerModule::do_disable_triggers(const CommandData_t& /*cmd*/)
+FixedTimeTCMakerModule::do_disable_triggers(const CommandData_t& /*cmd*/)
 {
   m_send_trigger_candidates_thread.stop_working_thread();
 }
@@ -93,11 +87,11 @@ PreconfiguredTriggerModule::do_disable_triggers(const CommandData_t& /*cmd*/)
 
 
 triggeralgs::TriggerCandidate
-PreconfiguredTriggerModule::create_candidate(dfmessages::timestamp_t time_start, dfmessages::timestamp_t time_end)
+FixedTimeTCMakerModule::create_candidate(dfmessages::timestamp_t time_start, dfmessages::timestamp_t time_end)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_start = time_start - m_time_before;
-  candidate.time_end = time_end + m_time_after;
+  candidate.time_start = time_start;
+  candidate.time_end = time_end;
   candidate.time_candidate = time_start;
   candidate.detid = { 0 };
   candidate.type = m_tcout_type;
@@ -109,7 +103,7 @@ PreconfiguredTriggerModule::create_candidate(dfmessages::timestamp_t time_start,
 }
 
 void
-PreconfiguredTriggerModule::send_trigger_candidates(std::atomic<bool>& running_flag)
+FixedTimeTCMakerModule::send_trigger_candidates(std::atomic<bool>& running_flag)
 {
   auto triggers = m_conf->get_triggers();
   for (auto& trigger : triggers) {
@@ -137,4 +131,4 @@ PreconfiguredTriggerModule::send_trigger_candidates(std::atomic<bool>& running_f
 
 } // namespace dunedaq::trigger
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::PreconfiguredTriggerModule)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::trigger::FixedTimeTCMakerModule)

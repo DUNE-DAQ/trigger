@@ -1,35 +1,35 @@
 /**
- * @file PreconfiguredTriggerModule.hpp Declarations for Preconfigured Trigger Module
+ * @file FixedTimeTCMakerModule.hpp Declarations for Fixed-Time TC Maker Trigger Module
  *
  * This is part of the DUNE DAQ , copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#ifndef TRIGGER_PLUGINS_PRECONFIGUREDTRIGGERMODULE_HPP_
-#define TRIGGER_PLUGINS_PRECONFIGUREDTRIGGERMODULE_HPP_
+#ifndef TRIGGER_PLUGINS_FixedTimeTCMakerMODULE_HPP_
+#define TRIGGER_PLUGINS_FixedTimeTCMakerMODULE_HPP_
 
 #include "appfwk/DAQModule.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
-#include "appmodel/PreconfiguredTriggerModuleConf.hpp"
+#include "appmodel/FixedTimeTCMakerModuleConf.hpp"
 #include "utilities/WorkerThread.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "trigger/Latency.hpp"
 
 namespace dunedaq::trigger {
-class PreconfiguredTriggerModule : public appfwk::DAQModule
+class FixedTimeTCMakerModule : public appfwk::DAQModule
 {
 public:
-  explicit PreconfiguredTriggerModule(const std::string& module_name);
-  PreconfiguredTriggerModule(const PreconfiguredTriggerModule&) =
-    delete; ///< PreconfiguredTriggerModule is not copy-constructible
-  PreconfiguredTriggerModule& operator=(const PreconfiguredTriggerModule&) =
-    delete; ///< PreconfiguredTriggerModule is not copy-assignable
-  PreconfiguredTriggerModule(PreconfiguredTriggerModule&&) =
-    delete; ///< PreconfiguredTriggerModule is not move-constructible
-  PreconfiguredTriggerModule& operator=(PreconfiguredTriggerModule&&) =
-    delete; ///< PreconfiguredTriggerModule is not move-assignable
+  explicit FixedTimeTCMakerModule(const std::string& module_name);
+  FixedTimeTCMakerModule(const FixedTimeTCMakerModule&) =
+    delete; ///< FixedTimeTCMakerModule is not copy-constructible
+  FixedTimeTCMakerModule& operator=(const FixedTimeTCMakerModule&) =
+    delete; ///< FixedTimeTCMakerModule is not copy-assignable
+  FixedTimeTCMakerModule(FixedTimeTCMakerModule&&) =
+    delete; ///< FixedTimeTCMakerModule is not move-constructible
+  FixedTimeTCMakerModule& operator=(FixedTimeTCMakerModule&&) =
+    delete; ///< FixedTimeTCMakerModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> cfg) override;
   void generate_opmon_data() override;
@@ -45,12 +45,10 @@ private:
   utilities::WorkerThread m_send_trigger_candidates_thread;
 
   // Configuration
-  const appmodel::PreconfiguredTriggerModuleConf* m_conf;
+  const appmodel::FixedTimeTCMakerModuleConf* m_conf;
   std::chrono::milliseconds m_wait_time;
   /// @brief Output TC type
   TCType m_tcout_type;
-  uint32_t m_time_before;
-  uint32_t m_time_after;
 
   // Runtime
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_trigger_sender;
@@ -67,4 +65,4 @@ private:
 };
 } // namespace dunedaq::trigger
 
-#endif // TRIGGER_PLUGINS_PRECONFIGUREDTRIGGERMODULE_HPP_
+#endif // TRIGGER_PLUGINS_FixedTimeTCMakerMODULE_HPP_
