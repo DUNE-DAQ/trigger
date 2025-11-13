@@ -29,11 +29,9 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "min_size_bytes": 72, "max_size_bytes": 216}
 ignored_logfile_problems = {
     "-controller": [
-        r"Worker \(pid:\d+\) was sent SIGHUP"  # ignoring SIGHUP messages pending investigation, 03-Nov, KAB/PMP/JCF
     ],
     "connectivity-service": [
         "errorlog: -",
-        r"Worker \(pid:\d+\) was sent SIGHUP"  # ignoring SIGHUP messages pending investigation, 03-Nov, KAB/PMP/JCF
     ],
 }
 
