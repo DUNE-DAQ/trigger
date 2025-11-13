@@ -60,6 +60,7 @@ daq_add_library(
 
 daq_add_plugin(DataSubscriberModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TriggerDataHandlerModule duneDAQModule LINK_LIBRARIES trigger)
+daq_add_plugin(FixedTimeTCMakerModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(RandomTCMakerModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(MLTModule duneDAQModule LINK_LIBRARIES trigger)
 daq_add_plugin(TPReplayModule duneDAQModule LINK_LIBRARIES trigger)
