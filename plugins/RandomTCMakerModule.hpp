@@ -101,11 +101,11 @@ private:
   /// @brief Output TC type
   TCType m_tcout_type;
 
-  /// @brief Output candidate central time, based off trigger timestamp
+  /// @brief Offset applied to timestamp estimator time to generate random trigger candidates
   dfmessages::timestamp_t m_tcout_time_offset_ts;
-  /// @brief Output candidate start time, based off trigger timestamp
+  /// @brief Output candidate start time, relative to peak time
   dfmessages::timestamp_t m_tcout_time_before_ts;
-  /// @brief Output candidate end time, based off trigger timestamp
+  /// @brief Output candidate end time, relative to peak time
   dfmessages::timestamp_t m_tcout_time_after_ts;
 
   /// @brief Clock speed in hz, taken from detector configuration
