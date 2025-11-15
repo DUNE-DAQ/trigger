@@ -119,7 +119,7 @@ RandomTCMakerModule::do_configure(const CommandData_t& /*obj*/)
   m_trigger_rate_hz.store(m_conf->get_trigger_rate_hz());
 
   TLOG() << "RandomTCMaker will output TC of type: " << m_conf->get_candidate_type_name();
-  TLOG() << "TC window center offset: " << m_tcout_time_offset_ts;
+  TLOG() << "TC window center offset: " << m_tcout_time_backshift_ts;
   TLOG() << "TC window time before: " << m_tcout_time_before_ts << " time after: " << m_tcout_time_after_ts;
   TLOG() << "Clock speed is: " << m_clock_speed_hz;
   TLOG() << "Output trigger rate is: " << m_trigger_rate_hz.load();
