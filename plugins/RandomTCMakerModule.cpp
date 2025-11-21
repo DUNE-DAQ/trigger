@@ -101,9 +101,6 @@ RandomTCMakerModule::do_configure(const CommandData_t& /*obj*/)
   m_conf = m_mtrg->get_configuration();
 
   // Get the TC out configuration
-  // const appmodel::TCReadoutMap* tc_readout = m_conf->get_tc_readout();
-  // m_tcout_time_before = tc_readout->get_time_before();
-  // m_tcout_time_after_ts = tc_readout->get_time_after();
   m_tcout_time_backshift_ts = m_conf->get_candidate_backshift_ts();
   m_tcout_time_before_ts = m_conf->get_candidate_window_before_ts();
   m_tcout_time_after_ts = m_conf->get_candidate_window_after_ts();
@@ -210,9 +207,9 @@ triggeralgs::TriggerCandidate
 RandomTCMakerModule::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_candidate = timestamp - m_tcout_time_backshift_ts; //timestamp;
-  candidate.time_start = candidate.time_candidate-m_tcout_time_before_ts; //(timestamp - m_tcout_time_before_ts);
-  candidate.time_end = candidate.time_candidate+m_tcout_time_after_ts; //(timestamp + m_tcout_time_after_ts);
+  candidate.time_candidate = timestamp - m_tcout_time_backshift_ts;
+  candidate.time_start = candidate.time_candidate-m_tcout_time_before_ts;
+  candidate.time_end = candidate.time_candidate+m_tcout_time_after_ts;
   candidate.detid = { 0 };
   candidate.type = m_tcout_type;
 
