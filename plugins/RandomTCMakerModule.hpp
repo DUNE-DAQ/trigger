@@ -100,10 +100,13 @@ private:
 
   /// @brief Output TC type
   TCType m_tcout_type;
-  /// @brief Output window start time, based off trigger timestamp
-  dfmessages::timestamp_t m_tcout_time_before;
-  /// @brief Output window end time, based off trigger timestamp
-  dfmessages::timestamp_t m_tcout_time_after;
+
+  /// @brief Output candidate central time, based off trigger timestamp
+  dfmessages::timestamp_t m_tcout_time_backshift_ts;
+  /// @brief Output candidate start time, based off trigger timestamp
+  dfmessages::timestamp_t m_tcout_time_before_ts;
+  /// @brief Output candidate end time, relative to peak time
+  dfmessages::timestamp_t m_tcout_time_after_ts;
 
   /// @brief Clock speed in hz, taken from detector configuration
   uint64_t m_clock_speed_hz;
