@@ -101,11 +101,11 @@ RandomTCMakerModule::do_configure(const CommandData_t& /*obj*/)
   m_conf = m_mtrg->get_configuration();
 
   // Get the TC out configuration
-  m_tcout_time_backshift_ts = m_conf->get_candidate_backshift_ts();
-  m_tcout_time_before_ts = m_conf->get_candidate_window_before_ts();
-  m_tcout_time_after_ts = m_conf->get_candidate_window_after_ts();
-
-  m_tcout_type = static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(m_conf->get_candidate_type_name()));
+  const appmodel::TCReadoutMap* tc_readout = m_conf->get_tc_readout();
+  m_tcout_time_before = tc_readout->get_time_before();
+  m_tcout_time_after = tc_readout->get_time_after();
+  m_tcout_type =
+    static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(tc_readout->get_tc_type_name()));
 
   // Throw error if unknown TC type
   if (m_tcout_type == TCType::kUnknown) {
@@ -115,9 +115,8 @@ RandomTCMakerModule::do_configure(const CommandData_t& /*obj*/)
   m_latency_monitoring.store(m_conf->get_latency_monitoring());
   m_trigger_rate_hz.store(m_conf->get_trigger_rate_hz());
 
-  TLOG() << "RandomTCMaker will output TC of type: " << m_conf->get_candidate_type_name();
-  TLOG() << "TC window center offset: " << m_tcout_time_backshift_ts;
-  TLOG() << "TC window time before: " << m_tcout_time_before_ts << " time after: " << m_tcout_time_after_ts;
+  TLOG() << "RandomTCMaker will output TC of type: " << tc_readout->get_tc_type_name();
+  TLOG() << "TC window time before: " << m_tcout_time_before << " time after: " << m_tcout_time_after;
   TLOG() << "Clock speed is: " << m_clock_speed_hz;
   TLOG() << "Output trigger rate is: " << m_trigger_rate_hz.load();
 
@@ -207,9 +206,9 @@ triggeralgs::TriggerCandidate
 RandomTCMakerModule::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
-  candidate.time_candidate = timestamp - m_tcout_time_backshift_ts;
-  candidate.time_start = candidate.time_candidate-m_tcout_time_before_ts;
-  candidate.time_end = candidate.time_candidate+m_tcout_time_after_ts;
+  candidate.time_start = (timestamp - m_tcout_time_before);
+  candidate.time_end = (timestamp + m_tcout_time_after);
+  candidate.time_candidate = timestamp;
   candidate.detid = { 0 };
   candidate.type = m_tcout_type;
 
