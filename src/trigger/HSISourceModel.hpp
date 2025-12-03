@@ -126,7 +126,7 @@ public:
     print_opmon_stats();
   }
 
-  bool handle_payload(dfmessages::HSIEvent& data) // NOLINT(build/unsigned)
+  bool handle_payload(dfmessages::HSIEvent&& data) // NOLINT(build/unsigned)
   {
     m_received_events_count++;
     if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( data.timestamp );

@@ -73,7 +73,7 @@ public:
 
 private:
   // The main thread
-  void receive_token(dfmessages::TriggerDecisionToken& token);
+  void receive_token(dfmessages::TriggerDecisionToken&& token);
 
   std::string m_connection_name;
 

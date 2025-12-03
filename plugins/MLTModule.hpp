@@ -86,8 +86,8 @@ private:
   void do_configure(const CommandData_t& /*obj*/);
   void do_scrap(const CommandData_t& /*obj*/);
 
-  void trigger_decisions_callback(dfmessages::TriggerDecision& decision);
-  void dfo_busy_callback(dfmessages::TriggerInhibit& inhibit);
+  void trigger_decisions_callback(dfmessages::TriggerDecision&& decision);
+  void dfo_busy_callback(dfmessages::TriggerInhibit&& inhibit);
 
   std::map<std::string, int> decode_geoid(uint64_t _geoid_int);
 

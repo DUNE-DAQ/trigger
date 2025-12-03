@@ -77,7 +77,7 @@ TokenManager::trigger_sent(dfmessages::trigger_number_t trigger_number)
 }
 
 void
-TokenManager::receive_token(dfmessages::TriggerDecisionToken& token)
+TokenManager::receive_token(dfmessages::TriggerDecisionToken&& token)
 {
   TLOG_DEBUG(1) << "Received token with run number " << token.run_number << ", current run number " << m_run_number;
   if (token.run_number == m_run_number) {

@@ -317,7 +317,7 @@ MLTModule::do_resume(const CommandData_t& /*resumeobj*/)
 }
 
 void
-MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision)
+MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision&& decision)
 {
   m_td_msg_received_count++;
   if (m_latency_monitoring.load())
@@ -406,7 +406,7 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision)
 }
 
 void
-MLTModule::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
+MLTModule::dfo_busy_callback(dfmessages::TriggerInhibit&& inhibit)
 {
   TLOG_DEBUG(17) << "Received inhibit message with busy status " << inhibit.busy << " and run number "
                  << inhibit.run_number;
