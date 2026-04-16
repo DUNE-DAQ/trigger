@@ -4,7 +4,7 @@
 Here is a sample command for invoking a test (feel free to keep or drop the options in brackets, as you prefer):
 
 ```
-pytest -s change_rate_test.py [--nanorc-option log-level debug]  # this nanorc option is still useful even when using drunc
+pytest -s change_rate_test.py [--dunerc-option log-level debug]
 ```
 
 For reference, here are the ideas behind the existing tests:
