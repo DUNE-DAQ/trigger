@@ -15,7 +15,6 @@ pytest_plugins = "integrationtest.integrationtest_drunc"
 
 # Values that help determine the running conditions
 number_of_data_producers = 1
-data_rate_slowdown_factor = 1  # 10 for ProtoWIB/DuneWIB
 run_duration = 200  # seconds (has to be this long for 0.01Hz rate to show that it is working)
 readout_window_time_before = 1000
 readout_window_time_after = 1001
@@ -76,28 +75,14 @@ ignored_logfile_problems = {
     ],
 }
 
-# The next three variable declarations *must* be present as globals in the test
-# file. They're read by the "fixtures" in conftest.py to determine how
-# to run the config generation and drunc
 
-# The arguments to pass to the config generator, excluding the json
-# output directory (the test framework handles that)
-
-object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
-
-conf_dict = data_classes.drunc_config()
+conf_dict = data_classes.integtest_params_for_generated_dunedaq_config()
+conf_dict.object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
-conf_dict.session = "changerate"
+conf_dict.config_session_name = "changerate"
 conf_dict.tpg_enabled = False
 
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_id=conf_dict.session,
-        obj_class="Session",
-        updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
-    )
-)
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(obj_class="LatencyBuffer", updates={"size": 50000})
 )
