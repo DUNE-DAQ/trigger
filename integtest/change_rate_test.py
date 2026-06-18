@@ -4,8 +4,8 @@ import re
 
 import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
-import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
+import integrationtest.utility_functions as utility_functions
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
 import functools
@@ -120,7 +120,7 @@ dunerc_command_list = (
 
 def test_dunerc_success(run_dunerc, caplog):
     # check for run control success, problems during pytest setup, etc.
-    basic_checks.basic_checks(run_dunerc, caplog, print_test_name=False)
+    utility_functions.basic_checks(run_dunerc, caplog, print_test_name=False)
 
 
 def test_log_files(run_dunerc):
