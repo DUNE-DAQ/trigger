@@ -155,7 +155,3 @@ def test_data_files(run_dunerc):
             assert data_file_checks.check_fragment_sizes(
                 data_file, fragment_check_list[jdx]
             )
-
-
-def test_cleanup(run_dunerc):
-    utility_functions.remove_hdf5_files_if_requested(run_dunerc, this_test_requests_hdf5_file_removal=False)
