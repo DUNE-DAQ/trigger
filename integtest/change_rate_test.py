@@ -82,7 +82,7 @@ conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name = "changerate"
 conf_dict.tpg_enabled = False
-utility_functions.set_RTCM_trigger_params(conf_dict, trigger_rate=1.0,
+utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=1.0,
                                           readout_window_before_ticks=readout_window_time_before,
                                           readout_window_after_ticks=readout_window_time_after)
 
