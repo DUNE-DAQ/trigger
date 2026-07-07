@@ -1,3 +1,13 @@
+# 07-Jul-2026, KAB: the goal of this test is to check whether duplicate TriggerPrimitives
+# are being produced in a demo system. It does this by reducing the configured TriggerActivity
+# prescale value to 5 and checking if there are complaints in the log files about attemping
+# to insert duplicate TAs (which are produced from duplicate TPs) into the relevant latency buffers.
+#
+# We have been seeing this problem (failed attempts to insert duplicate TAs into the relevant
+# latency buffers) occasionally for quite some time in other regression tests, and we believe
+# that the problem is now fixed with the new "latency buffer returns an iterator" code in
+# DUNE-DAQ/datahandlinglibs#106.
+#
 import pytest
 import urllib.request
 
