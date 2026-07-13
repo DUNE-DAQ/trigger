@@ -26,7 +26,7 @@ find_package(CLI11 REQUIRED)
 daq_protobuf_codegen( opmon/*.proto )
 
 ##############################################################################
-# Main library 
+# Main library
 set(TRIGGER_DEPENDENCIES
   appmodel::appmodel
   appfwk::appfwk
@@ -54,7 +54,7 @@ daq_add_library(
 ## merge a chance to succeed.
 #daq_codegen(
 #  txbuffer.jsonnet DEP_PKGS datahandlinglibs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
-  
+
 ##############################################################################
 # Plugins
 
@@ -80,7 +80,6 @@ daq_add_application( generate_tpset_from_hdf5 generate_tpset_from_hdf5.cxx TEST 
 ##############################################################################
 # Unit Tests
 
-#daq_add_unit_test(TokenManager_test              LINK_LIBRARIES trigger)
 #daq_add_unit_test(TxSet_test                     LINK_LIBRARIES trigger)
 #daq_add_unit_test(BufferManager_test             LINK_LIBRARIES trigger)
 #daq_add_unit_test(TriggerObjectOverlay_test      LINK_LIBRARIES trigger)

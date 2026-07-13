@@ -17,7 +17,6 @@
 #include "trigger/Issues.hpp"
 #include "trigger/Latency.hpp"
 #include "trigger/LivetimeCounter.hpp"
-#include "trigger/TokenManager.hpp"
 #include "trigger/opmon/latency_info.pb.h"
 #include "trigger/opmon/moduleleveltrigger_info.pb.h"
 
