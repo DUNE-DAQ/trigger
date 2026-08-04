@@ -95,7 +95,7 @@ private:
 
   // Queue sources and sinks
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerDecision>> m_decision_input;
-  std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerDecision>> m_decision_output;
+  std::map<std::string, std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerDecision>>> m_decision_outputs;
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerInhibit>> m_inhibit_input;
 
   /* TD requests

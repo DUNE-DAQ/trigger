@@ -84,7 +84,7 @@ MLTModule::do_configure(const CommandData_t& /*obj*/)
   // Get the inputs
   for (auto con : m_mtrg->get_inputs()) {
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
-        m_decision_input = get_iom_receiver<dfmessages::TriggerDecision>(con->UID());
+      m_decision_input = get_iom_receiver<dfmessages::TriggerDecision>(con->UID());
     } else if (con->get_data_type() == datatype_to_string<dfmessages::TriggerInhibit>()) {
       m_inhibit_input = get_iom_receiver<dfmessages::TriggerInhibit>(con->UID());
     }
@@ -93,7 +93,7 @@ MLTModule::do_configure(const CommandData_t& /*obj*/)
   // Get the outputs
   for (auto con : m_mtrg->get_outputs()) {
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>())
-      m_decision_output = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
+      m_decision_outputs[con->UID()] = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
   }
 
   hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap =
@@ -151,7 +151,7 @@ MLTModule::do_scrap(const CommandData_t& /*obj*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering scrap() method";
 
   m_decision_input.reset();
-  m_decision_output.reset();
+  m_decision_outputs.clear();
   m_inhibit_input.reset();
 
   m_srcid_detid_map.clear();
@@ -365,7 +365,11 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision)
     }
 
     try {
-      m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
+      for (auto& [conn_name, sender] : m_decision_outputs) {
+        auto decision_copy = dfmessages::TriggerDecision(decision);
+        sender->send(std::move(decision_copy), std::chrono::milliseconds(1));
+      }
+      // m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
       m_td_sent_count++;
 
       for (const auto t : trigger_types) {
@@ -416,6 +420,11 @@ MLTModule::dfo_busy_callback(dfmessages::TriggerInhibit& inhibit)
     m_dfo_is_busy = inhibit.busy;
     LivetimeCounter::State state = (inhibit.busy) ? LivetimeCounter::State::kDead : LivetimeCounter::State::kLive;
     m_livetime_counter->set_state(state);
+
+    if (!m_decision_outputs.count(inhibit.decision_destination)) {
+      m_decision_outputs[inhibit.decision_destination] =
+        get_iom_sender<dfmessages::TriggerDecision>(inhibit.decision_destination);
+    }
   }
 }
 
