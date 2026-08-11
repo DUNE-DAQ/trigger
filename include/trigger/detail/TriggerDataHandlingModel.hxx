@@ -38,4 +38,11 @@ TriggerDataHandlingModel<RDT, RHT, LBT, RPT, IDT>::transform_payload(IDT& origin
   }
 }
 
+template<class RDT, class RHT, class LBT, class RPT, class IDT>
+void
+TriggerDataHandlingModel<RDT, RHT, LBT, RPT, IDT>::invoke_postprocess_schedule_timeout_policy() const
+{
+  return; // TODO
+}
+
 } // namespace dunedaq::trigger
