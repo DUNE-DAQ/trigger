@@ -138,7 +138,7 @@ conf_dict.config_substitutions.append(
     data_classes.list_element_addition(
         obj_class="Session",
         obj_id=conf_dict.config_session_name,
-        rel_name="disabled",
+        rel_name="excluded",
         additional_object_class="TPStreamWriterApplication",
         additional_object_id="tp-stream-writer",
     )
