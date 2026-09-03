@@ -188,7 +188,7 @@ MLTModule::generate_opmon_data()
   // per TC type
   std::lock_guard<std::mutex> guard(m_trigger_mutex);
   for (auto& [type, counts] : m_trigger_counters) {
-    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
+    auto name = dunedaq::trgdataformats::trigger_candidate_type_to_string(type);
     opmon::TriggerDecisionInfo td_info;
     td_info.set_received(counts.received.exchange(0));
     td_info.set_sent(counts.sent.exchange(0));
