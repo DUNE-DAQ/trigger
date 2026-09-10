@@ -153,7 +153,7 @@ Few notes on what happens in this script:
 `TPReplayApplication` schema:
 ```xml
  <class name="TPReplayApplication">
-  <superclass name="ResourceSetAND"/>
+  <superclass name="ExcludableEntitySetAND"/>
   <superclass name="SmartDaqApplication"/>
   <attribute name="application_name" type="string" init-value="daq_application" is-not-null="yes"/>
   <relationship name="tp_source_ids" class-type="SourceIDConf" low-cc="zero" high-cc="many" is-composite="no" is-exclusive="no" is-dependent="no"/>
