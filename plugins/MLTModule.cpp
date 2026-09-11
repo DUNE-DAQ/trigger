@@ -97,7 +97,7 @@ MLTModule::do_configure(const CommandData_t& /*obj*/)
   }
 
   hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap =
-    hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_session);
+    hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(*m_session);
   // Fill the SourceID -- Subdetector map
   for (auto const& [sourceid, geoids] : geoidmap) {
     TLOG() << "SourceID: " << sourceid;
