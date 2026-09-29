@@ -8,13 +8,13 @@
 
 #include "FixedTimeTCMakerModule.hpp"
 
+#include "appmodel/FixedTimeTCConf.hpp"
 #include "appmodel/FixedTimeTCMakerModule.hpp"
 #include "appmodel/FixedTimeTCMakerModuleConf.hpp"
-#include "appmodel/FixedTimeTCConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
+#include "trigger/TriggerCandidate_serialization.hpp"
 #include "trigger/opmon/latency_info.pb.h"
 #include "trigger/opmon/randomtcmaker_info.pb.h"
-#include "trigger/TriggerCandidate_serialization.hpp"
 
 namespace dunedaq::trigger {
 FixedTimeTCMakerModule::FixedTimeTCMakerModule(const std::string& module_name)
@@ -84,8 +84,6 @@ FixedTimeTCMakerModule::do_disable_triggers(const CommandData_t& /*cmd*/)
   m_send_trigger_candidates_thread.stop_working_thread();
 }
 
-
-
 triggeralgs::TriggerCandidate
 FixedTimeTCMakerModule::create_candidate(dfmessages::timestamp_t time_start, dfmessages::timestamp_t time_end)
 {
@@ -116,7 +114,7 @@ FixedTimeTCMakerModule::send_trigger_candidates(std::atomic<bool>& running_flag)
 
     if (m_latency_monitoring.load())
       m_latency_instance.update_latency_out(candidate.time_candidate);
-    
+
     try {
       m_trigger_sender->send(std::move(candidate), std::chrono::milliseconds(10));
       m_tc_sent_count++;

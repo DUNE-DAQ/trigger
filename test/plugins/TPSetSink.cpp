@@ -27,16 +27,14 @@ TPSetSink::TPSetSink(const std::string& name)
   register_command("stop", &TPSetSink::do_stop);
 }
 
-void 
-TPSetSink::init(std::shared_ptr<dunedaq::appfwk::ConfigurationManager>)
-{};
+void TPSetSink::init(std::shared_ptr<dunedaq::appfwk::ConfigurationManager>){};
 
-//void
-//TPSetSink::init(const CommandData_t& obj)
+// void
+// TPSetSink::init(const CommandData_t& obj)
 //{
-//  // TODO Reimplement as OKS
-//  // m_tpset_source = get_iom_receiver<TPSet>(appfwk::connection_uid(obj, "tpset_source"));
-//}
+//   // TODO Reimplement as OKS
+//   // m_tpset_source = get_iom_receiver<TPSet>(appfwk::connection_uid(obj, "tpset_source"));
+// }
 
 void
 TPSetSink::do_start(const CommandData_t& /*obj*/)

@@ -10,24 +10,22 @@
 #define TRIGGER_PLUGINS_FixedTimeTCMakerMODULE_HPP_
 
 #include "appfwk/DAQModule.hpp"
-#include "triggeralgs/TriggerCandidate.hpp"
 #include "appmodel/FixedTimeTCMakerModuleConf.hpp"
-#include "utilities/WorkerThread.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "trigger/Latency.hpp"
+#include "triggeralgs/TriggerCandidate.hpp"
+#include "utilities/WorkerThread.hpp"
 
 namespace dunedaq::trigger {
 class FixedTimeTCMakerModule : public appfwk::DAQModule
 {
 public:
   explicit FixedTimeTCMakerModule(const std::string& module_name);
-  FixedTimeTCMakerModule(const FixedTimeTCMakerModule&) =
-    delete; ///< FixedTimeTCMakerModule is not copy-constructible
+  FixedTimeTCMakerModule(const FixedTimeTCMakerModule&) = delete; ///< FixedTimeTCMakerModule is not copy-constructible
   FixedTimeTCMakerModule& operator=(const FixedTimeTCMakerModule&) =
-    delete; ///< FixedTimeTCMakerModule is not copy-assignable
-  FixedTimeTCMakerModule(FixedTimeTCMakerModule&&) =
-    delete; ///< FixedTimeTCMakerModule is not move-constructible
+    delete;                                                  ///< FixedTimeTCMakerModule is not copy-assignable
+  FixedTimeTCMakerModule(FixedTimeTCMakerModule&&) = delete; ///< FixedTimeTCMakerModule is not move-constructible
   FixedTimeTCMakerModule& operator=(FixedTimeTCMakerModule&&) =
     delete; ///< FixedTimeTCMakerModule is not move-assignable
 

@@ -17,8 +17,9 @@
 namespace dunedaq {
 namespace trigger {
 
-class TriggerDataHandlerModule : public dunedaq::appfwk::DAQModule,
-				 public dunedaq::datahandlinglibs::RawDataHandlerBase
+class TriggerDataHandlerModule
+  : public dunedaq::appfwk::DAQModule
+  , public dunedaq::datahandlinglibs::RawDataHandlerBase
 {
 public:
   using inherited_dlh = dunedaq::datahandlinglibs::RawDataHandlerBase;
@@ -29,16 +30,18 @@ public:
    */
   explicit TriggerDataHandlerModule(const std::string& name);
 
-  TriggerDataHandlerModule(const TriggerDataHandlerModule&) = delete;            ///< TriggerDataHandlerModule is not copy-constructible
-  TriggerDataHandlerModule& operator=(const TriggerDataHandlerModule&) = delete; ///< TriggerDataHandlerModule is not copy-assignable
-  TriggerDataHandlerModule(TriggerDataHandlerModule&&) = delete;                 ///< TriggerDataHandlerModule is not move-constructible
-  TriggerDataHandlerModule& operator=(TriggerDataHandlerModule&&) = delete;      ///< TriggerDataHandlerModule is not move-assignable
+  TriggerDataHandlerModule(const TriggerDataHandlerModule&) =
+    delete; ///< TriggerDataHandlerModule is not copy-constructible
+  TriggerDataHandlerModule& operator=(const TriggerDataHandlerModule&) =
+    delete;                                                      ///< TriggerDataHandlerModule is not copy-assignable
+  TriggerDataHandlerModule(TriggerDataHandlerModule&&) = delete; ///< TriggerDataHandlerModule is not move-constructible
+  TriggerDataHandlerModule& operator=(TriggerDataHandlerModule&&) =
+    delete; ///< TriggerDataHandlerModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> cfg) override;
 
-  std::shared_ptr<datahandlinglibs::DataHandlingConcept>
-  create_readout(const appmodel::DataHandlerModule* modconf, std::atomic<bool>& run_marker) override;
-
+  std::shared_ptr<datahandlinglibs::DataHandlingConcept> create_readout(const appmodel::DataHandlerModule* modconf,
+                                                                        std::atomic<bool>& run_marker) override;
 };
 
 } // namespace trigger

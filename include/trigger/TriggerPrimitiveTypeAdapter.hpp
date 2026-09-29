@@ -1,17 +1,16 @@
 #ifndef TRIGGER_INCLUDE_TRIGGER_TRIGGERPRIMITIVETYPEADAPTER_HPP_
 #define TRIGGER_INCLUDE_TRIGGER_TRIGGERPRIMITIVETYPEADAPTER_HPP_
 
-
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "trgdataformats/TriggerPrimitive.hpp"
 #include "trgdataformats/Types.hpp"
 
 #include <cstdint> // uint_t types
-#include <memory>  // unique_ptr
-#include <vector>
 #include <cstring> // memcpy
-#include <tuple> // tie
+#include <memory>  // unique_ptr
+#include <tuple>   // tie
+#include <vector>
 
 namespace dunedaq {
 namespace trigger {

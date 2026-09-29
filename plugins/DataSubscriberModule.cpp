@@ -8,18 +8,18 @@
 #include "DataSubscriberModule.hpp"
 #include "logging/Logging.hpp"
 
-#include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/DataHandlingIssues.hpp"
+#include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/models/DataSubscriberModel.hpp"
 #include "trigger/HSISourceModel.hpp"
 
 #include "appmodel/DataSubscriberModule.hpp"
 
-#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
+#include "trgdataformats/TriggerPrimitive.hpp"
 #include "trigger/TAWrapper.hpp"
 #include "trigger/TCWrapper.hpp"
 #include "trigger/TPSet.hpp"
-#include "trgdataformats/TriggerPrimitive.hpp"
+#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
 
@@ -27,8 +27,7 @@ using namespace dunedaq::datahandlinglibs::logging;
 
 namespace dunedaq {
 
-
-//DUNE_DAQ_TYPESTRING(dunedaq::trigger::TPSet, "TPSet")
+// DUNE_DAQ_TYPESTRING(dunedaq::trigger::TPSet, "TPSet")
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TriggerPrimitiveTypeAdapter, "TriggerPrimitive")
 DUNE_DAQ_TYPESTRING(std::vector<dunedaq::trigger::TriggerPrimitiveTypeAdapter>, "TriggerPrimitiveVector")
 DUNE_DAQ_TYPESTRING(dunedaq::trigger::TAWrapper, "TriggerActivity")
@@ -37,7 +36,8 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 namespace trigger {
 
 DataSubscriberModule::DataSubscriberModule(const std::string& name)
-  : DAQModule(name), m_source_concept(nullptr)
+  : DAQModule(name)
+  , m_source_concept(nullptr)
 {
 
   inherited_mod::register_command("start", &DataSubscriberModule::do_start);
@@ -56,9 +56,9 @@ DataSubscriberModule::init(std::shared_ptr<appfwk::ConfigurationManager> cfg)
     throw datahandlinglibs::InitializationError(ERS_HERE, "Only 1 input supported for subscribers");
   }
   m_source_concept = create_data_subscriber(ini);
-  register_node(get_name(), m_source_concept); 
+  register_node(get_name(), m_source_concept);
   m_source_concept->init(ini);
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) <<  ": Exiting init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << ": Exiting init() method";
 }
 
 void
@@ -76,10 +76,10 @@ DataSubscriberModule::do_stop(const CommandData_t& /*args*/)
 std::shared_ptr<datahandlinglibs::SourceConcept>
 DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
 {
- 
+
   auto datatypes = cfg->get_outputs()[0]->get_data_type();
   auto raw_dt = cfg->get_inputs()[0]->get_data_type();
-  
+
   if (raw_dt == "TPSet") {
     TLOG_DEBUG(1) << "Creating trigger primitives subscriber";
     auto source_model =
@@ -89,22 +89,19 @@ DataSubscriberModule::create_data_subscriber(const confmodel::DaqModule* cfg)
 
   if (raw_dt == "TriggerActivity") {
     TLOG_DEBUG(1) << "Creating trigger activities subscriber";
-    auto source_model =
-      std::make_shared<datahandlinglibs::DataSubscriberModel<triggeralgs::TriggerActivity>>();
+    auto source_model = std::make_shared<datahandlinglibs::DataSubscriberModel<triggeralgs::TriggerActivity>>();
     return source_model;
   }
 
   if (raw_dt == "TriggerCandidate") {
     TLOG_DEBUG(1) << "Creating trigger candidates subscriber";
-    auto source_model =
-      std::make_shared<datahandlinglibs::DataSubscriberModel<triggeralgs::TriggerCandidate>>();
+    auto source_model = std::make_shared<datahandlinglibs::DataSubscriberModel<triggeralgs::TriggerCandidate>>();
     return source_model;
   }
 
-   if (raw_dt == "HSIEvent") {
+  if (raw_dt == "HSIEvent") {
     TLOG_DEBUG(1) << "Creating trigger candidates subscriber";
-    auto source_model =
-      std::make_shared<trigger::HSISourceModel>();
+    auto source_model = std::make_shared<trigger::HSISourceModel>();
     return source_model;
   }
   return nullptr;

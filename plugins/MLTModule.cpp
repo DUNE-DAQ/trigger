@@ -84,7 +84,7 @@ MLTModule::do_configure(const CommandData_t& /*obj*/)
   // Get the inputs
   for (auto con : m_mtrg->get_inputs()) {
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
-        m_decision_input = get_iom_receiver<dfmessages::TriggerDecision>(con->UID());
+      m_decision_input = get_iom_receiver<dfmessages::TriggerDecision>(con->UID());
     } else if (con->get_data_type() == datatype_to_string<dfmessages::TriggerInhibit>()) {
       m_inhibit_input = get_iom_receiver<dfmessages::TriggerInhibit>(con->UID());
     }

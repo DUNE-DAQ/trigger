@@ -14,15 +14,15 @@
 
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
-//#include "triggger/Issues.hpp"
-#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
+// #include "triggger/Issues.hpp"
 #include "trigger/Latency.hpp"
-#include "trigger/opmon/tpprocessor_info.pb.h"
+#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/opmon/latency_info.pb.h"
+#include "trigger/opmon/tpprocessor_info.pb.h"
 
 #include "triggeralgs/TriggerActivity.hpp"
-#include "triggeralgs/Types.hpp"
 #include "triggeralgs/TriggerActivityMaker.hpp"
+#include "triggeralgs/Types.hpp"
 
 #include "appmodel/DataHandlerModule.hpp"
 
@@ -37,8 +37,8 @@ public:
   using tpptr = TriggerPrimitiveTypeAdapter*;
   using consttpptr = const TriggerPrimitiveTypeAdapter*;
 
-
-  explicit TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
+  explicit TPProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry,
+                       bool post_processing_enabled);
 
   ~TPProcessor();
 
@@ -61,10 +61,9 @@ protected:
    * Pipeline Stage 2.: Do TA finding
    * */
 
-  void find_ta(const TriggerPrimitiveTypeAdapter* tp,  std::shared_ptr<triggeralgs::TriggerActivityMaker> tam);
+  void find_ta(const TriggerPrimitiveTypeAdapter* tp, std::shared_ptr<triggeralgs::TriggerActivityMaker> tam);
 
-  private:
-
+private:
   std::vector<std::shared_ptr<triggeralgs::TriggerActivityMaker>> m_tams;
 
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerActivity>> m_ta_sink;
@@ -72,7 +71,7 @@ protected:
   daqdataformats::SourceID m_sourceid;
 
   using metric_counter_type = uint64_t;
-  std::atomic<metric_counter_type> m_tp_received_count{ 0 };  // NOLINT(build/unsigned)
+  std::atomic<metric_counter_type> m_tp_received_count{ 0 }; // NOLINT(build/unsigned)
   std::atomic<metric_counter_type> m_ta_made_count{ 0 };
   std::atomic<metric_counter_type> m_ta_sent_count{ 0 };
   std::atomic<metric_counter_type> m_ta_failed_sent_count{ 0 };
@@ -84,7 +83,6 @@ protected:
   dunedaq::trigger::Latency m_latency_instance;
   std::atomic<metric_counter_type> m_latency_in{ 0 };
   std::atomic<metric_counter_type> m_latency_out{ 0 };
-
 };
 
 } // namespace trigger

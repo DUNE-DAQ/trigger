@@ -11,10 +11,10 @@
 #ifndef TRIGGER_INCLUDE_TRIGGER_ALGORITHMPLUGINS_HPP_
 #define TRIGGER_INCLUDE_TRIGGER_ALGORITHMPLUGINS_HPP_
 
-#include "triggeralgs/TriggerDecisionMaker.hpp"
+#include "trigger/Issues.hpp"
 #include "triggeralgs/TriggerActivityFactory.hpp"
 #include "triggeralgs/TriggerCandidateFactory.hpp"
-#include "trigger/Issues.hpp"
+#include "triggeralgs/TriggerDecisionMaker.hpp"
 
 #include "cetlib/BasicPluginFactory.h"
 
@@ -71,7 +71,7 @@ make_tc_maker(std::string const& plugin_name)
   {                                                                                                                    \
     std::unique_ptr<triggeralgs::TriggerDecisionMaker> make()                                                          \
     {                                                                                                                  \
-      return std::unique_ptr<triggeralgs::TriggerDecisionMaker>(new klass());                                            \
+      return std::unique_ptr<triggeralgs::TriggerDecisionMaker>(new klass());                                          \
     }                                                                                                                  \
   }
 

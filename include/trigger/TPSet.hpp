@@ -11,9 +11,9 @@
 
 #include "dfmessages/SourceID_serialization.hpp"
 #include "serialization/Serialization.hpp"
+#include "trgdataformats/TriggerPrimitive.hpp"
 #include "trigger/Set.hpp"
 #include "trigger/TriggerPrimitive_serialization.hpp"
-#include "trgdataformats/TriggerPrimitive.hpp"
 
 namespace dunedaq::trigger {
 
@@ -22,6 +22,14 @@ using TPSet = Set<trgdataformats::TriggerPrimitive>;
 } // namespace dunedaq::trigger
 
 DUNE_DAQ_SERIALIZE_ENUM(dunedaq::trigger::TPSet::Type)
-DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(dunedaq::trigger, TPSet, seqno, run_number, origin, type, start_time, end_time, objects)
+DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(dunedaq::trigger,
+                                 TPSet,
+                                 seqno,
+                                 run_number,
+                                 origin,
+                                 type,
+                                 start_time,
+                                 end_time,
+                                 objects)
 
 #endif // TRIGGER_INCLUDE_TRIGGER_TPSET_HPP_
