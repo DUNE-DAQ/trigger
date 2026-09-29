@@ -13,12 +13,12 @@
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/Types.hpp"
 #include "ers/Issue.hpp"
-#include "triggeralgs/Types.hpp"
-#include "trigger/serialize.hpp"
 #include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
+#include "trigger/serialize.hpp"
+#include "triggeralgs/Types.hpp"
 
-#include <string>
 #include <bitset>
+#include <string>
 
 // NOLINTNEXTLINE(build/define_used)
 #define TLVL_ENTER_EXIT_METHODS 10
@@ -161,19 +161,19 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 ERS_DECLARE_ISSUE_BASE(trigger,
                        TCOutOfTimeout,
                        appfwk::GeneralDAQModuleIssue,
-                       "TC of type " << tc_type << ", timestamp " << tc_timestamp << " overlaps with previous TD readout window: [" << td_start << ", " << td_end << "]",
+                       "TC of type " << tc_type << ", timestamp " << tc_timestamp
+                                     << " overlaps with previous TD readout window: [" << td_start << ", " << td_end
+                                     << "]",
                        ((std::string)name),
-                       ((int)tc_type)
-                       ((triggeralgs::timestamp_t)tc_timestamp)
-                       ((triggeralgs::timestamp_t)td_start)
-                       ((triggeralgs::timestamp_t)td_end))
+                       ((int)tc_type)((triggeralgs::timestamp_t)tc_timestamp)((triggeralgs::timestamp_t)td_start)(
+                         (triggeralgs::timestamp_t)td_end))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
                        TCTimestampsSizeError,
                        appfwk::GeneralDAQModuleIssue,
                        "There are no next timestamps!",
                        ((std::string)name),
-		       ((int)size))
+                       ((int)size))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
                        InvalidHSIEventRunNumber,
@@ -194,17 +194,11 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 ERS_DECLARE_ISSUE(trigger,
                   TADropped,
                   "TA timestamp " << time << " for channel " << channel,
-                  ((uint64_t)time) ((uint64_t)channel))
+                  ((uint64_t)time)((uint64_t)channel))
 
-ERS_DECLARE_ISSUE(trigger,
-                  TCDropped,
-                  "TC timestamp " << time << " for src " << src,
-                  ((uint64_t)time) ((uint64_t)src))
+ERS_DECLARE_ISSUE(trigger, TCDropped, "TC timestamp " << time << " for src " << src, ((uint64_t)time)((uint64_t)src))
 
-ERS_DECLARE_ISSUE(trigger,
-                  TDDropped,
-                  "TD trigger number " << tn << " time stamp  " << ts,
-                  ((uint64_t)tn) ((uint64_t)ts))
+ERS_DECLARE_ISSUE(trigger, TDDropped, "TD trigger number " << tn << " time stamp  " << ts, ((uint64_t)tn)((uint64_t)ts))
 
 ERS_DECLARE_ISSUE_BASE(trigger,
                        MLTConfigurationProblem,
@@ -267,7 +261,7 @@ ERS_DECLARE_ISSUE_BASE(trigger,
                        appfwk::GeneralDAQModuleIssue,
                        "No valid files to use!",
                        ((std::string)name),
-		       ERS_EMPTY)
+                       ERS_EMPTY)
 
 ERS_DECLARE_ISSUE_BASE(trigger,
                        ReplayNoValidTPs,
@@ -279,9 +273,8 @@ ERS_DECLARE_ISSUE_BASE(trigger,
 ERS_DECLARE_ISSUE_BASE(trigger,
                        ReplayStreamFileError,
                        appfwk::GeneralDAQModuleIssue,
-                       "Duplicate stream index " << index
-                         << " for file: " << filename
-                         << " (original: " << original << ")",
+                       "Duplicate stream index " << index << " for file: " << filename << " (original: " << original
+                                                 << ")",
                        ((std::string)name),
                        ((int)index)((std::string)filename)((std::string)original))
 

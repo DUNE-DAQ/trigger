@@ -1,5 +1,5 @@
 /**
- * @file TPRequestHandler.hpp Trigger matching mechanism 
+ * @file TPRequestHandler.hpp Trigger matching mechanism
  * used for skip list based LBs in readout models
  *
  * This is part of the DUNE DAQ , copyright 2020.
@@ -14,34 +14,28 @@
 
 #include "appmodel/DataHandlerModule.hpp"
 
-#include "datahandlinglibs/ReadoutLogging.hpp"
-#include "datahandlinglibs/FrameErrorRegistry.hpp"
 #include "datahandlinglibs/DataHandlingIssues.hpp"
+#include "datahandlinglibs/FrameErrorRegistry.hpp"
 #include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/models/DefaultSkipListRequestHandler.hpp"
 
-#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 #include "trigger/TPSet.hpp"
+#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 
 #include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
- 
+
 #include <atomic>
 #include <memory>
 #include <string>
 
 using dunedaq::datahandlinglibs::logging::TLVL_WORK_STEPS;
 
-
 namespace dunedaq {
 ERS_DECLARE_ISSUE(trigger,
                   DroppedTPSet,
                   "Failed to send TPs from  " << s_ts << " to " << e_ts,
-                  ((uint64_t)s_ts) 
-		  ((uint64_t)e_ts))
-ERS_DECLARE_ISSUE(trigger,
-                   TPHandlerMsg,
-                   infomsg,
-                   ((std::string) infomsg))
+                  ((uint64_t)s_ts)((uint64_t)e_ts))
+ERS_DECLARE_ISSUE(trigger, TPHandlerMsg, infomsg, ((std::string)infomsg))
 
 namespace trigger {
 
@@ -52,37 +46,34 @@ public:
 
   // Constructor that binds LB and error registry
 
-  TPRequestHandler(std::shared_ptr<datahandlinglibs::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>>& latency_buffer,
-                                std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
-    : datahandlinglibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>(
-        latency_buffer,
-        error_registry)
+  TPRequestHandler(
+    std::shared_ptr<datahandlinglibs::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>>& latency_buffer,
+    std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry)
+    : datahandlinglibs::DefaultSkipListRequestHandler<TriggerPrimitiveTypeAdapter>(latency_buffer, error_registry)
   {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "TPRequestHandler created...";
   }
- 
+
   void conf(const appmodel::DataHandlerModule* conf) override;
   void start(const appfwk::DAQModule::CommandData_t& args) override;
   void scrap(const appfwk::DAQModule::CommandData_t& args) override;
   void periodic_data_transmission() override;
-  
+
 private:
   using timestamp_t = std::uint64_t;
   std::shared_ptr<iomanager::SenderConcept<dunedaq::trigger::TPSet>> m_tpset_sink;
   uint64_t m_run_number;
   uint64_t m_next_tpset_seqno;
 
-  timestamp_t m_oldest_ts=0;
-  timestamp_t m_newest_ts=0;
-  timestamp_t m_start_win_ts=0;
-  timestamp_t m_end_win_ts=0;
+  timestamp_t m_oldest_ts = 0;
+  timestamp_t m_newest_ts = 0;
+  timestamp_t m_start_win_ts = 0;
+  timestamp_t m_end_win_ts = 0;
   bool m_first_cycle = true;
   uint64_t m_ts_set_sender_offset_ticks = 6250000; // 100 ms delay in transmission
-
 };
 
 } // namespace trigger
 } // namespace dunedaq
-
 
 #endif // TRIGGER_SRC_TRIGGER_TPREQUESTHANDLER_HPP_

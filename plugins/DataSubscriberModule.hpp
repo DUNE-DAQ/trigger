@@ -8,12 +8,12 @@
 #ifndef TRIGGER_PLUGINS_DATASUBSCRIBER_HPP_
 #define TRIGGER_PLUGINS_DATASUBSCRIBER_HPP_
 
-//#include "appfwk/cmd/Nljs.hpp"
-//#include "appfwk/app/Nljs.hpp"
-//#include "appfwk/cmd/Structs.hpp"
+// #include "appfwk/cmd/Nljs.hpp"
+// #include "appfwk/app/Nljs.hpp"
+// #include "appfwk/cmd/Structs.hpp"
 
-#include "appfwk/DAQModule.hpp"
 #include "appfwk/ConfigurationManager.hpp"
+#include "appfwk/DAQModule.hpp"
 
 #include "datahandlinglibs/concepts/SourceConcept.hpp"
 
@@ -32,21 +32,22 @@ public:
    */
   explicit DataSubscriberModule(const std::string& name);
 
-  DataSubscriberModule(const DataSubscriberModule&) = delete;            ///< DataSubscriberModule is not copy-constructible
-  DataSubscriberModule& operator=(const DataSubscriberModule&) = delete; ///< DataSubscriberModule is not copy-assignable
-  DataSubscriberModule(DataSubscriberModule&&) = delete;                 ///< DataSubscriberModule is not move-constructible
-  DataSubscriberModule& operator=(DataSubscriberModule&&) = delete;      ///< DataSubscriberModule is not move-assignable
+  DataSubscriberModule(const DataSubscriberModule&) = delete; ///< DataSubscriberModule is not copy-constructible
+  DataSubscriberModule& operator=(const DataSubscriberModule&) =
+    delete;                                                         ///< DataSubscriberModule is not copy-assignable
+  DataSubscriberModule(DataSubscriberModule&&) = delete;            ///< DataSubscriberModule is not move-constructible
+  DataSubscriberModule& operator=(DataSubscriberModule&&) = delete; ///< DataSubscriberModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> cfg) override;
 
   std::shared_ptr<datahandlinglibs::SourceConcept> create_data_subscriber(const confmodel::DaqModule* cfg);
+
 private:
   void do_start(const CommandData_t& /*args*/);
   void do_stop(const CommandData_t& /*args*/);
 
   // Internal
   std::shared_ptr<datahandlinglibs::SourceConcept> m_source_concept;
-
 };
 
 } // namespace trigger

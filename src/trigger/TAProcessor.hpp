@@ -17,14 +17,14 @@
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "trigger/Issues.hpp"
-#include "trigger/TAWrapper.hpp"
 #include "trigger/Latency.hpp"
-#include "trigger/opmon/taprocessor_info.pb.h"
+#include "trigger/TAWrapper.hpp"
 #include "trigger/opmon/latency_info.pb.h"
+#include "trigger/opmon/taprocessor_info.pb.h"
 
 #include "triggeralgs/TriggerCandidate.hpp"
-#include "triggeralgs/Types.hpp"
 #include "triggeralgs/TriggerCandidateMaker.hpp"
+#include "triggeralgs/Types.hpp"
 
 namespace dunedaq {
 namespace trigger {
@@ -37,8 +37,8 @@ public:
   using taptr = TAWrapper*;
   using consttaptr = const TAWrapper*;
 
-
-  explicit TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
+  explicit TAProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry,
+                       bool post_processing_enabled);
 
   ~TAProcessor();
 
@@ -63,8 +63,7 @@ protected:
 
   void find_tc(const TAWrapper* ta, std::shared_ptr<triggeralgs::TriggerCandidateMaker> tcm);
 
-  private:
-
+private:
   std::vector<std::shared_ptr<triggeralgs::TriggerCandidateMaker>> m_tcms;
 
   std::shared_ptr<iomanager::SenderConcept<triggeralgs::TriggerCandidate>> m_tc_sink;
@@ -72,7 +71,7 @@ protected:
   daqdataformats::SourceID m_sourceid;
 
   using metric_counter_type = uint64_t;
-  std::atomic<metric_counter_type> m_ta_received_count{ 0 };  // NOLINT(build/unsigned)
+  std::atomic<metric_counter_type> m_ta_received_count{ 0 }; // NOLINT(build/unsigned)
   std::atomic<metric_counter_type> m_tc_made_count{ 0 };
   std::atomic<metric_counter_type> m_tc_sent_count{ 0 };
   std::atomic<metric_counter_type> m_tc_failed_sent_count{ 0 };
@@ -84,7 +83,6 @@ protected:
   dunedaq::trigger::Latency m_latency_instance;
   std::atomic<metric_counter_type> m_latency_in{ 0 };
   std::atomic<metric_counter_type> m_latency_out{ 0 };
-
 };
 
 } // namespace trigger

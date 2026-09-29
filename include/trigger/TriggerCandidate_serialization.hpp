@@ -21,7 +21,6 @@ DUNE_DAQ_SERIALIZE_ENUM(triggeralgs::TriggerCandidate::Type)
 
 DUNE_DAQ_SERIALIZE_ENUM(triggeralgs::TriggerCandidate::Algorithm)
 
-                                 
 DUNE_DAQ_SERIALIZE_NON_INTRUSIVE(triggeralgs,
                                  TriggerCandidate,
                                  time_start,

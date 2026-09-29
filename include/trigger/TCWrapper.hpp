@@ -11,76 +11,70 @@
 
 #include "daqdataformats/Fragment.hpp"
 
-#include "triggeralgs/TriggerObjectOverlay.hpp"
 #include "triggeralgs/TriggerActivity.hpp"
 #include "triggeralgs/TriggerCandidate.hpp"
+#include "triggeralgs/TriggerObjectOverlay.hpp"
 
 namespace dunedaq {
 namespace trigger {
-    struct TCWrapper
+struct TCWrapper
+{
+  using FrameType = TCWrapper;
+  triggeralgs::TriggerCandidate candidate;
+  std::vector<uint8_t> candidate_overlay_buffer;
+  // Don't really want this default ctor, but IterableQueueModel requires it
+  // TCWrapper() {}
+
+  TCWrapper(triggeralgs::TriggerCandidate c = triggeralgs::TriggerCandidate())
+    : candidate(c)
   {
-    using FrameType = TCWrapper;
-    triggeralgs::TriggerCandidate candidate;
-    std::vector<uint8_t> candidate_overlay_buffer;
-    // Don't really want this default ctor, but IterableQueueModel requires it
-    //TCWrapper() {}
-    
-    TCWrapper(triggeralgs::TriggerCandidate c = triggeralgs::TriggerCandidate())
-      : candidate(c)
-    {
-      populate_buffer();
-    }
+    populate_buffer();
+  }
 
-    void populate_buffer()
-    {
-      candidate_overlay_buffer.resize(triggeralgs::get_overlay_nbytes(candidate));
-      triggeralgs::write_overlay(candidate, candidate_overlay_buffer.data());
-    }
-    
-    // comparable based on first timestamp
-    bool operator<(const TCWrapper& other) const
-    {
-      return std::tie(this->candidate.time_start, this->candidate.type) < std::tie(other.candidate.time_start, other.candidate.type);
-    }
+  void populate_buffer()
+  {
+    candidate_overlay_buffer.resize(triggeralgs::get_overlay_nbytes(candidate));
+    triggeralgs::write_overlay(candidate, candidate_overlay_buffer.data());
+  }
 
-    uint64_t get_timestamp() const // NOLINT(build/unsigned)
-    {
-      return candidate.time_start;
-    }
+  // comparable based on first timestamp
+  bool operator<(const TCWrapper& other) const
+  {
+    return std::tie(this->candidate.time_start, this->candidate.type) <
+           std::tie(other.candidate.time_start, other.candidate.type);
+  }
 
-    void set_timestamp(uint64_t ts) // NOLINT(build/unsigned)
-    {
-      candidate.time_start = ts;
-    }
+  uint64_t get_timestamp() const // NOLINT(build/unsigned)
+  {
+    return candidate.time_start;
+  }
 
-    void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset */ = 0) // NOLINT(build/unsigned)
-    {
-      candidate.time_start = first_timestamp;
-      populate_buffer();
-    }
+  void set_timestamp(uint64_t ts) // NOLINT(build/unsigned)
+  {
+    candidate.time_start = ts;
+  }
 
-    size_t get_payload_size() { return candidate_overlay_buffer.size(); }
+  void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset */ = 0) // NOLINT(build/unsigned)
+  {
+    candidate.time_start = first_timestamp;
+    populate_buffer();
+  }
 
-    size_t get_num_frames() { return 1; }
+  size_t get_payload_size() { return candidate_overlay_buffer.size(); }
 
-    size_t get_frame_size() { return get_payload_size(); }
+  size_t get_num_frames() { return 1; }
 
-    TCWrapper* begin()
-    {
-      return (TCWrapper*)(candidate_overlay_buffer.data());
-    }
-    
-    TCWrapper* end()
-    {
-      return (TCWrapper*)(candidate_overlay_buffer.data()+candidate_overlay_buffer.size());
-    }
+  size_t get_frame_size() { return get_payload_size(); }
 
-    //static const constexpr size_t fixed_payload_size = 5568;
-    static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
-    static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerCandidate;
-    // No idea what this should really be set to
-    static const constexpr uint64_t expected_tick_difference = 1; // NOLINT(build/unsigned)
+  TCWrapper* begin() { return (TCWrapper*)(candidate_overlay_buffer.data()); }
 
+  TCWrapper* end() { return (TCWrapper*)(candidate_overlay_buffer.data() + candidate_overlay_buffer.size()); }
+
+  // static const constexpr size_t fixed_payload_size = 5568;
+  static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
+  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerCandidate;
+  // No idea what this should really be set to
+  static const constexpr uint64_t expected_tick_difference = 1; // NOLINT(build/unsigned)
 };
 } // namespace trigger
 } // namespace dunedaq

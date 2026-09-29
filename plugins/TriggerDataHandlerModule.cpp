@@ -7,22 +7,21 @@
  */
 #include "TriggerDataHandlerModule.hpp"
 
-#include "logging/Logging.hpp"
 #include "iomanager/IOManager.hpp"
+#include "logging/Logging.hpp"
 
 #include "datahandlinglibs/DataHandlingIssues.hpp"
 #include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/models/DataHandlingModel.hpp"
-#include "datahandlinglibs/models/SkipListLatencyBufferModel.hpp"
 #include "datahandlinglibs/models/DefaultSkipListRequestHandler.hpp"
+#include "datahandlinglibs/models/SkipListLatencyBufferModel.hpp"
 #include "trigger/TPRequestHandler.hpp"
 
-#include "trigger/TriggerDataHandlingModel.hpp"
-#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
-#include "trigger/TPProcessor.hpp"
 #include "trigger/TAProcessor.hpp"
 #include "trigger/TCProcessor.hpp"
-
+#include "trigger/TPProcessor.hpp"
+#include "trigger/TriggerDataHandlingModel.hpp"
+#include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 
 #include <memory>
 #include <sstream>
@@ -43,8 +42,8 @@ namespace trigger {
 TriggerDataHandlerModule::TriggerDataHandlerModule(const std::string& name)
   : DAQModule(name)
   , RawDataHandlerBase(name)
-{ 
-  //inherited_dlh::m_readout_creator = make_readout_creator("fd");
+{
+  // inherited_dlh::m_readout_creator = make_readout_creator("fd");
 
   inherited_mod::register_command("conf", &inherited_dlh::do_conf);
   inherited_mod::register_command("scrap", &inherited_dlh::do_scrap);
@@ -67,63 +66,63 @@ TriggerDataHandlerModule::create_readout(const appmodel::DataHandlerModule* modc
 {
   namespace rol = dunedaq::datahandlinglibs;
 
-  // Acquire DataType  
+  // Acquire DataType
   std::string raw_dt = modconf->get_module_configuration()->get_input_data_type();
   TLOG() << "Choosing specializations for DataHandlingModel with data_type:" << raw_dt << ']';
 
   // IF TriggerPrimitiveVector (TP vector)
   if (raw_dt.find("TriggerPrimitiveVector") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitiveVector";
-    auto readout_model = std::make_shared<TriggerDataHandlingModel<
-      TriggerPrimitiveTypeAdapter,
-      TPRequestHandler,
-      rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
-      TPProcessor,
-      std::vector<TriggerPrimitiveTypeAdapter>>>(run_marker);
-    register_node("TPProcessor", readout_model); 
+    auto readout_model =
+      std::make_shared<TriggerDataHandlingModel<TriggerPrimitiveTypeAdapter,
+                                                TPRequestHandler,
+                                                rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
+                                                TPProcessor,
+                                                std::vector<TriggerPrimitiveTypeAdapter>>>(run_marker);
+    register_node("TPProcessor", readout_model);
     readout_model->init(modconf);
     return readout_model;
-  }  
+  }
 
   // IF TriggerPrimitive (TP)
   if (raw_dt.find("TriggerPrimitive") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerPrimitive";
-    auto readout_model = std::make_shared<TriggerDataHandlingModel<
-      TriggerPrimitiveTypeAdapter,
-      TPRequestHandler,
-      rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
-      TPProcessor>>(run_marker);
-    register_node("TPProcessor", readout_model); 
+    auto readout_model =
+      std::make_shared<TriggerDataHandlingModel<TriggerPrimitiveTypeAdapter,
+                                                TPRequestHandler,
+                                                rol::SkipListLatencyBufferModel<TriggerPrimitiveTypeAdapter>,
+                                                TPProcessor>>(run_marker);
+    register_node("TPProcessor", readout_model);
     readout_model->init(modconf);
     return readout_model;
   }
 
- // IF TriggerActivity (TA)
+  // IF TriggerActivity (TA)
   if (raw_dt.find("TriggerActivity") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerActivity";
-    auto readout_model = std::make_shared<TriggerDataHandlingModel<
-      TAWrapper,
-      rol::DefaultSkipListRequestHandler<trigger::TAWrapper>,
-      rol::SkipListLatencyBufferModel<trigger::TAWrapper>,
-      TAProcessor,
-      triggeralgs::TriggerActivity>>(run_marker);
-    register_node("TAProcessor", readout_model); 
-    
+    auto readout_model =
+      std::make_shared<TriggerDataHandlingModel<TAWrapper,
+                                                rol::DefaultSkipListRequestHandler<trigger::TAWrapper>,
+                                                rol::SkipListLatencyBufferModel<trigger::TAWrapper>,
+                                                TAProcessor,
+                                                triggeralgs::TriggerActivity>>(run_marker);
+    register_node("TAProcessor", readout_model);
+
     readout_model->init(modconf);
     return readout_model;
   }
 
- // No processing, only buffering to respond to data requests
+  // No processing, only buffering to respond to data requests
   if (raw_dt.find("TriggerCandidate") != std::string::npos) {
     TLOG(TLVL_WORK_STEPS) << "Creating readout for TriggerCandidate";
-    auto readout_model = std::make_shared<TriggerDataHandlingModel<
-      TCWrapper,
-      rol::DefaultSkipListRequestHandler<trigger::TCWrapper>,
-      rol::SkipListLatencyBufferModel<trigger::TCWrapper>,
-      TCProcessor,
-      triggeralgs::TriggerCandidate>>(run_marker);
-    register_node("TCProcessor", readout_model); 
-    
+    auto readout_model =
+      std::make_shared<TriggerDataHandlingModel<TCWrapper,
+                                                rol::DefaultSkipListRequestHandler<trigger::TCWrapper>,
+                                                rol::SkipListLatencyBufferModel<trigger::TCWrapper>,
+                                                TCProcessor,
+                                                triggeralgs::TriggerCandidate>>(run_marker);
+    register_node("TCProcessor", readout_model);
+
     readout_model->init(modconf);
     return readout_model;
   }

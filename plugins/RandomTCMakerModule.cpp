@@ -105,7 +105,8 @@ RandomTCMakerModule::do_configure(const CommandData_t& /*obj*/)
   m_tcout_time_before_ts = m_conf->get_candidate_window_before_ts();
   m_tcout_time_after_ts = m_conf->get_candidate_window_after_ts();
 
-  m_tcout_type = static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(m_conf->get_candidate_type_name()));
+  m_tcout_type =
+    static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(m_conf->get_candidate_type_name()));
 
   // Throw error if unknown TC type
   if (m_tcout_type == TCType::kUnknown) {
@@ -208,8 +209,8 @@ RandomTCMakerModule::create_candidate(dfmessages::timestamp_t timestamp)
 {
   triggeralgs::TriggerCandidate candidate;
   candidate.time_candidate = timestamp - m_tcout_time_backshift_ts;
-  candidate.time_start = candidate.time_candidate-m_tcout_time_before_ts;
-  candidate.time_end = candidate.time_candidate+m_tcout_time_after_ts;
+  candidate.time_start = candidate.time_candidate - m_tcout_time_before_ts;
+  candidate.time_end = candidate.time_candidate + m_tcout_time_after_ts;
   candidate.detid = { 0 };
   candidate.type = m_tcout_type;
 
@@ -262,7 +263,7 @@ RandomTCMakerModule::send_trigger_candidates()
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       continue;
     }
-    
+
     dfmessages::timestamp_t actual_timestamp;
     if (m_timestamp_estimator->wait_for_requested_timestamp(next_trigger_timestamp, m_running_flag, actual_timestamp) ==
         utilities::TimestampEstimatorBase::kInterrupted) {
@@ -272,8 +273,8 @@ RandomTCMakerModule::send_trigger_candidates()
 
     m_tc_made_count++;
 
-    TLOG_DEBUG(1) << get_name() << " at timestamp " << actual_timestamp
-                  << ", pushing a candidate with timestamp " << candidate.time_candidate;
+    TLOG_DEBUG(1) << get_name() << " at timestamp " << actual_timestamp << ", pushing a candidate with timestamp "
+                  << candidate.time_candidate;
 
     if (m_latency_monitoring.load())
       m_latency_instance.update_latency_out(candidate.time_candidate);
