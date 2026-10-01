@@ -10,7 +10,7 @@
 /**
  * @brief Name of this test module
  */
-#define BOOST_TEST_MODULE AlgorithmPlugins_test //NOLINT
+#define BOOST_TEST_MODULE AlgorithmPlugins_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
 
@@ -21,10 +21,14 @@ BOOST_AUTO_TEST_SUITE(BOOST_TEST_MODULE);
 BOOST_AUTO_TEST_CASE(TAFactory)
 {
   // Get a few algorithms
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> prescale_maker = trigger::make_ta_maker("TAMakerPrescaleAlgorithm");
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> h_muon_maker = trigger::make_ta_maker("TAMakerHorizontalMuonAlgorithm");
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> dbscan_maker = trigger::make_ta_maker("TriggerActivityMakerDBSCANPlugin");
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> fake_maker = trigger::make_ta_maker("TriggerActivityMakerFakerPlugin");
+  std::unique_ptr<triggeralgs::TriggerActivityMaker> prescale_maker =
+    trigger::make_ta_maker("TAMakerPrescaleAlgorithm");
+  std::unique_ptr<triggeralgs::TriggerActivityMaker> h_muon_maker =
+    trigger::make_ta_maker("TAMakerHorizontalMuonAlgorithm");
+  std::unique_ptr<triggeralgs::TriggerActivityMaker> dbscan_maker =
+    trigger::make_ta_maker("TriggerActivityMakerDBSCANPlugin");
+  std::unique_ptr<triggeralgs::TriggerActivityMaker> fake_maker =
+    trigger::make_ta_maker("TriggerActivityMakerFakerPlugin");
 
   // Only the fake_maker should be nullptr
   BOOST_TEST(static_cast<bool>(prescale_maker != nullptr));
@@ -41,11 +45,11 @@ BOOST_AUTO_TEST_CASE(TAFactory)
 
   for (int idx = 0; idx < 10; idx++) {
     tp.time_start = idx;
-    tp.samples_to_peak = 1+idx;
+    tp.samples_to_peak = 1 + idx;
     tp.samples_over_threshold = 2;
-    tp.adc_integral = 1000+idx;
-    tp.adc_peak = 1000+idx;
-    tp.channel = 0+idx;
+    tp.adc_integral = 1000 + idx;
+    tp.adc_peak = 1000 + idx;
+    tp.channel = 0 + idx;
     tp.detid = 0;
     (*prescale_maker)(tp, prescale_ta);
     (*h_muon_maker)(tp, h_muon_ta);

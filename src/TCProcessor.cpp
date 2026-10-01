@@ -10,8 +10,8 @@
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 
-#include "datahandlinglibs/FrameErrorRegistry.hpp"
 #include "datahandlinglibs/DataHandlingIssues.hpp"
+#include "datahandlinglibs/FrameErrorRegistry.hpp"
 #include "datahandlinglibs/ReadoutLogging.hpp"
 #include "datahandlinglibs/models/IterableQueueModel.hpp"
 #include "trigger/TCWrapper.hpp"
@@ -29,13 +29,13 @@ DUNE_DAQ_TYPESTRING(dunedaq::trigger::TCWrapper, "TriggerCandidate")
 namespace dunedaq {
 namespace trigger {
 
-TCProcessor::TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled)
+TCProcessor::TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry,
+                         bool post_processing_enabled)
   : datahandlinglibs::TaskRawDataProcessorModel<TCWrapper>(error_registry, post_processing_enabled)
 {
 }
 
-TCProcessor::~TCProcessor()
-{}
+TCProcessor::~TCProcessor() {}
 
 void
 TCProcessor::start(const appfwk::DAQModule::CommandData_t& args)
@@ -97,14 +97,14 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Entering conf() method";
 
-  auto mtrg = cfg->cast<appmodel::TriggerDataHandlerModule>();	
+  auto mtrg = cfg->cast<appmodel::TriggerDataHandlerModule>();
   if (mtrg == nullptr) {
     throw(InvalidConfiguration(ERS_HERE, "Provided null TriggerDataHandlerModule configuration!"));
   }
   for (auto output : mtrg->get_outputs()) {
-   try {
+    try {
       if (output->get_data_type() == "TriggerDecision") {
-         m_td_sink = get_iom_sender<dfmessages::TriggerDecision>(output->UID());
+        m_td_sink = get_iom_sender<dfmessages::TriggerDecision>(output->UID());
       }
     } catch (const ers::Issue& excpt) {
       ers::error(datahandlinglibs::ResourceQueueError(ERS_HERE, "td", "DefaultRequestHandlerModel", excpt));
@@ -115,38 +115,34 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
   auto proc_conf = dp->cast<appmodel::TCDataProcessor>();
 
   // Add all Source IDs to mandatoy links for now...
-  for(auto const& link : mtrg->get_mandatory_source_ids()){
+  for (auto const& link : mtrg->get_mandatory_source_ids()) {
     m_mandatory_links.push_back(
-        dfmessages::SourceID{
-        daqdataformats::SourceID::string_to_subsystem(link->get_subsystem()),
-        link->get_sid()});
-  }  
-  for(auto const& link : mtrg->get_enabled_source_ids()){
+      dfmessages::SourceID{ daqdataformats::SourceID::string_to_subsystem(link->get_subsystem()), link->get_sid() });
+  }
+  for (auto const& link : mtrg->get_enabled_source_ids()) {
     m_mandatory_links.push_back(
-        dfmessages::SourceID{
-        daqdataformats::SourceID::string_to_subsystem(link->get_subsystem()),
-        link->get_sid()});
+      dfmessages::SourceID{ daqdataformats::SourceID::string_to_subsystem(link->get_subsystem()), link->get_sid() });
   }
 
   // TODO: Group links!
-  //m_group_links_data = conf->get_groups_links();
+  // m_group_links_data = conf->get_groups_links();
   parse_group_links(m_group_links_data);
   print_group_links();
   m_total_group_links = m_group_links.size();
   TLOG_DEBUG(3) << "Total group links: " << m_total_group_links;
 
-  m_tc_merging        = proc_conf->get_merge_overlapping_tcs();
+  m_tc_merging = proc_conf->get_merge_overlapping_tcs();
   m_ignore_tc_pileup = proc_conf->get_ignore_overlapping_tcs();
-  m_buffer_timeout    = proc_conf->get_buffer_timeout();
+  m_buffer_timeout = proc_conf->get_buffer_timeout();
   m_send_timed_out_tds = (m_ignore_tc_pileup) ? false : proc_conf->get_td_out_of_timeout();
-  m_td_readout_limit  = proc_conf->get_td_readout_limit();
+  m_td_readout_limit = proc_conf->get_td_readout_limit();
   m_ignored_tc_types = proc_conf->get_ignore_tc();
   m_ignoring_tc_types = !m_ignored_tc_types.empty();
 
   // Trigger bitwords
   std::vector<const appmodel::TriggerBitword*> bitwords = proc_conf->get_trigger_bitwords();
   m_use_bitwords = !bitwords.empty();
-  if(m_use_bitwords){
+  if (m_use_bitwords) {
     set_trigger_bitwords(bitwords);
     print_trigger_bitwords();
   }
@@ -177,14 +173,14 @@ TCProcessor::conf(const appmodel::DataHandlerModule* cfg)
 
   // Ignoring TC types
   TLOG_DEBUG(3) << "Ignoring TC types: " << m_ignoring_tc_types;
-  if(m_ignoring_tc_types){
+  if (m_ignoring_tc_types) {
     TLOG_DEBUG(3) << "TC types to ignore: ";
     for (std::vector<unsigned int>::iterator it = m_ignored_tc_types.begin(); it != m_ignored_tc_types.end();) {
       TLOG_DEBUG(3) << *it;
       ++it;
     }
   }
-  m_latency_monitoring.store( dp->get_latency_monitoring() );
+  m_latency_monitoring.store(dp->get_latency_monitoring());
   inherited::add_postprocess_task(std::bind(&TCProcessor::make_td, this, std::placeholders::_1));
 
   inherited::conf(mtrg);
@@ -208,11 +204,11 @@ TCProcessor::scrap(const appfwk::DAQModule::CommandData_t& args)
   m_readout_window_map_data.clear();
   m_readout_window_map.clear();
   m_ignored_tc_types.clear();
-  
+
   m_td_sink.reset();
-  
+
   m_group_links_data.clear();
-  
+
   inherited::scrap(args);
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << "TCProcessor: Exiting scrap() method";
@@ -223,26 +219,26 @@ TCProcessor::generate_opmon_data()
 {
   opmon::TCProcessorInfo info;
 
-  info.set_tds_created_count( m_tds_created_count.load() );  
-  info.set_tds_sent_count( m_tds_sent_count.load() );
-  info.set_tds_dropped_count( m_tds_dropped_count.load() );
-  info.set_tds_failed_bitword_count( m_tds_failed_bitword_count.load() );
-  info.set_tds_cleared_count( m_tds_cleared_count.load() );
-  info.set_tc_received_count( m_tc_received_count.load() );
-  info.set_tc_ignored_count( m_tc_ignored_count.load() );
-  info.set_tds_created_tc_count( m_tds_created_tc_count.load() );
-  info.set_tds_sent_tc_count( m_tds_sent_tc_count.load() );
-  info.set_tds_dropped_tc_count( m_tds_dropped_tc_count.load() );
-  info.set_tds_failed_bitword_tc_count( m_tds_failed_bitword_tc_count.load() );
-  info.set_tds_cleared_tc_count( m_tds_cleared_tc_count.load() );
+  info.set_tds_created_count(m_tds_created_count.load());
+  info.set_tds_sent_count(m_tds_sent_count.load());
+  info.set_tds_dropped_count(m_tds_dropped_count.load());
+  info.set_tds_failed_bitword_count(m_tds_failed_bitword_count.load());
+  info.set_tds_cleared_count(m_tds_cleared_count.load());
+  info.set_tc_received_count(m_tc_received_count.load());
+  info.set_tc_ignored_count(m_tc_ignored_count.load());
+  info.set_tds_created_tc_count(m_tds_created_tc_count.load());
+  info.set_tds_sent_tc_count(m_tds_sent_tc_count.load());
+  info.set_tds_dropped_tc_count(m_tds_dropped_tc_count.load());
+  info.set_tds_failed_bitword_tc_count(m_tds_failed_bitword_tc_count.load());
+  info.set_tds_cleared_tc_count(m_tds_cleared_tc_count.load());
 
   this->publish(std::move(info));
 
-  if ( m_latency_monitoring.load() && m_running_flag.load() ) {
+  if (m_latency_monitoring.load() && m_running_flag.load()) {
     opmon::TriggerLatency lat_info;
 
-    lat_info.set_latency_in( m_latency_instance.get_latency_in() );
-    lat_info.set_latency_out( m_latency_instance.get_latency_out() );
+    lat_info.set_latency_in(m_latency_instance.get_latency_in());
+    lat_info.set_latency_out(m_latency_instance.get_latency_out());
 
     this->publish(std::move(lat_info));
   }
@@ -254,19 +250,20 @@ TCProcessor::generate_opmon_data()
 void
 TCProcessor::make_td(const TCWrapper* tcw)
 {
-	
+
   auto tc = tcw->candidate;
-  if (m_latency_monitoring.load()) m_latency_instance.update_latency_in( tc.time_start );
+  if (m_latency_monitoring.load())
+    m_latency_instance.update_latency_in(tc.time_start);
   m_tc_received_count++;
 
-  if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ) {
+  if ((m_use_readout_map) && (m_readout_window_map.count(tc.type))) {
     TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc.type) << ", timestamp " << tc.time_candidate
-		  << ", start/end " << tc.time_start << "/" << tc.time_end << ", readout start/end "
-		  << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
-		  << tc.time_candidate + m_readout_window_map[tc.type].second;
+                  << ", start/end " << tc.time_start << "/" << tc.time_end << ", readout start/end "
+                  << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
+                  << tc.time_candidate + m_readout_window_map[tc.type].second;
   } else {
     TLOG_DEBUG(3) << "Got TC of type " << static_cast<int>(tc.type) << ", timestamp " << tc.time_candidate
-		  << ", start/end " << tc.time_start << "/" << tc.time_end;
+                  << ", start/end " << tc.time_start << "/" << tc.time_end;
   }
 
   // Option to ignore TC types (if given by config)
@@ -274,16 +271,15 @@ TCProcessor::make_td(const TCWrapper* tcw)
     TLOG_DEBUG(3) << " Ignore TC type: " << static_cast<unsigned int>(tc.type);
     m_tc_ignored_count++;
 
-	/*FIXME: comment out this block: if a TC is to be ignored it shall just be ignored! 
-	  if (m_tc_merging) {
-	    // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend
-	    // readout
-	    std::lock_guard<std::mutex> lock(m_td_vector_mutex);
-	    add_tc_ignored(*tc);
-	  }
-	  */
-  }
-  else {
+    /*FIXME: comment out this block: if a TC is to be ignored it shall just be ignored!
+      if (m_tc_merging) {
+        // Still need to check for overlap with existing TD, if overlaps, include in the TD, but don't extend
+        // readout
+        std::lock_guard<std::mutex> lock(m_td_vector_mutex);
+        add_tc_ignored(*tc);
+      }
+      */
+  } else {
     std::lock_guard<std::mutex> lock(m_td_vector_mutex);
     add_tc(tc);
     m_cv.notify_one();
@@ -305,16 +301,16 @@ TCProcessor::create_decision(const PendingTD& pending_td)
 
   dfmessages::TriggerDecision decision;
   decision.trigger_number = 0; // filled by MLT
-  decision.run_number = 0; // filled by MLT
+  decision.run_number = 0;     // filled by MLT
   decision.trigger_timestamp = pending_td.contributing_tcs[m_earliest_tc_index].time_candidate;
   decision.readout_type = dfmessages::ReadoutType::kLocalized;
 
   TDBitset td_bitword = get_TD_bitword(pending_td);
   TLOG_DEBUG(5) << "[MLT] TD has bitword: " << td_bitword << " "
-                                     << static_cast<dfmessages::trigger_type_t>(td_bitword.to_ulong());
+                << static_cast<dfmessages::trigger_type_t>(td_bitword.to_ulong());
   decision.trigger_type = static_cast<dfmessages::trigger_type_t>(td_bitword.to_ulong()); // m_trigger_type;
 
-    //decision.trigger_type = 1; // m_trigger_type;
+  // decision.trigger_type = 1; // m_trigger_type;
 
   TLOG_DEBUG(3) << ", TC detid: " << pending_td.contributing_tcs[m_earliest_tc_index].detid
                 << ", TC type: " << static_cast<int>(pending_td.contributing_tcs[m_earliest_tc_index].type)
@@ -344,23 +340,23 @@ TCProcessor::create_decision(const PendingTD& pending_td)
   return decision;
 }
 
-
 void
-TCProcessor::send_trigger_decisions() {
- // A unique lock that can be locked and unlocked
- std::unique_lock<std::mutex> lock(m_td_vector_mutex);
+TCProcessor::send_trigger_decisions()
+{
+  // A unique lock that can be locked and unlocked
+  std::unique_lock<std::mutex> lock(m_td_vector_mutex);
 
- while (m_running_flag) {
+  while (m_running_flag) {
     // TODO: think about better implementation (notify?, something event driven)
     m_cv.wait_for(lock, std::chrono::microseconds(100));
     auto ready_tds = get_ready_tds(m_pending_tds);
     TLOG_DEBUG(10) << "ready tds: " << ready_tds.size() << ", updated pending tds: " << m_pending_tds.size();
 
     for (std::vector<PendingTD>::iterator it = ready_tds.begin(); it != ready_tds.end();) {
-        call_tc_decision(*it);
-        ++it;
+      call_tc_decision(*it);
+      ++it;
     }
- }
+  }
 }
 
 void
@@ -382,18 +378,17 @@ TCProcessor::call_tc_decision(const TCProcessor::PendingTD& pending_td)
   auto tn = decision.trigger_number;
   auto td_ts = decision.trigger_timestamp;
 
-  if (m_latency_monitoring.load()) m_latency_instance.update_latency_out( pending_td.contributing_tcs.front().time_start );
-  if(!m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
+  if (m_latency_monitoring.load())
+    m_latency_instance.update_latency_out(pending_td.contributing_tcs.front().time_start);
+  if (!m_td_sink->try_send(std::move(decision), iomanager::Sender::s_no_block)) {
     ers::warning(TDDropped(ERS_HERE, tn, td_ts));
     m_tds_dropped_count++;
     m_tds_dropped_tc_count += pending_td.contributing_tcs.size();
-  }
-  else {
+  } else {
     m_tds_sent_count++;
     m_tds_sent_tc_count += pending_td.contributing_tcs.size();
   }
 }
-
 
 void
 TCProcessor::add_tc(const triggeralgs::TriggerCandidate tc)
@@ -420,9 +415,9 @@ TCProcessor::add_tc(const triggeralgs::TriggerCandidate tc)
       }
 
       // If we're here, TC merging must be on, in which case we're actually
-      // going to merge the TC into the TD.    
+      // going to merge the TC into the TD.
       it->contributing_tcs.push_back(tc);
-      if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
+      if ((m_use_readout_map) && (m_readout_window_map.count(tc.type))) {
         TLOG_DEBUG(3) << "TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first << "/"
                       << tc.time_candidate + m_readout_window_map[tc.type].second
                       << " overlaps with pending TD with start/end times " << it->readout_start << "/"
@@ -454,7 +449,7 @@ TCProcessor::add_tc(const triggeralgs::TriggerCandidate tc)
   // Create a new TD out of the TC
   PendingTD td_candidate;
   td_candidate.contributing_tcs.push_back(tc);
-  if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ){
+  if ((m_use_readout_map) && (m_readout_window_map.count(tc.type))) {
     td_candidate.readout_start = tc.time_candidate - m_readout_window_map[tc.type].first;
     td_candidate.readout_end = tc.time_candidate + m_readout_window_map[tc.type].second;
   } else {
@@ -470,7 +465,7 @@ TCProcessor::add_tc_ignored(const triggeralgs::TriggerCandidate tc)
 {
   for (std::vector<PendingTD>::iterator it = m_pending_tds.begin(); it != m_pending_tds.end();) {
     if (check_overlap(tc, *it)) {
-      if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ) {
+      if ((m_use_readout_map) && (m_readout_window_map.count(tc.type))) {
         TLOG_DEBUG(3) << "!Ignored! TC with start/end times " << tc.time_candidate - m_readout_window_map[tc.type].first
                       << "/" << tc.time_candidate + m_readout_window_map[tc.type].second
                       << " overlaps with pending TD with start/end times " << it->readout_start << "/"
@@ -491,7 +486,7 @@ TCProcessor::add_tc_ignored(const triggeralgs::TriggerCandidate tc)
 bool
 TCProcessor::check_overlap(const triggeralgs::TriggerCandidate& tc, const PendingTD& pending_td)
 {
-  if ( (m_use_readout_map) && (m_readout_window_map.count(tc.type)) ) {
+  if ((m_use_readout_map) && (m_readout_window_map.count(tc.type))) {
     return !(((tc.time_candidate + m_readout_window_map[tc.type].second) < pending_td.readout_start) ||
              ((tc.time_candidate - m_readout_window_map[tc.type].first > pending_td.readout_end)));
   } else {
@@ -539,7 +534,8 @@ TCProcessor::get_earliest_tc_index(const PendingTD& pending_td)
   return earliest_tc_index;
 }
 
-bool TCProcessor::check_td_readout_length(const PendingTD& pending_td)
+bool
+TCProcessor::check_td_readout_length(const PendingTD& pending_td)
 {
   bool td_too_long = false;
   if (static_cast<int64_t>(pending_td.readout_end - pending_td.readout_start) >= m_td_readout_limit) {
@@ -556,12 +552,10 @@ TCProcessor::clear_td_vectors()
   std::lock_guard<std::mutex> lock(m_td_vector_mutex);
   m_tds_cleared_count += m_pending_tds.size();
   // Use std::accumulate to sum up the sizes of all contributing_tcs vectors
-  size_t tds_cleared_tc_count = std::accumulate(
-    m_pending_tds.begin(), m_pending_tds.end(), 0,
-    [](size_t sum, const PendingTD& ptd) {
+  size_t tds_cleared_tc_count =
+    std::accumulate(m_pending_tds.begin(), m_pending_tds.end(), 0, [](size_t sum, const PendingTD& ptd) {
       return sum + ptd.contributing_tcs.size();
-    }
-  );
+    });
   m_tds_cleared_tc_count += tds_cleared_tc_count;
   m_pending_tds.clear();
 }
@@ -609,7 +603,7 @@ TCProcessor::set_trigger_bitwords(const std::vector<const appmodel::TriggerBitwo
   for (const appmodel::TriggerBitword* bitword : _bitwords) {
     TDBitset temp_bitword;
 
-    for (const std::string& tctype_str: bitword->get_bitword()) {
+    for (const std::string& tctype_str : bitword->get_bitword()) {
       TCType tc_type = static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(tctype_str));
 
       if (tc_type == TCType::kUnknown) {
@@ -627,23 +621,20 @@ void
 TCProcessor::parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>& data)
 {
   for (auto readout_type : data) {
-    TCType tc_type = static_cast<TCType>(
-      dunedaq::trgdataformats::string_to_trigger_candidate_type(readout_type->get_tc_type_name()));
+    TCType tc_type =
+      static_cast<TCType>(dunedaq::trgdataformats::string_to_trigger_candidate_type(readout_type->get_tc_type_name()));
 
-      // Throw error if unknown TC type
-      if (tc_type == TCType::kUnknown) {
-        throw(InvalidConfiguration(ERS_HERE, "Provided an unknown TC type in the TCReadoutMap for the TCProcessor"));
-      }
+    // Throw error if unknown TC type
+    if (tc_type == TCType::kUnknown) {
+      throw(InvalidConfiguration(ERS_HERE, "Provided an unknown TC type in the TCReadoutMap for the TCProcessor"));
+    }
 
-    m_readout_window_map[tc_type] = {
-      readout_type->get_time_before(), readout_type->get_time_after()
-    };
+    m_readout_window_map[tc_type] = { readout_type->get_time_before(), readout_type->get_time_after() };
   }
   return;
 }
 void
-TCProcessor::print_readout_map(std::map<TCType,
-                                        std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
+TCProcessor::print_readout_map(std::map<TCType, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map)
 {
   TLOG_DEBUG(3) << "MLT TD Readout map:";
   for (auto const& [key, val] : map) {
@@ -682,8 +673,8 @@ TCProcessor::print_group_links()
 }
 dfmessages::ComponentRequest
 TCProcessor::create_request_for_link(dfmessages::SourceID link,
-                                            triggeralgs::timestamp_t start,
-                                            triggeralgs::timestamp_t end)
+                                     triggeralgs::timestamp_t start,
+                                     triggeralgs::timestamp_t end)
 {
   dfmessages::ComponentRequest request;
   request.component = link;
@@ -698,8 +689,8 @@ TCProcessor::create_request_for_link(dfmessages::SourceID link,
 
 std::vector<dfmessages::ComponentRequest>
 TCProcessor::create_all_decision_requests(std::vector<dfmessages::SourceID> links,
-                                                 triggeralgs::timestamp_t start,
-                                                 triggeralgs::timestamp_t end)
+                                          triggeralgs::timestamp_t start,
+                                          triggeralgs::timestamp_t end)
 {
   std::vector<dfmessages::ComponentRequest> requests;
   for (auto link : links) {
@@ -710,7 +701,7 @@ TCProcessor::create_all_decision_requests(std::vector<dfmessages::SourceID> link
 
 void
 TCProcessor::add_requests_to_decision(dfmessages::TriggerDecision& decision,
-                                             std::vector<dfmessages::ComponentRequest> requests)
+                                      std::vector<dfmessages::ComponentRequest> requests)
 {
   for (auto request : requests) {
     decision.components.push_back(request);
@@ -725,9 +716,9 @@ TCProcessor::parse_roi_conf(const std::vector<const appmodel::ROIGroupConf*>& da
   for (auto group : data) {
     roi_group temp_roi_group;
     temp_roi_group.n_links = group->get_number_of_link_groups();
-    temp_roi_group.prob         = group->get_probability();
-    temp_roi_group.time_window  = group->get_time_window();
-    temp_roi_group.mode         = group->get_groups_selection_mode();
+    temp_roi_group.prob = group->get_probability();
+    temp_roi_group.time_window = group->get_time_window();
+    temp_roi_group.mode = group->get_groups_selection_mode();
     m_roi_conf.insert({ counter, temp_roi_group });
     m_roi_conf_ids.push_back(counter);
     m_roi_conf_probs.push_back(group->get_probability());
@@ -812,9 +803,8 @@ TCProcessor::roi_readout_make_requests(dfmessages::TriggerDecision& decision)
     TLOG_DEBUG(10) << "group window: " << this_group.time_window;
 
     // Once the components are prepared, create requests and append them to decision
-    std::vector<dfmessages::ComponentRequest> requests =
-      create_all_decision_requests(links, decision.trigger_timestamp - this_group.time_window,
-                                   decision.trigger_timestamp + this_group.time_window);
+    std::vector<dfmessages::ComponentRequest> requests = create_all_decision_requests(
+      links, decision.trigger_timestamp - this_group.time_window, decision.trigger_timestamp + this_group.time_window);
     add_requests_to_decision(decision, requests);
     links.clear();
   }
@@ -847,7 +837,8 @@ TCProcessor::print_opmon_stats()
   TLOG() << "TDs created: \t\t\t" << m_tds_created_count << " \t(" << m_tds_created_tc_count << " TCs)";
   TLOG() << "TDs sent: \t\t\t" << m_tds_sent_count << " \t(" << m_tds_sent_tc_count << " TCs)";
   TLOG() << "TDs dropped: \t\t\t" << m_tds_dropped_count << " \t(" << m_tds_dropped_tc_count << " TCs)";
-  TLOG() << "TDs failed bitword check: \t" << m_tds_failed_bitword_count << " \t(" << m_tds_failed_bitword_tc_count << " TCs)";
+  TLOG() << "TDs failed bitword check: \t" << m_tds_failed_bitword_count << " \t(" << m_tds_failed_bitword_tc_count
+         << " TCs)";
   TLOG() << "TDs cleared: \t\t\t" << m_tds_cleared_count << " \t(" << m_tds_cleared_tc_count << " TCs)";
   TLOG() << "------------------------------";
   TLOG() << "TCs received: \t" << m_tc_received_count;

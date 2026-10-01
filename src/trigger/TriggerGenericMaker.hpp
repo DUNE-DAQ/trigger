@@ -18,11 +18,11 @@
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/Types.hpp"
-#include "trgdataformats/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
+#include "trgdataformats/Types.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include <algorithm>
@@ -75,12 +75,12 @@ public:
   TriggerGenericMaker(TriggerGenericMaker&&) = delete;
   TriggerGenericMaker& operator=(TriggerGenericMaker&&) = delete;
 
-  //void init(const CommandData_t& obj) override
+  // void init(const CommandData_t& obj) override
   //{
-  //  // TODO: Reimplement as OKS
-  //  //m_input_queue = get_iom_receiver<IN>(appfwk::connection_uid(obj, "input"));
-  //  //m_output_queue = get_iom_sender<OUT>(appfwk::connection_uid(obj, "output"));
-  //}
+  //   // TODO: Reimplement as OKS
+  //   //m_input_queue = get_iom_receiver<IN>(appfwk::connection_uid(obj, "input"));
+  //   //m_output_queue = get_iom_sender<OUT>(appfwk::connection_uid(obj, "output"));
+  // }
 
   void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
   {
@@ -88,12 +88,14 @@ public:
 
     i.received_count = m_received_count.load();
     i.sent_count = m_sent_count.load();
-    if (m_maker) { i.data_vs_system_ms = m_maker->m_data_vs_system_time; }
-    else i.data_vs_system_ms = 0;    
+    if (m_maker) {
+      i.data_vs_system_ms = m_maker->m_data_vs_system_time;
+    } else
+      i.data_vs_system_ms = 0;
 
     ci.add(i);
   }
-  
+
 protected:
   void set_algorithm_name(const std::string& name) { m_algorithm_name = name; }
 
@@ -135,7 +137,7 @@ private:
 
   std::unique_ptr<MAKER> m_maker;
   nlohmann::json m_maker_conf;
-  
+
   TriggerGenericWorker<IN, OUT, MAKER> worker;
 
   // This should return a unique_ptr to the MAKER created from conf command arguments.
@@ -152,10 +154,7 @@ private:
     m_run_number = startobj.value<dunedaq::daqdataformats::run_number_t>("run", 0);
   }
 
-  void do_stop(const CommandData_t& /*obj*/)
-  {
-    m_thread.stop_working_thread();
-  }
+  void do_stop(const CommandData_t& /*obj*/) { m_thread.stop_working_thread(); }
 
   void do_configure(const CommandData_t& obj)
   {
@@ -165,7 +164,7 @@ private:
     // persist between runs and hold onto its state from the previous
     // run
     m_maker_conf = obj;
-   
+
     // worker should be notified that configuration potentially changed
     worker.reconfigure();
   }
@@ -187,8 +186,8 @@ private:
       IN in;
       while (receive(in)) {
         if (m_running_flag.load()) {
-	  worker.process(in); 
-	}
+          worker.process(in);
+        }
       }
     }
     // P. Rodrigues 2022-06-01. The argument here is whether to drop
@@ -245,16 +244,16 @@ class TriggerGenericWorker
 {
 public:
   explicit TriggerGenericWorker(TriggerGenericMaker<IN, OUT, MAKER>& parent)
-    : m_parent(parent), m_low_level_input_count(0)
-  {}
+    : m_parent(parent)
+    , m_low_level_input_count(0)
+  {
+  }
 
   TriggerGenericMaker<IN, OUT, MAKER>& m_parent;
 
   void reconfigure() {}
 
-  void reset() {
-    m_low_level_input_count = 0;
-  }
+  void reset() { m_low_level_input_count = 0; }
 
   void process(IN& in)
   {
@@ -279,7 +278,7 @@ public:
 
   void drain(bool) {}
 
-  size_t get_low_level_input_count() {return m_low_level_input_count;}
+  size_t get_low_level_input_count() { return m_low_level_input_count; }
   size_t m_low_level_input_count;
 };
 
@@ -294,7 +293,8 @@ public: // NOLINT
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
     , m_out_buffer(parent.get_name(), parent.m_algorithm_name, parent.m_buffer_time)
     , m_low_level_input_count(0)
-  {}
+  {
+  }
 
   TriggerGenericMaker<Set<A>, Set<B>, MAKER>& m_parent;
 
@@ -371,8 +371,7 @@ public: // NOLINT
         heartbeat.type = Set<B>::Type::kHeartbeat;
         heartbeat.start_time = in.start_time;
         heartbeat.end_time = in.end_time;
-        heartbeat.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+        heartbeat.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
         TLOG_DEBUG(4) << "Buffering heartbeat with start time " << heartbeat.start_time;
         m_out_buffer.buffer_heartbeat(heartbeat);
@@ -398,15 +397,14 @@ public: // NOLINT
       m_out_buffer.buffer(elems);
     }
 
-    size_t n_output_windows=0;
+    size_t n_output_windows = 0;
     // emit completed windows
     while (m_out_buffer.ready()) {
       ++n_output_windows;
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
-      out.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+      out.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
         TLOG_DEBUG(4) << "Sending heartbeat with start time " << out.start_time;
@@ -448,11 +446,10 @@ public: // NOLINT
       Set<B> out;
       m_out_buffer.flush(out);
       out.seqno = m_parent.m_sent_count;
-      out.origin = daqdataformats::SourceID(
-          daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
+      out.origin = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTrigger, m_parent.m_sourceid);
 
       if (out.type == Set<B>::Type::kHeartbeat) {
-        if(!drop) {
+        if (!drop) {
           if (!m_parent.send(std::move(out))) {
             ers::error(AlgorithmFailedToSend(ERS_HERE, m_parent.get_name(), m_parent.m_algorithm_name));
             // out is dropped
@@ -473,7 +470,7 @@ public: // NOLINT
     }
   }
 
-  size_t get_low_level_input_count() {return m_low_level_input_count;}
+  size_t get_low_level_input_count() { return m_low_level_input_count; }
   size_t m_low_level_input_count;
 };
 
@@ -487,7 +484,8 @@ public: // NOLINT
     : m_parent(parent)
     , m_in_buffer(parent.get_name(), parent.m_algorithm_name)
     , m_low_level_input_count(0)
-  {}
+  {
+  }
 
   TriggerGenericMaker<Set<A>, OUT, MAKER>& m_parent;
 
@@ -495,9 +493,7 @@ public: // NOLINT
 
   void reconfigure() {}
 
-  void reset() {
-    m_low_level_input_count = 0;
-  }
+  void reset() { m_low_level_input_count = 0; }
 
   void process_slice(const std::vector<A>& time_slice, std::vector<OUT>& out_vec)
   {
@@ -583,12 +579,12 @@ public: // NOLINT
             // out.back() is dropped
           }
         }
-	out_vec.pop_back();
+        out_vec.pop_back();
       }
     }
   }
 
-  size_t get_low_level_input_count() {return m_low_level_input_count;}
+  size_t get_low_level_input_count() { return m_low_level_input_count; }
   size_t m_low_level_input_count;
 };
 

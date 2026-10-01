@@ -7,9 +7,9 @@
  */
 #include "CLI/CLI.hpp"
 
+#include "hdf5libs/HDF5RawDataFile.hpp"
 #include "trgdataformats/TriggerObjectOverlay.hpp"
 #include "trgdataformats/TriggerPrimitive.hpp"
-#include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include <daqdataformats/Fragment.hpp>
 #include <daqdataformats/SourceID.hpp>

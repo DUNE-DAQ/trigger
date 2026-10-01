@@ -13,19 +13,19 @@
 #include "logging/Logging.hpp"
 
 #include "appmodel/DataHandlerModule.hpp"
-#include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/ROIGroupConf.hpp"
 #include "appmodel/SourceIDConf.hpp"
-#include "appmodel/TriggerDataHandlerModule.hpp"
+#include "appmodel/TCReadoutMap.hpp"
 #include "appmodel/TriggerBitword.hpp"
+#include "appmodel/TriggerDataHandlerModule.hpp"
 
 #include "datahandlinglibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "trigger/Issues.hpp"
-#include "trigger/TCWrapper.hpp"
 #include "trigger/Latency.hpp"
-#include "trigger/opmon/tcprocessor_info.pb.h"
+#include "trigger/TCWrapper.hpp"
 #include "trigger/opmon/latency_info.pb.h"
+#include "trigger/opmon/tcprocessor_info.pb.h"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -47,7 +47,8 @@ public:
   using TCType = triggeralgs::TriggerCandidate::Type;
   using TDBitset = std::bitset<64>;
 
-  explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry, bool post_processing_enabled);
+  explicit TCProcessor(std::unique_ptr<datahandlinglibs::FrameErrorRegistry>& error_registry,
+                       bool post_processing_enabled);
 
   ~TCProcessor();
 
@@ -62,7 +63,6 @@ public:
   void generate_opmon_data() override;
 
 protected:
-
   void make_td(const TCWrapper* tc);
 
 private:
@@ -135,7 +135,7 @@ private:
   void add_tc_ignored(const triggeralgs::TriggerCandidate tc);
   void call_tc_decision(const PendingTD& pending_td);
   bool check_overlap(const triggeralgs::TriggerCandidate& tc, const PendingTD& pending_td);
-  //bool check_overlap_td(const PendingTD& pending_td);
+  // bool check_overlap_td(const PendingTD& pending_td);
   bool check_td_readout_length(const PendingTD&);
   void clear_td_vectors();
   std::vector<PendingTD> get_ready_tds(std::vector<PendingTD>& pending_tds);
@@ -155,12 +155,10 @@ private:
 
   // Readout map config
   bool m_use_readout_map;
-  std::vector<const appmodel::TCReadoutMap*>  m_readout_window_map_data;
-  std::map<TCType, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>>
-    m_readout_window_map;
+  std::vector<const appmodel::TCReadoutMap*> m_readout_window_map_data;
+  std::map<TCType, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> m_readout_window_map;
   void parse_readout_map(const std::vector<const appmodel::TCReadoutMap*>& data);
-  void print_readout_map(std::map<TCType,
-                                  std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map);
+  void print_readout_map(std::map<TCType, std::pair<triggeralgs::timestamp_t, triggeralgs::timestamp_t>> map);
 
   // Create the next trigger decision
   dfmessages::TriggerDecision create_decision(const PendingTD& pending_td);
@@ -171,13 +169,12 @@ private:
   bool m_ignoring_tc_types;
   bool check_trigger_type_ignore(unsigned int tc_type);
 
-
- // output queue for TDs
+  // output queue for TDs
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerDecision>> m_td_sink;
 
   // opmon
-  using metric_counter_type = uint64_t; 
-  std::atomic<metric_counter_type> m_tds_created_count{ 0 };  // NOLINT(build/unsigned)
+  using metric_counter_type = uint64_t;
+  std::atomic<metric_counter_type> m_tds_created_count{ 0 }; // NOLINT(build/unsigned)
   std::atomic<metric_counter_type> m_tds_sent_count{ 0 };
   std::atomic<metric_counter_type> m_tds_dropped_count{ 0 };
   std::atomic<metric_counter_type> m_tds_failed_bitword_count{ 0 };
