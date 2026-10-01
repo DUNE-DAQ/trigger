@@ -7,8 +7,6 @@
 #ifndef TRIGGER_PLUGINS_RANDOMTRIGGERCANDIDATEMAKER_HPP_
 #define TRIGGER_PLUGINS_RANDOMTRIGGERCANDIDATEMAKER_HPP_
 
-#include "trigger/TokenManager.hpp"
-
 #include "appfwk/ConfigurationManager.hpp"
 #include "appfwk/DAQModule.hpp"
 #include "confmodel/Connection.hpp"

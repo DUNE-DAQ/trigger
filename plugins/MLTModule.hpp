@@ -17,7 +17,6 @@
 #include "trigger/Issues.hpp"
 #include "trigger/Latency.hpp"
 #include "trigger/LivetimeCounter.hpp"
-#include "trigger/TokenManager.hpp"
 #include "trigger/opmon/latency_info.pb.h"
 #include "trigger/opmon/moduleleveltrigger_info.pb.h"
 
@@ -96,7 +95,7 @@ private:
 
   // Queue sources and sinks
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerDecision>> m_decision_input;
-  std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerDecision>> m_decision_output;
+  std::map<std::string, std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerDecision>>> m_decision_outputs;
   std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerInhibit>> m_inhibit_input;
 
   /* TD requests
