@@ -18,7 +18,7 @@ find_package(daqdataformats REQUIRED)
 find_package(detdataformats REQUIRED)
 find_package(trgdataformats REQUIRED)
 find_package(detchannelmaps REQUIRED)
-find_package(hdf5libs REQUIRED)
+find_package(rawdatafilelibs REQUIRED)
 find_package(datahandlinglibs REQUIRED)
 find_package(appmodel REQUIRED)
 find_package(CLI11 REQUIRED)
@@ -37,7 +37,7 @@ set(TRIGGER_DEPENDENCIES
   iomanager::iomanager
   detdataformats::detdataformats
   trgdataformats::trgdataformats
-  hdf5libs::hdf5libs
+  rawdatafilelibs::rawdatafilelibs
   Boost::iostreams # Boost::iostreams comes in via datahandlinglibs
   detchannelmaps::detchannelmaps
   datahandlinglibs::datahandlinglibs)
@@ -73,9 +73,9 @@ daq_add_plugin(TPReplayModule duneDAQModule LINK_LIBRARIES trigger)
 
 daq_add_application( set_serialization_speed set_serialization_speed.cxx TEST LINK_LIBRARIES trigger)
 daq_add_application( taset_serialization taset_serialization.cxx TEST LINK_LIBRARIES trigger)
-daq_add_application( print_trigger_type print_trigger_type.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
-daq_add_application( print_ds_fragments print_ds_fragments.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
-daq_add_application( generate_tpset_from_hdf5 generate_tpset_from_hdf5.cxx TEST LINK_LIBRARIES trigger hdf5libs::hdf5libs CLI11::CLI11)
+daq_add_application( print_trigger_type print_trigger_type.cxx TEST LINK_LIBRARIES trigger rawdatafilelibs::rawdatafilelibs CLI11::CLI11)
+daq_add_application( print_ds_fragments print_ds_fragments.cxx TEST LINK_LIBRARIES trigger rawdatafilelibs::rawdatafilelibs CLI11::CLI11)
+daq_add_application( generate_tpset_from_hdf5 generate_tpset_from_hdf5.cxx TEST LINK_LIBRARIES trigger rawdatafilelibs::rawdatafilelibs CLI11::CLI11)
 
 ##############################################################################
 # Unit Tests

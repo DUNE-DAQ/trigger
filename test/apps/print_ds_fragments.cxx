@@ -7,7 +7,8 @@
  */
 #include "CLI/CLI.hpp"
 
-#include "hdf5libs/HDF5RawDataFile.hpp"
+#include "rawdatafilelibs/BackendFactory.hpp"
+#include "rawdatafilelibs/RawDataFileReader.hpp"
 #include "trgdataformats/TriggerObjectOverlay.hpp"
 #include "trgdataformats/TriggerPrimitive.hpp"
 
@@ -131,28 +132,28 @@ main(int argc, char** argv)
 
   CLI11_PARSE(app, argc, argv);
 
-  dunedaq::hdf5libs::HDF5RawDataFile hdf5file(in_filename);
+  auto input_file = dunedaq::rawdatafilelibs::open_raw_data_file(in_filename);
+  if (input_file->get_record_type() != dunedaq::rawdatafilelibs::RecordType::kTriggerRecord) {
+    std::cout << "Not a TriggerRecord file." << std::endl;
+    return 1;
+  }
 
-  auto record_ids = hdf5file.get_all_trigger_record_ids();
-
-  for (auto const& record_id : record_ids) {
+  dunedaq::daqdataformats::SourceIDSelector trigger_fragments;
+  trigger_fragments.subsystem = dunedaq::daqdataformats::SourceID::Subsystem::kTrigger;
+  for (auto const& record_id : input_file->get_record_ids()) {
     std::cout << "-----------------------------------------------------------------------------------" << std::endl;
-    std::cout << "Trigger record " << record_id.first << std::endl;
-    auto frag_paths =
-      hdf5file.get_fragment_dataset_paths(record_id, dunedaq::daqdataformats::SourceID::Subsystem::kTrigger);
-    for (auto const& frag_path : frag_paths) {
-      auto frag_ptr = hdf5file.get_frag_ptr(frag_path);
-      if (frag_ptr->get_fragment_type() == dunedaq::daqdataformats::FragmentType::kTriggerPrimitive) {
+    std::cout << "Trigger record " << record_id.number << std::endl;
+    for (auto const& source_id : input_file->get_fragment_source_ids(record_id, trigger_fragments)) {
+      auto frag_ptr = input_file->get_fragment(record_id, source_id);
+      // (else-if: each print function takes the fragment, which can't be looked at afterwards)
+      auto fragment_type = frag_ptr->get_fragment_type();
+      if (fragment_type == dunedaq::daqdataformats::FragmentType::kTriggerPrimitive) {
         print_tps(std::move(frag_ptr));
-      }
-      if (frag_ptr->get_fragment_type() == dunedaq::daqdataformats::FragmentType::kTriggerActivity) {
+      } else if (fragment_type == dunedaq::daqdataformats::FragmentType::kTriggerActivity) {
         print_tas(std::move(frag_ptr));
-      }
-      if (frag_ptr->get_fragment_type() == dunedaq::daqdataformats::FragmentType::kTriggerCandidate) {
+      } else if (fragment_type == dunedaq::daqdataformats::FragmentType::kTriggerCandidate) {
         print_tcs(std::move(frag_ptr));
       }
-
-      // std::cout << frag_path << std::endl;
     }
     std::cout << std::endl;
   }

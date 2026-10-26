@@ -30,14 +30,12 @@
 #include "appmodel/TCReadoutMap.hpp"
 
 #include "confmodel/Connection.hpp"
-#include "confmodel/GeoId.hpp"
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
-#include "hdf5libs/HDF5RawDataFile.hpp"
 #include "iomanager/Receiver.hpp"
 #include "trgdataformats/TriggerCandidateData.hpp"
 #include "trgdataformats/Types.hpp"
@@ -87,8 +85,6 @@ private:
 
   void trigger_decisions_callback(dfmessages::TriggerDecision& decision);
   void dfo_busy_callback(dfmessages::TriggerInhibit& inhibit);
-
-  std::map<std::string, int> decode_geoid(uint64_t _geoid_int);
 
   const dunedaq::appmodel::MLTModule* m_mtrg;
   const dunedaq::confmodel::Session* m_session;

@@ -11,8 +11,11 @@
 #include "trigger/Issues.hpp" // For TLVL_*
 #include "trigger/TriggerPrimitiveTypeAdapter.hpp"
 
+#include "daqdataformats/RecordID.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
+#include "rawdatafilelibs/BackendFactory.hpp"
+#include "rawdatafilelibs/RawDataFileReader.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
 #include <algorithm>
@@ -22,6 +25,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 using namespace triggeralgs;
@@ -283,23 +287,29 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
     std::string filename = a_file.second;
 
     // Check file exists
-    std::unique_ptr<hdf5libs::HDF5RawDataFile> input_file;
+    std::unique_ptr<rawdatafilelibs::RawDataFileReader> input_file;
     try {
-      input_file = std::make_unique<hdf5libs::HDF5RawDataFile>(filename);
-    } catch (const hdf5libs::FileOpenFailed& e) {
+      input_file = rawdatafilelibs::open_raw_data_file(filename);
+    } catch (const ers::Issue& e) { // e.g. FileOpenFailed, or BackendNotAvailable for an unknown extension
       ers::error(dunedaq::trigger::ReplayFileProblem(ERS_HERE, get_name(), filename));
       return {};
     }
 
     // Check that the file is a TimeSlice type
-    if (!input_file->is_timeslice_type()) {
+    if (input_file->get_record_type() != rawdatafilelibs::RecordType::kTimeSlice) {
       ers::error(dunedaq::trigger::BadTPInputFile(ERS_HERE, get_name(), filename));
       return {};
     }
 
-    std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
+    // Every fragment of every TimeSlice, one TimeSlice after another
+    std::vector<std::pair<daqdataformats::RecordID, daqdataformats::SourceID>> fragment_keys;
+    for (auto const& record_id : input_file->get_record_ids()) {
+      for (auto const& source_id : input_file->get_fragment_source_ids(record_id)) {
+        fragment_keys.emplace_back(record_id, source_id);
+      }
+    }
     // Check there are fragments
-    if (fragment_paths.empty()) {
+    if (fragment_keys.empty()) {
       ers::error(dunedaq::trigger::ReplayNoFragments(ERS_HERE, get_name(), filename));
       return {};
     }
@@ -310,9 +320,9 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
     int local_tp_vectors = 0;
     int local_tps = 0;
 
-    // Loop over paths/fragments
-    for (const auto& path : fragment_paths) {
-      std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_frag_ptr(path);
+    // Loop over fragments
+    for (const auto& [record_id, source_id] : fragment_keys) {
+      std::unique_ptr<daqdataformats::Fragment> frag = input_file->get_fragment(record_id, source_id);
 
       // Check fragment has data
       auto frag_size = frag->get_data_size();

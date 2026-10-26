@@ -15,9 +15,9 @@ import conffwk
 import daqdataformats
 import detchannelmaps
 import detdataformats
+import rawdatafilelibs
 import trgdataformats
 from daqconf.consolidate import copy_configuration
-from hdf5libs import HDF5RawDataFile
 
 
 def setup_logging(verbose: bool) -> None:
@@ -165,9 +165,9 @@ def extract_rous_and_planes(files: list[str], channel_map: 'detchannelmaps._daq_
 
     for tpstream_file in files:
         logging.debug("Processing file: %s", tpstream_file)
-        loaded_file = HDF5RawDataFile(tpstream_file)
+        loaded_file = rawdatafilelibs.open(tpstream_file)
         # check is tpstream
-        if not loaded_file.is_timeslice_type:
+        if not loaded_file.is_timeslice_type():
             logging.critical("File %s is not a TP Stream file!", tpstream_file)
             sys.exit(1)
         # check has records

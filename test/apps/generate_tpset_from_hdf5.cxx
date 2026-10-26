@@ -16,9 +16,12 @@
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/TriggerRecordHeader.hpp"
 #include "daqdataformats/Types.hpp"
-#include "hdf5libs/HDF5RawDataFile.hpp"
+#include "rawdatafilelibs/BackendFactory.hpp"
+#include "rawdatafilelibs/RawDataFileReader.hpp"
 
 #include <iostream>
+#include <utility>
+#include <vector>
 
 int
 main(int argc, char** argv)
@@ -42,24 +45,31 @@ main(int argc, char** argv)
   uint32_t total_tps = 0;
 
   // Prepare input file
-  std::unique_ptr<dunedaq::hdf5libs::HDF5RawDataFile> input_file =
-    std::make_unique<dunedaq::hdf5libs::HDF5RawDataFile>(filename);
+  auto input_file = dunedaq::rawdatafilelibs::open_raw_data_file(filename);
 
   // Check that the file is a TimeSlice type
-  if (!input_file->is_timeslice_type()) {
+  if (input_file->get_record_type() != dunedaq::rawdatafilelibs::RecordType::kTimeSlice) {
     std::cout << "Not a timeslice type.\n";
     return 1;
   }
 
-  std::vector<std::string> fragment_paths = input_file->get_all_fragment_dataset_paths();
+  // Every Trigger-subsystem fragment, one TimeSlice after another
+  dunedaq::daqdataformats::SourceIDSelector trigger_fragments;
+  trigger_fragments.subsystem = dunedaq::daqdataformats::SourceID::Subsystem::kTrigger;
+  std::vector<std::pair<dunedaq::daqdataformats::RecordID, dunedaq::daqdataformats::SourceID>> fragment_keys;
+  for (auto const& record_id : input_file->get_record_ids()) {
+    for (auto const& source_id : input_file->get_fragment_source_ids(record_id, trigger_fragments)) {
+      fragment_keys.emplace_back(record_id, source_id);
+    }
+  }
 
   // Read in the file and place the TPs in TPSets. TPSets have time
   // boundaries ( n*tpset_time_width + tpset_time_offset ), and TPs are placed
   // in TPSets based on the TP start time
   //
   // This loop assumes the input file is sorted by TP start time
-  for (std::string& fragment_path : fragment_paths) {
-    std::unique_ptr<dunedaq::daqdataformats::Fragment> frag = input_file->get_frag_ptr(fragment_path);
+  for (auto const& [record_id, source_id] : fragment_keys) {
+    std::unique_ptr<dunedaq::daqdataformats::Fragment> frag = input_file->get_fragment(record_id, source_id);
     // Make sure this fragment is a TriggerPrimitive
     if (frag->get_fragment_type() != dunedaq::daqdataformats::FragmentType::kTriggerPrimitive)
       continue;

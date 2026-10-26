@@ -8,7 +8,8 @@
  */
 #include "CLI/CLI.hpp"
 
-#include "hdf5libs/HDF5RawDataFile.hpp"
+#include "rawdatafilelibs/BackendFactory.hpp"
+#include "rawdatafilelibs/RawDataFileReader.hpp"
 #include "trgdataformats/TriggerPrimitive.hpp"
 
 #include <daqdataformats/Fragment.hpp>
@@ -27,14 +28,12 @@ main(int argc, char** argv)
 
   CLI11_PARSE(app, argc, argv);
 
-  dunedaq::hdf5libs::HDF5RawDataFile decoder(filename);
+  auto input_file = dunedaq::rawdatafilelibs::open_raw_data_file(filename);
 
-  auto trigger_record_ids = decoder.get_all_trigger_record_ids();
+  for (auto const& record_id : input_file->get_record_ids()) {
+    auto trigger_number = record_id.number;
 
-  for (auto trigger_record_id : trigger_record_ids) {
-    auto trigger_number = trigger_record_id.first;
-
-    auto header = decoder.get_trh_ptr(trigger_number);
+    auto header = input_file->get_trigger_record_header(record_id);
     std::cout << "Trigger record " << trigger_number << " has type 0x" << std::hex << header->get_trigger_type()
               << std::dec << std::endl;
   }

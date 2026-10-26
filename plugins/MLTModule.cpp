@@ -17,13 +17,17 @@
 #include "trigger/Issues.hpp"
 #include "trigger/LivetimeCounter.hpp"
 
+#include "appmodel/ConfigurationHelper.hpp"
 #include "daqdataformats/ComponentRequest.hpp"
+#include "daqdataformats/SourceIDGeoIDMap.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/Types.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 #include "trgdataformats/Types.hpp"
+
+#include <stdexcept>
 
 namespace dunedaq {
 namespace trigger {
@@ -41,27 +45,6 @@ MLTModule::MLTModule(const std::string& name)
   register_command("enable_triggers", &MLTModule::do_resume);
   register_command("scrap",  &MLTModule::do_scrap);
   // clang-format on
-}
-
-std::map<std::string, int>
-MLTModule::decode_geoid(uint64_t _geoid_int)
-{
-
-  std::map<std::string, int> geoid;
-
-  // Extract stream_id (stored in the top 16 bits)
-  geoid["stream_id"] = (_geoid_int >> 48) & 0xFFFF;
-
-  // Extract slot_id (stored in the next 16 bits)
-  geoid["slot_id"] = (_geoid_int >> 32) & 0xFFFF;
-
-  // Extract crate_id (stored in the next 16 bits)
-  geoid["crate_id"] = (_geoid_int >> 16) & 0xFFFF;
-
-  // Extract det_id (stored in the lowest 16 bits)
-  geoid["detector_id"] = _geoid_int & 0xFFFF;
-
-  return geoid;
 }
 
 void
@@ -96,14 +79,17 @@ MLTModule::do_configure(const CommandData_t& /*obj*/)
       m_decision_outputs[con->UID()] = get_iom_sender<dfmessages::TriggerDecision>(con->UID());
   }
 
-  hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t geoidmap =
-    hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(*m_session);
-  // Fill the SourceID -- Subdetector map
-  for (auto const& [sourceid, geoids] : geoidmap) {
+  // Fill the SourceID -- Subdetector map from the GeoIDs of the session's detector streams
+  daqdataformats::SourceIDGeoIDMap geoidmap;
+  try {
+    geoidmap = appmodel::ConfigurationHelper(m_session).get_source_id_geo_id_map();
+  } catch (std::invalid_argument const& excpt) { // e.g. one GeoID configured for two SourceIDs
+    throw MLTConfigurationProblem(ERS_HERE, get_name(), excpt.what());
+  }
+  for (auto const& [sourceid, geoids] : geoidmap.get_entries()) {
     TLOG() << "SourceID: " << sourceid;
     for (auto const& geoid : geoids) {
-      std::map<std::string, int> gidmap = decode_geoid(geoid);
-      SubdetectorID detid = static_cast<SubdetectorID>(gidmap["detector_id"]);
+      SubdetectorID detid = geoid.subdetector();
       if (m_srcid_detid_map.contains(sourceid) && !(m_srcid_detid_map[sourceid] == detid)) {
         throw MLTConfigurationProblem(
           ERS_HERE, get_name(), "Multiple subdetector types for one SourceID not supported in trigger system!");
