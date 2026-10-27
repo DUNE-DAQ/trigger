@@ -19,6 +19,9 @@ find_package(detdataformats REQUIRED)
 find_package(trgdataformats REQUIRED)
 find_package(detchannelmaps REQUIRED)
 find_package(rawdatafilelibs REQUIRED)
+# Not linked: hdf5libs provides the hdf5 backend plugin that rawdatafilelibs loads at run time to
+# read .hdf5 files, and this find_package is what gives the release's Spack recipe its hdf5libs dependency
+find_package(hdf5libs REQUIRED)
 find_package(datahandlinglibs REQUIRED)
 find_package(appmodel REQUIRED)
 find_package(CLI11 REQUIRED)
