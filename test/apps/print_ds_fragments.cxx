@@ -145,7 +145,7 @@ main(int argc, char** argv)
     std::cout << "Trigger record " << record_id.number << std::endl;
     for (auto const& source_id : input_file->get_fragment_source_ids(record_id, trigger_fragments)) {
       auto frag_ptr = input_file->get_fragment(record_id, source_id);
-      // (else-if: each print function takes the fragment, which can't be looked at afterwards)
+      // Each print function consumes frag_ptr
       auto fragment_type = frag_ptr->get_fragment_type();
       if (fragment_type == dunedaq::daqdataformats::FragmentType::kTriggerPrimitive) {
         print_tps(std::move(frag_ptr));

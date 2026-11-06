@@ -20,6 +20,7 @@
 #include "rawdatafilelibs/RawDataFileReader.hpp"
 
 #include <iostream>
+#include <memory>
 #include <utility>
 #include <vector>
 

@@ -290,7 +290,8 @@ TPReplayModule::read_tps(std::map<int, std::string> m_tpstream_files)
     std::unique_ptr<rawdatafilelibs::RawDataFileReader> input_file;
     try {
       input_file = rawdatafilelibs::open_raw_data_file(filename);
-    } catch (const ers::Issue& e) { // e.g. FileOpenFailed, or BackendNotAvailable for an unknown extension
+    } catch (const ers::Issue& e) {
+      // e.g. FileOpenFailed, or BackendNotAvailable for an unknown extension
       ers::error(dunedaq::trigger::ReplayFileProblem(ERS_HERE, get_name(), filename));
       return {};
     }

@@ -83,7 +83,8 @@ MLTModule::do_configure(const CommandData_t& /*obj*/)
   daqdataformats::SourceIDGeoIDMap geoidmap;
   try {
     geoidmap = appmodel::ConfigurationHelper(m_session).get_source_id_geo_id_map();
-  } catch (std::invalid_argument const& excpt) { // e.g. one GeoID configured for two SourceIDs
+  } catch (std::invalid_argument const& excpt) {
+    // e.g. one GeoID configured for two SourceIDs
     throw MLTConfigurationProblem(ERS_HERE, get_name(), excpt.what());
   }
   for (auto const& [sourceid, geoids] : geoidmap.get_entries()) {
