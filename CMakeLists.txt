@@ -89,3 +89,4 @@ daq_add_unit_test(TriggerTypeAdapters_test        LINK_LIBRARIES trigger)
 ##############################################################################
 
 daq_install()
+
