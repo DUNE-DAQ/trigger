@@ -364,23 +364,30 @@ MLTModule::trigger_decisions_callback(dfmessages::TriggerDecision& decision)
       m_latency_requests_instance.update_latency_out(decision.components.front().window_end);
     }
 
-    try {
-      for (auto& [conn_name, sender] : m_decision_outputs) {
+    // A DFO that cannot be reached must not keep the TriggerDecision from the other DFOs
+    bool all_sends_failed = !m_decision_outputs.empty();
+    for (auto& [conn_name, sender] : m_decision_outputs) {
+      try {
         auto decision_copy = dfmessages::TriggerDecision(decision);
         sender->send(std::move(decision_copy), std::chrono::milliseconds(1));
+        all_sends_failed = false;
+      } catch (const ers::Issue& e) {
+        ers::error(e);
+        TLOG_DEBUG(1) << "The network is misbehaving: TD send to " << conn_name << " failed for "
+                      << m_last_trigger_number;
       }
-      // m_decision_output->send(std::move(decision), std::chrono::milliseconds(1));
+    }
+
+    if (!all_sends_failed) {
       m_td_sent_count++;
 
       for (const auto t : trigger_types) {
         ++get_trigger_counter(t).sent;
       }
 
+      // The trigger number is used up once any DFO has the TriggerDecision
       m_last_trigger_number++;
-      // add_td(pending_td);
-    } catch (const ers::Issue& e) {
-      ers::error(e);
-      TLOG_DEBUG(1) << "The network is misbehaving: TD send failed for " << m_last_trigger_number;
+    } else {
       m_td_queue_timeout_expired_err_count++;
 
       for (const auto t : trigger_types) {
